@@ -1,0 +1,966 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>アイデアファクトリー - 総合プラットフォーム</title>
+  <link rel="manifest" href="/manifest.json">
+  <style>
+    :root {
+      --primary: #2563eb;
+      --bg: #f8fafc;
+      --card-bg: #ffffff;
+      --text: #1e293b;
+      --border: #e2e8f0;
+      --success: #059669;
+      --danger: #dc2626;
+    }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background-color: var(--bg);
+      color: var(--text);
+      margin: 0;
+      padding: 20px;
+    }
+    .container { max-width: 1000px; margin: 0 auto; }
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: var(--card-bg);
+      padding: 15px 20px;
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      margin-bottom: 20px;
+    }
+    .user-info { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+    .balance-badge {
+      background: #eff6ff;
+      color: var(--primary);
+      padding: 6px 12px;
+      border-radius: 20px;
+      font-weight: bold;
+    }
+    
+    /* タブナビゲーション */
+    .tabs {
+      display: flex;
+      gap: 5px;
+      margin-bottom: 20px;
+      border-bottom: 2px solid var(--border);
+      padding-bottom: 5px;
+      overflow-x: auto;
+    }
+    .tab-btn {
+      flex: 1;
+      min-width: 130px;
+      padding: 10px;
+      background: #e2e8f0;
+      color: #475569;
+      border: none;
+      border-radius: 8px 8px 0 0;
+      font-weight: bold;
+      cursor: pointer;
+      text-align: center;
+      transition: background 0.2s, color 0.2s;
+    }
+    .tab-btn.active {
+      background: var(--primary);
+      color: white;
+    }
+    .tab-content { display: none; }
+
+    .card {
+      background: var(--card-bg);
+      padding: 20px;
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      margin-bottom: 20px;
+    }
+    .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(270px, 1fr)); gap: 20px; }
+    .idea-card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      cursor: pointer;
+      transition: transform 0.15s, box-shadow 0.15s;
+    }
+    .idea-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+    }
+    .idea-img { width: 100%; height: 160px; object-fit: cover; background: #cbd5e1; }
+    .idea-body { padding: 15px; flex-grow: 1; display: flex; flex-direction: column; justify-content: space-between; }
+    
+    button.action-btn {
+      background: var(--primary);
+      color: white;
+      border: none;
+      padding: 8px 16px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: 500;
+      width: 100%;
+      margin-top: 5px;
+    }
+    button.action-btn:hover { opacity: 0.9; }
+    input, select, textarea {
+      width: 100%;
+      padding: 8px 12px;
+      margin-top: 5px;
+      margin-bottom: 15px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      box-sizing: border-box;
+    }
+    table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+    th, td { border-bottom: 1px solid var(--border); padding: 10px; text-align: left; font-size: 14px; }
+
+    /* モーダルスタイル */
+    .modal-overlay {
+      position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(0,0,0,0.5); display: none; justify-content: center; align-items: center; z-index: 1000;
+    }
+    .modal-box {
+      background: white; padding: 25px; border-radius: 12px; width: 90%; max-width: 500px; box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+      position: relative; max-height: 90vh; overflow-y: auto;
+    }
+
+    /* トースト通知 */
+    #toast-container {
+      position: fixed; bottom: 20px; right: 20px; z-index: 2000; display: flex; flex-direction: column; gap: 10px;
+    }
+    .toast {
+      background: #1e293b; color: white; padding: 12px 20px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+      font-size: 14px; animation: fadeIn 0.2s ease;
+    }
+    .toast.success { background: var(--success); }
+    .toast.error { background: var(--danger); }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h2>💡 アイデアファクトリー</h2>
+      <div class="user-info">
+        <span id="user-display">未ログイン</span>
+        <span id="balance-display" class="balance-badge" style="display:none;">売上残高: 0円</span>
+        <button id="auth-btn" class="action-btn" onclick="openAuthModal()" style="width: auto; padding: 6px 14px;">ログイン / 登録</button>
+      </div>
+    </header>
+
+    <!-- タブボタン -->
+    <div class="tabs">
+      <button class="tab-btn active" onclick="switchTab(this, 'creator')">① 💡 アイデア募集</button>
+      <button class="tab-btn" onclick="switchTab(this, 'modeler')">② 🛠️ モデリング中</button>
+      <button class="tab-btn" onclick="switchTab(this, 'shop')">③ 🛒 商品購入</button>
+      <button class="tab-btn" onclick="switchTab(this, 'mypage')">④ 👤 マイページ</button>
+      <button class="tab-btn" onclick="switchTab(this, 'sales')">⑤ 💰 売上・ギフト</button>
+      <button class="tab-btn" id="admin-tab-btn" onclick="switchTab(this, 'admin')" style="display:none; background:#7c3aed; color:white;">⑥ ⚙️ 運営管理</button>
+    </div>
+
+    <!-- TAB 1: 考案者タブ -->
+    <div id="tab-creator" class="tab-content" style="display: block;">
+      <div class="card">
+        <h3>➕ 新しいアイデアを投稿する</h3>
+        <form id="idea-form" onsubmit="submitIdea(event)">
+          <label>タイトル</label>
+          <input type="text" id="idea-title" required placeholder="例: 卓上ミニハンディファンスタンド">
+          
+          <label>詳細説明・仕様</label>
+          <textarea id="idea-desc" rows="3" placeholder="商品の詳細やデザインの希望、サイズ感などを記載"></textarea>
+
+          <!-- 権利侵害チェックエリア -->
+          <div style="margin: 10px 0;">
+            <button type="button" onclick="checkInfringement()" class="action-btn" style="background-color: #ef4444;">
+              🔍 類似・権利侵害をAIでチェック
+            </button>
+          </div>
+
+          <!-- AI画像生成エリア -->
+          <div style="margin: 10px 0;">
+            <button type="button" onclick="generateAIImage()" class="action-btn" style="background-color: #6f42c1;">
+              ✨ AIでイメージ画像を自動作成する
+            </button>
+          </div>
+
+          <div id="ai-loading" style="display:none; color: #6f42c1; font-weight: bold; margin: 5px 0;">
+            🤖 AIがモデラー向けイメージ画像を生成中...（10秒ほどお待ちください）
+          </div>
+
+          <div id="ai-preview" style="margin: 10px 0;"></div>
+
+          <div style="display:flex; gap:10px;">
+            <div style="flex:1;">
+              <label>考案者分配率 (%)</label>
+              <input type="number" id="creator-share" value="50" min="0" max="100">
+            </div>
+            <div style="flex:1;">
+              <label>モデラー分配率 (%)</label>
+              <input type="number" id="modeler-share" value="50" min="0" max="100">
+            </div>
+          </div>
+
+          <div style="display:flex; gap:10px;">
+            <div style="flex:1;">
+              <label>物理プリント希望価格 (円)</label>
+              <input type="number" id="price-physical" value="2500">
+            </div>
+            <div style="flex:1;">
+              <label>データ(STL)希望価格 (円)</label>
+              <input type="number" id="price-digital" value="500">
+            </div>
+          </div>
+
+          <label>手動で画像をアップロードする場合 (任意)</label>
+          <input type="file" id="idea-image" accept="image/*">
+
+          <button type="submit" class="action-btn">アイデアを投稿する</button>
+        </form>
+      </div>
+
+      <h3>📌 モデラー募集中一覧</h3>
+      <div id="grid-recruiting" class="grid"></div>
+    </div>
+
+    <!-- TAB 2: モデラータブ -->
+    <div id="tab-modeler" class="tab-content">
+      <h3>🛠️ 制作中・モデリング作業中の案件</h3>
+      <div id="grid-in-progress" class="grid"></div>
+    </div>
+
+    <!-- TAB 3: 商品購入タブ -->
+    <div id="tab-shop" class="tab-content">
+      <h3>🛒 販売中の商品（プリント品・STLデータ）</h3>
+      <div id="grid-on-sale" class="grid"></div>
+    </div>
+
+    <!-- TAB 4: マイページタブ -->
+    <div id="tab-mypage" class="tab-content">
+      <div class="card">
+        <h3>👤 マイページ（自分のアクティビティ）</h3>
+        
+        <h4>📌 自分が投稿したアイデア</h4>
+        <div id="my-ideas-list" class="grid" style="margin-bottom: 20px;"></div>
+
+        <h4>🛠️ 自分がモデリング担当の案件</h4>
+        <div id="my-modeling-list" class="grid" style="margin-bottom: 20px;"></div>
+
+        <h4>📦 注文・購入履歴 ＆ 配送状況</h4>
+        <table>
+          <thead><tr><th>注文日時</th><th>商品名</th><th>種別</th><th>配送状態</th><th>追跡番号</th></tr></thead>
+          <tbody id="my-purchases-body"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- TAB 5: 売上・ギフト管理 -->
+    <div id="tab-sales" class="tab-content">
+      <div class="card">
+        <h3>💰 売上残高 ＆ ギフト交換管理</h3>
+        <p style="font-size:13px; color:#64748b;">※売上分配金の有効期限は付与から180日間です。1,000円分より各種デジタルギフトへ交換可能です。</p>
+        
+        <div style="display:flex; gap:20px; margin-bottom:15px; flex-wrap: wrap;">
+          <div style="flex:1; min-width: 280px;">
+            <h4>🎁 デジタルギフト交換申請</h4>
+            <label>交換先</label>
+            <select id="exchange-type">
+              <option value="Amazonギフトカード">Amazonギフトカード</option>
+              <option value="Apple Gift Card">Apple Gift Card</option>
+              <option value="Google Play ギフトコード">Google Play ギフトコード</option>
+            </select>
+            <label>交換金額 (円分)</label>
+            <input type="number" id="exchange-amount" value="1000" step="1000" min="1000">
+            <button class="action-btn" onclick="requestExchange()">交換申請を行う</button>
+          </div>
+          
+          <div style="flex:1; min-width: 280px;">
+            <h4>📜 交換申請履歴</h4>
+            <table>
+              <thead><tr><th>日時</th><th>内容</th><th>状態</th><th>ギフトコード</th></tr></thead>
+              <tbody id="exchange-history-body"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 6: 運営管理タブ (Admin Only) -->
+    <div id="tab-admin" class="tab-content">
+      <div class="card" style="border-color: #7c3aed;">
+        <h3 style="color:#7c3aed;">⚙️ 運営管理ダッシュボード</h3>
+        
+        <h4>🎁 ギフト交換申請の処理</h4>
+        <table>
+          <thead><tr><th>ID</th><th>ユーザー</th><th>種類</th><th>金額</th><th>状態</th><th>操作 / ギフトコード</th></tr></thead>
+          <tbody id="admin-exchange-body"></tbody>
+        </table>
+
+        <h4 style="margin-top: 30px;">📦 全ユーザーの注文・配送管理</h4>
+        <table>
+          <thead><tr><th>ID</th><th>購入者</th><th>商品名</th><th>種別</th><th>配送状態</th><th>追跡番号更新</th></tr></thead>
+          <tbody id="admin-orders-body"></tbody>
+        </table>
+
+        <h4 style="margin-top: 30px;">💡 全アイデアの一括管理・削除</h4>
+        <table>
+          <thead><tr><th>ID</th><th>タイトル</th><th>考案者</th><th>ステータス</th><th>操作</th></tr></thead>
+          <tbody id="admin-ideas-body"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- フッター -->
+    <footer style="text-align: center; padding: 20px 0; margin-top: 40px; border-top: 1px solid var(--border); font-size: 0.85rem; color: #64748b;">
+      <a href="/terms" target="_blank" style="color: var(--primary); text-decoration: none; font-weight: 500;">利用規約</a>
+      <span style="margin: 0 8px;">|</span>
+      &copy; Idea Factory. All Rights Reserved.
+    </footer>
+  </div>
+
+  <!-- 認証モーダル -->
+  <div id="auth-modal" class="modal-overlay">
+    <div class="modal-box">
+      <h3 id="auth-modal-title">ログイン</h3>
+      <form id="auth-form" onsubmit="handleAuthSubmit(event)">
+        <label>ユーザー名</label>
+        <input type="text" id="modal-username" required placeholder="例: creator_taro">
+        
+        <label>パスワード</label>
+        <input type="password" id="modal-password" required placeholder="パスワード">
+
+        <div id="role-field" style="display:none;">
+          <label>役割</label>
+          <select id="modal-role">
+            <option value="考案者">考案者</option>
+            <option value="モデラー">モデラー</option>
+            <option value="購入者">購入者</option>
+            <option value="運営者">運営者</option>
+          </select>
+        </div>
+
+        <button type="submit" class="action-btn" id="modal-submit-btn">ログインする</button>
+        <p style="text-align:center; margin-top:15px; font-size:14px;">
+          <span id="auth-toggle-text">アカウントをお持ちでない方は</span>
+          <a href="#" onclick="toggleAuthMode(); return false;" id="auth-toggle-link" style="color:var(--primary); font-weight:bold;">新規登録</a>
+        </p>
+        <button type="button" onclick="closeAuthModal()" style="background:#cbd5e1; color:#334155; margin-top:10px;" class="action-btn">キャンセル</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- 詳細モーダル（コメント機能付き） -->
+  <div id="detail-modal" class="modal-overlay">
+    <div class="modal-box" id="detail-modal-content">
+      <!-- 動的ロード -->
+    </div>
+  </div>
+
+  <!-- トースト通知用コンテナ -->
+  <div id="toast-container"></div>
+
+  <script>
+    let currentUser = null;
+    let currentRole = null;
+    let isRegisterMode = false;
+
+    // トースト通知表示
+    function showToast(message, type = 'success') {
+      const container = document.getElementById('toast-container');
+      const toast = document.createElement('div');
+      toast.className = `toast ${type}`;
+      toast.textContent = message;
+      container.appendChild(toast);
+      setTimeout(() => {
+        toast.style.opacity = '0';
+        setTimeout(() => toast.remove(), 200);
+      }, 3000);
+    }
+
+    // タブ切り替え処理
+    function switchTab(btnElement, tabName) {
+      document.querySelectorAll('.tab-content').forEach(el => el.style.display = 'none');
+      document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+
+      const targetTab = document.getElementById(`tab-${tabName}`);
+      if (targetTab) targetTab.style.display = 'block';
+      if (btnElement) btnElement.classList.add('active');
+
+      if (tabName === 'mypage') loadMyPage();
+      if (tabName === 'admin') loadAdminData();
+      loadIdeas();
+    }
+
+    async function checkUser() {
+      const res = await fetch('/api/me');
+      const data = await res.json();
+      currentUser = data.username;
+      currentRole = data.role;
+      
+      const userDisplay = document.getElementById('user-display');
+      const balanceDisplay = document.getElementById('balance-display');
+      const authBtn = document.getElementById('auth-btn');
+      const adminTabBtn = document.getElementById('admin-tab-btn');
+
+      if (currentUser) {
+        userDisplay.textContent = `${currentUser} (${currentRole || ''})`;
+        balanceDisplay.style.display = 'inline-block';
+        balanceDisplay.textContent = `売上残高: ${data.balance.toLocaleString()}円`;
+        authBtn.textContent = 'ログアウト';
+        authBtn.setAttribute('onclick', 'logout()');
+        loadExchangeHistory();
+
+        if (currentUser === 'admin' || currentRole === '運営者') {
+          adminTabBtn.style.display = 'block';
+        } else {
+          adminTabBtn.style.display = 'none';
+        }
+      } else {
+        userDisplay.textContent = '未ログイン';
+        balanceDisplay.style.display = 'none';
+        authBtn.textContent = 'ログイン / 登録';
+        authBtn.setAttribute('onclick', 'openAuthModal()');
+        adminTabBtn.style.display = 'none';
+      }
+      loadIdeas();
+    }
+
+    // モーダル制御
+    function openAuthModal() {
+      isRegisterMode = false;
+      document.getElementById('auth-modal-title').textContent = 'ログイン';
+      document.getElementById('modal-submit-btn').textContent = 'ログインする';
+      document.getElementById('role-field').style.display = 'none';
+      document.getElementById('auth-toggle-text').textContent = 'アカウントをお持ちでない方は';
+      document.getElementById('auth-toggle-link').textContent = '新規登録';
+      document.getElementById('auth-modal').style.display = 'flex';
+    }
+
+    function closeAuthModal() {
+      document.getElementById('auth-modal').style.display = 'none';
+    }
+
+    function toggleAuthMode() {
+      isRegisterMode = !isRegisterMode;
+      if (isRegisterMode) {
+        document.getElementById('auth-modal-title').textContent = '新規アカウント登録';
+        document.getElementById('modal-submit-btn').textContent = '登録してログイン';
+        document.getElementById('role-field').style.display = 'block';
+        document.getElementById('auth-toggle-text').textContent = 'すでにアカウントをお持ちの方は';
+        document.getElementById('auth-toggle-link').textContent = 'ログイン';
+      } else {
+        openAuthModal();
+      }
+    }
+
+    async function handleAuthSubmit(e) {
+      e.preventDefault();
+      const username = document.getElementById('modal-username').value;
+      const password = document.getElementById('modal-password').value;
+      const role = document.getElementById('modal-role').value;
+
+      const endpoint = isRegisterMode ? '/api/register' : '/api/login';
+      const bodyData = isRegisterMode ? { username, password, role } : { username, password };
+
+      const res = await fetch(endpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(bodyData)
+      });
+      const data = await res.json();
+
+      if (res.ok) {
+        showToast(data.message, 'success');
+        closeAuthModal();
+        checkUser();
+      } else {
+        showToast(data.message, 'error');
+      }
+    }
+
+    async function logout() {
+      await fetch('/api/logout', { method: 'POST' });
+      showToast('ログアウトしました', 'success');
+      checkUser();
+    }
+
+    // 類似・権利侵害チェック関数
+    async function checkInfringement() {
+      const title = document.getElementById('idea-title').value;
+      const desc = document.getElementById('idea-desc').value;
+
+      if (!title) {
+        showToast("アイデアのタイトルを入力してからチェックしてください。", "error");
+        return;
+      }
+
+      try {
+        const res = await fetch('/api/check-infringement', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ title, desc })
+        });
+        
+        const data = await res.json();
+        alert(data.message);
+
+      } catch (err) {
+        console.error(err);
+        showToast("チェック処理に失敗しました。サーバーの接続を確認してください。", "error");
+      }
+    }
+
+    // AIイメージ自動生成機能
+    async function generateAIImage() {
+      const title = document.getElementById('idea-title').value;
+      const desc = document.getElementById('idea-desc').value;
+      const loadingDiv = document.getElementById('ai-loading');
+      const previewDiv = document.getElementById('ai-preview');
+
+      if (!title) {
+        showToast("AI生成を利用するには、まず「タイトル」を入力してください", "error");
+        return;
+      }
+
+      loadingDiv.style.display = 'block';
+      previewDiv.innerHTML = '';
+
+      try {
+        const response = await fetch('/api/generate-ai-image', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ title: title, desc: desc })
+        });
+
+        const result = await response.json();
+        loadingDiv.style.display = 'none';
+
+        if (result.status === 'ok') {
+          previewDiv.innerHTML = `
+            <div style="border: 1px solid #e2e8f0; padding: 10px; border-radius: 8px; background: #f8fafc;">
+              <p style="margin: 0 0 5px 0; font-size: 12px; color: #64748b; font-weight:bold;">✨ AI生成イメージ（投稿時に一緒に保存されます）:</p>
+              <img src="${result.url}" style="max-width: 200px; border-radius: 6px;">
+              <input type="hidden" id="ai-filename" value="${result.filename}">
+            </div>
+          `;
+          showToast("AIイメージの生成が完了しました！", "success");
+        } else {
+          showToast("生成失敗: " + result.message, "error");
+        }
+      } catch (err) {
+        loadingDiv.style.display = 'none';
+        showToast("通信エラーが発生しました", "error");
+      }
+    }
+
+    // アイデア投稿処理
+    async function submitIdea(e) {
+      e.preventDefault();
+      if (!currentUser) return showToast('ログインしてください', 'error');
+
+      const formData = new FormData();
+      formData.append('title', document.getElementById('idea-title').value);
+      formData.append('description', document.getElementById('idea-desc').value);
+      formData.append('creator_share', document.getElementById('creator-share').value);
+      formData.append('modeler_share', document.getElementById('modeler-share').value);
+      formData.append('price_physical', document.getElementById('price-physical').value);
+      formData.append('price_digital', document.getElementById('price-digital').value);
+      
+      const fileInput = document.getElementById('idea-image');
+      const aiFilenameInput = document.getElementById('ai-filename');
+
+      if (fileInput.files[0]) {
+        formData.append('image', fileInput.files[0]);
+      } else if (aiFilenameInput && aiFilenameInput.value) {
+        formData.append('ai_image_filename', aiFilenameInput.value);
+      }
+
+      const res = await fetch('/api/ideas', { method: 'POST', body: formData });
+      const data = await res.json();
+      showToast(data.message, 'success');
+      document.getElementById('idea-form').reset();
+      document.getElementById('ai-preview').innerHTML = '';
+      loadIdeas();
+    }
+
+    // アイデア一覧ロード
+    async function loadIdeas() {
+      const res = await fetch('/api/ideas');
+      const ideas = await res.json();
+      
+      const gridRecruiting = document.getElementById('grid-recruiting');
+      const gridInProgress = document.getElementById('grid-in-progress');
+      const gridOnSale = document.getElementById('grid-on-sale');
+
+      if (!gridRecruiting) return;
+
+      gridRecruiting.innerHTML = '';
+      gridInProgress.innerHTML = '';
+      gridOnSale.innerHTML = '';
+
+      ideas.forEach(item => {
+        const card = document.createElement('div');
+        card.className = 'idea-card';
+        const imgUrl = item.image_url ? `/static/uploads/${item.image_url}` : 'https://via.placeholder.com/300x160?text=No+Image';
+
+        card.innerHTML = `
+          <img src="${imgUrl}" class="idea-img" alt="商品画像" onclick="openDetailModal(${item.id})">
+          <div class="idea-body" onclick="openDetailModal(${item.id})">
+            <div>
+              <h4 style="margin:5px 0;">${item.title}</h4>
+              <p style="font-size:12px; color:#64748b; margin:4px 0;">
+                考案: ${item.creator_name} | モデラー: ${item.modeler_name || '未定'}<br>
+                分配: 考案 ${item.creator_share}% / モデラー ${item.modeler_share}%
+              </p>
+              <p style="font-weight:bold; font-size:13px; margin:6px 0;">
+                物理: ${item.price_physical.toLocaleString()}円 / STL: ${item.price_digital.toLocaleString()}円
+              </p>
+            </div>
+          </div>
+          <div style="padding: 0 15px 15px;" id="action-btn-${item.id}" onclick="event.stopPropagation()"></div>
+        `;
+
+        const btnArea = card.querySelector(`#action-btn-${item.id}`);
+
+        if (item.status === 'アイデア募集') {
+          gridRecruiting.appendChild(card);
+          if (currentUser) {
+            btnArea.innerHTML = `<button class="action-btn" onclick="updateStatus(${item.id}, '制作中')">モデリングを引き受ける</button>`;
+          }
+        } else if (item.status === '制作中') {
+          gridInProgress.appendChild(card);
+          if (item.modeler_name === currentUser || currentUser === 'admin' || currentRole === '運営者') {
+            btnArea.innerHTML = `<button class="action-btn" onclick="updateStatus(${item.id}, '販売中')" style="background:#059669;">3Dデータ完成・販売開始</button>`;
+          } else {
+            btnArea.innerHTML = `<span style="font-size:12px; color:#d97706;">※ ${item.modeler_name} さんがモデリング中</span>`;
+          }
+        } else if (item.status === '販売中') {
+          gridOnSale.appendChild(card);
+          btnArea.innerHTML = `
+            <button class="action-btn" onclick="buyItem(${item.id}, ${item.price_physical}, 'physical')">物理プリント品を購入</button>
+            <button class="action-btn" onclick="buyItem(${item.id}, ${item.price_digital}, 'digital')" style="background:#059669;">STLデータを購入</button>
+          `;
+        }
+      });
+    }
+
+    // アイデア詳細モーダル
+    async function openDetailModal(id) {
+      const res = await fetch(`/api/ideas/${id}`);
+      if (!res.ok) return showToast('詳細情報の取得に失敗しました', 'error');
+      const item = await res.json();
+
+      const imgUrl = item.image_url ? `/static/uploads/${item.image_url}` : 'https://via.placeholder.com/400x200?text=No+Image';
+      const modal = document.getElementById('detail-modal');
+      const content = document.getElementById('detail-modal-content');
+
+      const isAdmin = currentUser === 'admin' || currentRole === '運営者';
+      const isOwner = currentUser === item.creator_name;
+
+      const commentsListHtml = (item.comments && item.comments.length) 
+        ? item.comments.map(c => `
+          <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:6px; padding:8px 12px; margin-bottom:8px;">
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+              <strong style="font-size:12px; color:#334155;">${c.username} ${c.role ? `(${c.role})` : ''}</strong>
+              <span style="font-size:11px; color:#94a3b8;">${c.created_at ? c.created_at.substring(5, 16) : ''}</span>
+            </div>
+            <p style="margin:4px 0 0 0; font-size:13px; color:#1e293b; white-space:pre-wrap;">${c.content || c.comment || ''}</p>
+            ${(currentUser === c.username || isAdmin) ? `
+              <button onclick="deleteComment(${id}, ${c.id})" style="background:none; border:none; color:#dc2626; font-size:11px; cursor:pointer; padding:0; margin-top:4px;">削除</button>
+            ` : ''}
+          </div>
+        `).join('') 
+        : '<p style="font-size:12px; color:#94a3b8;">コメントはまだありません。</p>';
+
+      content.innerHTML = `
+        <div style="display:flex; justify-content:space-between; align-items:center;">
+          <h3 style="margin:0;">💡 ${item.title}</h3>
+          ${(isOwner || isAdmin) ? `
+            <button onclick="deleteIdea(${item.id})" style="background:#dc2626; color:white; border:none; padding:4px 10px; border-radius:4px; font-size:12px; cursor:pointer;">投稿削除</button>
+          ` : ''}
+        </div>
+        <img src="${imgUrl}" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin:10px 0;">
+        <p><strong>ステータス:</strong> <span style="color:var(--primary);">${item.status}</span></p>
+        <p><strong>考案者:</strong> ${item.creator_name} / <strong>モデラー:</strong> ${item.modeler_name || '未定'}</p>
+        <p><strong>収益分配率:</strong> 考案者 ${item.creator_share}% / モデラー ${item.modeler_share}%</p>
+        <p><strong>価格:</strong> 物理プリント ${item.price_physical.toLocaleString()}円 / STLデータ ${item.price_digital.toLocaleString()}円</p>
+        <div style="background:#f1f5f9; padding:12px; border-radius:8px; margin:10px 0;">
+          <strong>詳細説明・仕様:</strong><br>
+          <p style="margin:5px 0; font-size:14px; white-space: pre-wrap;">${item.description || '詳細説明はありません。'}</p>
+        </div>
+
+        <hr style="border:none; border-top:1px solid #e2e8f0; margin:15px 0;">
+        
+        <h4 style="margin-bottom:10px;">💬 コメント・相談</h4>
+        <div id="comments-list" style="max-height:180px; overflow-y:auto; margin-bottom:12px;">
+          ${commentsListHtml}
+        </div>
+
+        ${currentUser ? `
+          <div style="display:flex; gap:8px;">
+            <input type="text" id="comment-input" placeholder="コメントを入力..." style="margin:0; flex:1;">
+            <button class="action-btn" style="width:auto; padding:6px 14px; margin:0;" onclick="postComment(${item.id})">送信</button>
+          </div>
+        ` : '<p style="font-size:12px; color:#64748b;">※コメントを投稿するにはログインしてください。</p>'}
+
+        <button class="action-btn" onclick="document.getElementById('detail-modal').style.display='none'" style="margin-top:15px; background:#64748b;">閉じる</button>
+      `;
+      modal.style.display = 'flex';
+    }
+
+    // コメント投稿
+    async function postComment(ideaId) {
+      const input = document.getElementById('comment-input');
+      const comment = input ? input.value.trim() : '';
+      if (!comment) return showToast('コメントを入力してください', 'error');
+
+      const res = await fetch(`/api/ideas/${ideaId}/comments`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ comment: comment, content: comment })
+      });
+      const data = await res.json();
+      if (res.ok) {
+        showToast(data.message, 'success');
+        openDetailModal(ideaId);
+      } else {
+        showToast(data.message, 'error');
+      }
+    }
+
+    // コメント削除
+    async function deleteComment(ideaId, commentId) {
+      if (!confirm('このコメントを削除しますか？')) return;
+      const res = await fetch(`/api/ideas/${ideaId}/comments/${commentId}`, { method: 'DELETE' });
+      const data = await res.json();
+      if (res.ok) {
+        showToast(data.message, 'success');
+        openDetailModal(ideaId);
+      } else {
+        showToast(data.message, 'error');
+      }
+    }
+
+    // アイデア削除
+    async function deleteIdea(ideaId) {
+      if (!confirm('このアイデアを削除しますか？')) return;
+      const res = await fetch(`/api/ideas/${ideaId}`, { method: 'DELETE' });
+      const data = await res.json();
+      if (res.ok) {
+        showToast(data.message, 'success');
+        document.getElementById('detail-modal').style.display = 'none';
+        loadIdeas();
+        if (document.getElementById('tab-admin').style.display === 'block') {
+          loadAdminData();
+        }
+      } else {
+        showToast(data.message, 'error');
+      }
+    }
+
+    // マイページデータロード
+    async function loadMyPage() {
+      if (!currentUser) return;
+      const res = await fetch('/api/my/data');
+      const data = await res.json();
+
+      const myIdeas = document.getElementById('my-ideas-list');
+      const myModeling = document.getElementById('my-modeling-list');
+      const myPurchasesBody = document.getElementById('my-purchases-body');
+
+      myIdeas.innerHTML = data.my_ideas.length ? '' : '<p style="font-size:13px; color:#64748b;">投稿したアイデアはありません。</p>';
+      data.my_ideas.forEach(item => {
+        const div = document.createElement('div');
+        div.className = 'idea-card';
+        div.innerHTML = `<div class="idea-body"><h4>${item.title}</h4><p style="font-size:12px;">状態: ${item.status}</p></div>`;
+        myIdeas.appendChild(div);
+      });
+
+      myModeling.innerHTML = data.my_modeling.length ? '' : '<p style="font-size:13px; color:#64748b;">担当している案件はありません。</p>';
+      data.my_modeling.forEach(item => {
+        const div = document.createElement('div');
+        div.className = 'idea-card';
+        div.innerHTML = `<div class="idea-body"><h4>${item.title}</h4><p style="font-size:12px;">状態: ${item.status}</p></div>`;
+        myModeling.appendChild(div);
+      });
+
+      myPurchasesBody.innerHTML = '';
+      data.my_purchases.forEach(p => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>${p.created_at.substring(5, 16)}</td>
+          <td>${p.title}</td>
+          <td>${p.item_type === 'physical' ? '物理プリント' : 'STLデータ'}</td>
+          <td><b>${p.shipping_status}</b></td>
+          <td>${p.tracking_number || '-'}</td>
+        `;
+        myPurchasesBody.appendChild(tr);
+      });
+    }
+
+    // 運営管理データロード
+    async function loadAdminData() {
+      const reqRes = await fetch('/api/admin/exchange-requests');
+      const requests = await reqRes.json();
+      const exBody = document.getElementById('admin-exchange-body');
+      exBody.innerHTML = '';
+
+      requests.forEach(r => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>${r.id}</td>
+          <td>${r.username}</td>
+          <td>${r.exchange_type}</td>
+          <td>${r.amount.toLocaleString()}円</td>
+          <td><b>${r.status}</b></td>
+          <td>
+            ${r.status === '未処理' ? `
+              <input type="text" id="gift-code-${r.id}" placeholder="ギフトコードを入力" style="margin:0; width:150px; display:inline-block;">
+              <button class="action-btn" style="width:auto; padding:4px 10px; display:inline-block;" onclick="processExchange(${r.id})">発行・処理</button>
+            ` : r.gift_code}
+          </td>
+        `;
+        exBody.appendChild(tr);
+      });
+
+      const ordRes = await fetch('/api/admin/orders');
+      const orders = await ordRes.json();
+      const ordBody = document.getElementById('admin-orders-body');
+      ordBody.innerHTML = '';
+
+      orders.forEach(o => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>${o.id}</td>
+          <td>${o.username}</td>
+          <td>${o.title} (${o.item_type})</td>
+          <td><b>${o.shipping_status}</b></td>
+          <td>
+            <input type="text" id="track-${o.id}" value="${o.tracking_number || ''}" placeholder="追跡番号" style="margin:0; width:120px; display:inline-block;">
+            <button class="action-btn" style="width:auto; padding:4px 10px; display:inline-block;" onclick="updateShipping(${o.id})">更新</button>
+          </td>
+        `;
+        ordBody.appendChild(tr);
+      });
+
+      const ideasRes = await fetch('/api/ideas');
+      const ideas = await ideasRes.json();
+      const ideasBody = document.getElementById('admin-ideas-body');
+      if (ideasBody) {
+        ideasBody.innerHTML = '';
+        ideas.forEach(i => {
+          const tr = document.createElement('tr');
+          tr.innerHTML = `
+            <td>${i.id}</td>
+            <td>${i.title}</td>
+            <td>${i.creator_name}</td>
+            <td><b>${i.status}</b></td>
+            <td>
+              <button class="action-btn" style="width:auto; padding:4px 10px; background:#dc2626; display:inline-block;" onclick="deleteIdea(${i.id})">削除</button>
+            </td>
+          `;
+          ideasBody.appendChild(tr);
+        });
+      }
+    }
+
+    async function processExchange(id) {
+      const gift_code = document.getElementById(`gift-code-${id}`).value;
+      if (!gift_code) return showToast('ギフトコードを入力してください', 'error');
+
+      const res = await fetch(`/api/admin/exchange-requests/${id}/process`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ gift_code })
+      });
+      const data = await res.json();
+      showToast(data.message, 'success');
+      loadAdminData();
+    }
+
+    async function updateShipping(id) {
+      const tracking_number = document.getElementById(`track-${id}`).value;
+      const res = await fetch(`/api/admin/orders/${id}/shipping`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ shipping_status: '発送済み', tracking_number })
+      });
+      const data = await res.json();
+      showToast(data.message, 'success');
+      loadAdminData();
+    }
+
+    async function updateStatus(id, status) {
+      const res = await fetch(`/api/ideas/${id}/status`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status })
+      });
+      const data = await res.json();
+      showToast(data.message, 'success');
+      loadIdeas();
+    }
+
+    async function buyItem(id, price, item_type) {
+      if (!confirm(`${price.toLocaleString()}円でこの商品（${item_type}）を購入しますか？`)) return;
+      const res = await fetch(`/api/ideas/${id}/buy`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ price, item_type })
+      });
+      const data = await res.json();
+      showToast(data.message, 'success');
+      checkUser();
+    }
+
+    async function requestExchange() {
+      const exchange_type = document.getElementById('exchange-type').value;
+      const amount = parseInt(document.getElementById('exchange-amount').value);
+
+      const res = await fetch('/api/exchange-requests', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ exchange_type, amount })
+      });
+      const data = await res.json();
+      if (res.ok) {
+        showToast(data.message, 'success');
+        checkUser();
+        loadExchangeHistory();
+      } else {
+        showToast(data.message, 'error');
+      }
+    }
+
+    async function loadExchangeHistory() {
+      const res = await fetch('/api/exchange-requests');
+      const requests = await res.json();
+      const tbody = document.getElementById('exchange-history-body');
+      tbody.innerHTML = '';
+
+      requests.forEach(r => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>${r.created_at.substring(5, 16)}</td>
+          <td>${r.exchange_type} (${r.amount.toLocaleString()}円分)</td>
+          <td><b>${r.status}</b></td>
+          <td>${r.gift_code || '発行待ち'}</td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/sw.js').catch(err => console.log('SW registration failed:', err));
+      });
+    }
+
+    checkUser();
+  </script>
+</body>
+</html>
