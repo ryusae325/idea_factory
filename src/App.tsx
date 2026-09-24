@@ -55,7 +55,7 @@ export default function App() {
     supabase.auth.getSession().then(({ data }) => {
       setLoggedIn(!!data.session);
       if (data.session) refreshProfile(data.session.user.id);
-      else setLoading(false);
+      setLoading(false);
     });
     const { data: sub } = supabase.auth.onAuthStateChange((event, session) => {
       setLoggedIn(!!session);
