@@ -1,0 +1,84 @@
+export type Role = '考案者' | 'モデラー' | '購入者' | '運営者';
+
+export interface Profile {
+  id: string;
+  username: string;
+  display_name: string;
+  role: Role;
+  balance: number;
+  is_admin: boolean;
+  created_at: string;
+}
+
+export type IdeaStatus = 'アイデア募集' | '制作中' | '販売中';
+
+export interface ProfileLite {
+  username: string;
+  display_name: string;
+}
+
+export interface Comment {
+  id: number;
+  idea_id: number;
+  user_id: string;
+  content: string;
+  created_at: string;
+  author?: ProfileLite;
+}
+
+export interface Idea {
+  id: number;
+  title: string;
+  description: string;
+  image_url: string;
+  status: IdeaStatus;
+  creator_id: string;
+  modeler_id: string | null;
+  creator_share: number;
+  modeler_share: number;
+  price_physical: number;
+  price_digital: number;
+  total_sales: number;
+  platform_fee: number;
+  creator_reward: number;
+  modeler_reward: number;
+  created_at: string;
+  creator?: ProfileLite | null;
+  modeler?: ProfileLite | null;
+}
+
+export interface Order {
+  id: number;
+  user_id: string;
+  idea_id: number;
+  item_type: 'physical' | 'digital';
+  price: number;
+  shipping_status: string;
+  tracking_number: string;
+  created_at: string;
+  idea?: { title: string } | null;
+  buyer?: ProfileLite | null;
+}
+
+export interface ExchangeRequest {
+  id: number;
+  user_id: string;
+  exchange_type: string;
+  amount: number;
+  status: '未処理' | '完了';
+  gift_code: string;
+  created_at: string;
+  requester?: ProfileLite | null;
+}
+
+export interface BalanceEntry {
+  id: number;
+  amount: number;
+  type: string;
+  expires_at: string | null;
+  created_at: string;
+}
+
+export const fmtYen = (n: number) => n.toLocaleString('ja-JP');
+
+export const fmtDate = (iso: string) => (iso ? iso.slice(5, 16).replace('T', ' ') : '');
