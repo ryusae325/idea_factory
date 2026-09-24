@@ -210,3 +210,33 @@ export async function uploadImage(userId: string, file: File): Promise<string> {
   const { data } = supabase.storage.from('uploads').getPublicUrl(path);
   return data.publicUrl;
 }
+
+// ---------- STLファイル管理 ----------
+
+export async function uploadStl(userId: string, file: File): Promise<string> {
+  const path = `${userId}/stl_${crypto.randomUUID()}.stl`;
+  const { error } = await supabase.storage.from('models').upload(path, file, {
+    cacheControl: '3600',
+    upsert: false,
+  });
+  if (error) throw new Error(error.message);
+  return path;
+}
+
+export async function setIdeaStl(ideaId: number, path: string): Promise<string> {
+  const { data, error } = await supabase.rpc('set_idea_stl', {
+    p_idea_id: ideaId,
+    p_path: path,
+  });
+  if (error) throw new Error(error.message);
+  return (data as string) ?? '設定しました';
+}
+
+/** 購入者（または考案者・モデラー・管理者）が署名付きURLを取得。権限がなければエラー */
+export async function getStlDownloadUrl(path: string): Promise<string> {
+  const { data, error } = await supabase.storage.from('models').createSignedUrl(path, 300);
+  if (error || !data?.signedUrl) {
+    throw new Error('ダウンロードするにはSTLデータをご購入ください');
+  }
+  return data.signedUrl;
+}

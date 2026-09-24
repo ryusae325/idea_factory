@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import type { Comment, Idea, Profile } from '../lib/types';
 import { fmtDate, fmtYen } from '../lib/types';
-import { deleteComment, deleteIdea, fetchComments, fetchIdea, postComment } from '../lib/data';
+import { deleteComment, deleteIdea, fetchComments, fetchIdea, postComment, getStlDownloadUrl, setIdeaStl, uploadStl } from '../lib/data';
 import { toast } from '../lib/toast';
 
 interface Props {
@@ -38,7 +38,37 @@ export default function DetailModal({ ideaId, profile, onClose, onChanged }: Pro
   const name = (p?: { username: string; display_name: string } | null) =>
     p?.display_name || p?.username || '';
   const isOwner = profile?.id === idea.creator_id;
+  const isModeler = profile?.id && idea.modeler_id === profile.id;
   const isAdmin = profile?.is_admin;
+  const canManageStl = !!(isOwner || isModeler || isAdmin);
+
+  const downloadStl = async () => {
+    if (!idea.stl_path) return;
+    try {
+      const url = await getStlDownloadUrl(idea.stl_path);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${idea.title}.stl`;
+      a.click();
+      toast('ダウンロードを開始しました');
+    } catch (e) {
+      toast((e as Error).message, 'error');
+    }
+  };
+
+  const handleStlUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file || !profile) return;
+    try {
+      const path = await uploadStl(profile.id, file);
+      await setIdeaStl(idea.id, path);
+      toast('STLファイルをアップロードしました');
+      await reload();
+    } catch (err) {
+      toast((err as Error).message, 'error');
+    }
+  };
 
   const submit = async () => {
     if (!text.trim()) return toast('コメントを入力してください', 'error');
@@ -128,6 +158,43 @@ export default function DetailModal({ ideaId, profile, onClose, onChanged }: Pro
           {idea.description || '詳細説明はありません。'}
         </p>
       </div>
+
+      <hr className="my-4 border-slate-200" />
+
+      <h4 className="text-sm font-bold text-slate-800">📦 3Dデータ（STL）</h4>
+      {idea.stl_path ? (
+        <div className="mt-2 flex items-center justify-between rounded-xl bg-emerald-50 px-4 py-3 ring-1 ring-emerald-200">
+          <p className="text-xs font-semibold text-emerald-800">
+            ✅ 3Dデータが登録されています
+          </p>
+          <button
+            onClick={downloadStl}
+            className="rounded-lg bg-emerald-600 px-3.5 py-2 text-[11px] font-bold text-white shadow-sm shadow-emerald-500/30 transition hover:bg-emerald-700"
+          >
+            ⬇️ ダウンロード
+          </button>
+        </div>
+      ) : (
+        <p className="mt-2 rounded-xl bg-slate-50 px-4 py-3 text-xs text-slate-500 ring-1 ring-slate-200">
+          3Dデータはまだ登録されていません。
+        </p>
+      )}
+      {canManageStl && (
+        <div className="mt-2 rounded-xl bg-slate-50 p-3 ring-1 ring-slate-200">
+          <label className="block text-[11px] font-bold text-slate-600">
+            STLファイルをアップロード（完成3Dデータ・.stl）
+          </label>
+          <input
+            type="file"
+            accept=".stl,model/stl,application/sla"
+            onChange={handleStlUpload}
+            className="mt-1.5 w-full text-xs text-slate-500 file:mr-3 file:rounded-lg file:border-0 file:bg-indigo-100 file:px-3 file:py-2 file:text-xs file:font-semibold file:text-indigo-700 hover:file:bg-indigo-200"
+          />
+          <p className="mt-1 text-[10px] text-slate-400">
+            ※アップロードしたSTLは、STLデータを購入したユーザーのみダウンロードできます。
+          </p>
+        </div>
+      )}
 
       <hr className="my-4 border-slate-200" />
 

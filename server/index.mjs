@@ -1,7 +1,7 @@
 import express from 'express';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { randomUUID } from 'node:crypto';
+import { randomUUID, createHmac, timingSafeEqual } from 'node:crypto';
 import Stripe from 'stripe';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -12,6 +12,8 @@ const SUPABASE_ANON_KEY =
   process.env.SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_PUBLISHABLE_KEY || '';
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY || '';
 const STRIPE_SECRET_KEY = process.env.STRIPE_SECRET_KEY || '';
+const STRIPE_WEBHOOK_SECRET = process.env.STRIPE_WEBHOOK_SECRET || '';
+const STRIPE_WEBHOOK_TOKEN = process.env.STRIPE_WEBHOOK_TOKEN || '';
 const PORT = Number(process.env.PORT || 8080);
 const stripe = STRIPE_SECRET_KEY ? new Stripe(STRIPE_SECRET_KEY) : null;
 
@@ -55,6 +57,54 @@ if (SUPABASE_URL && SUPABASE_ANON_KEY) {
     },
   );
 }
+
+// ---------- Stripe Webhook（JSONパーサーの前にraw bodyで受信） ----------
+app.post(
+  '/api/stripe/webhook',
+  express.raw({ type: () => true, limit: '2mb' }),
+  async (req, res) => {
+    if (!stripe) {
+      return res.status(503).json({ received: false, error: 'stripe not configured' });
+    }
+
+    const sig = req.headers['stripe-signature'];
+    let event;
+    try {
+      event = stripe.webhooks.constructEvent(req.body, sig, STRIPE_WEBHOOK_SECRET);
+    } catch (err) {
+      console.error('Webhook signature verification failed:', err.message);
+      return res.status(400).json({ received: false, error: 'invalid signature' });
+    }
+
+    if (event.type === 'checkout.session.completed') {
+      const session = event.data.object;
+      const sessionId = session.id;
+      try {
+        const sigHmac = createHmac('sha256', STRIPE_WEBHOOK_TOKEN)
+          .update(sessionId)
+          .digest('hex');
+        const r = await fetch(`${SUPABASE_URL}/rest/v1/rpc/complete_purchase_webhook`, {
+          method: 'POST',
+          headers: {
+            apikey: SUPABASE_ANON_KEY,
+            Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ p_session_id: sessionId, p_sig: sigHmac }),
+        });
+        if (!r.ok) {
+          console.error('webhook rpc error:', (await r.text()).slice(0, 300));
+        } else {
+          console.log(`webhook processed ${sessionId}: ${await r.text()}`);
+        }
+      } catch (e) {
+        console.error('webhook processing error:', e);
+      }
+    }
+
+    return res.json({ received: true });
+  }
+);
 
 app.use(express.json({ limit: '2mb' }));
 

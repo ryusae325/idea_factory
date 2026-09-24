@@ -42,6 +42,7 @@ export interface Idea {
   platform_fee: number;
   creator_reward: number;
   modeler_reward: number;
+  stl_path: string | null;
   created_at: string;
   creator?: ProfileLite | null;
   modeler?: ProfileLite | null;
@@ -56,7 +57,7 @@ export interface Order {
   shipping_status: string;
   tracking_number: string;
   created_at: string;
-  idea?: { title: string } | null;
+  idea?: { title: string; stl_path?: string | null } | null;
   buyer?: ProfileLite | null;
 }
 

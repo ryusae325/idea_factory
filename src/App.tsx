@@ -7,6 +7,7 @@ import Header from './components/Header';
 import ToastHost from './components/ToastHost';
 import DetailModal from './components/DetailModal';
 import ProfileModal from './components/ProfileModal';
+import LegalModal from './components/LegalModal';
 import IdeaGrid from './components/IdeaGrid';
 import CreatorTab from './tabs/CreatorTab';
 import MyPageTab from './tabs/MyPageTab';
@@ -28,6 +29,7 @@ export default function App() {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loggedIn, setLoggedIn] = useState(false);
   const [needsProfile, setNeedsProfile] = useState(false);
+  const [showLegal, setShowLegal] = useState(false);
   const [ideas, setIdeas] = useState<Idea[]>([]);
   const [tab, setTab] = useState<TabId>('creator');
   const [detailId, setDetailId] = useState<number | null>(null);
@@ -212,6 +214,12 @@ export default function App() {
 
         <footer className="mt-16 border-t border-slate-200 pt-6 text-center text-xs text-slate-400">
           <p>© ヒラメキ工房 — 考案者と3Dモデラーをつなぐ共創プラットフォーム</p>
+          <button
+            onClick={() => setShowLegal(true)}
+            className="mt-2 font-semibold text-indigo-500 transition hover:text-indigo-700 hover:underline"
+          >
+            利用規約・プライバシーポリシー・特商法表記
+          </button>
         </footer>
       </main>
 
@@ -230,6 +238,8 @@ export default function App() {
       {needsProfile && profile && (
         <ProfileModal profile={profile} onSaved={setProfile} onClose={() => setNeedsProfile(false)} />
       )}
+
+      {showLegal && <LegalModal onClose={() => setShowLegal(false)} />}
 
       <ToastHost />
     </div>
