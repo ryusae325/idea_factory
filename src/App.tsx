@@ -211,7 +211,7 @@ export default function App() {
         )}
 
         <footer className="mt-16 border-t border-slate-200 pt-6 text-center text-xs text-slate-400">
-          <p>© Idea Factory — 考案者と3Dモデラーをつなぐ共創プラットフォーム</p>
+          <p>© ヒラメキ工房 — 考案者と3Dモデラーをつなぐ共創プラットフォーム</p>
         </footer>
       </main>
 

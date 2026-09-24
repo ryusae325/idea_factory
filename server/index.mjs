@@ -311,5 +311,5 @@ app.get(/^\/(?!api\/|auth\/|rest\/|storage\/|realtime\/|pg).*/, (_req, res) => {
 });
 
 app.listen(PORT, '0.0.0.0', () => {
-  console.log(`Idea Factory server listening on 0.0.0.0:${PORT}`);
+  console.log(`ヒラメキ工房 server listening on 0.0.0.0:${PORT}`);
 });

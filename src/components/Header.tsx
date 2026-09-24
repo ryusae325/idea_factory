@@ -16,7 +16,7 @@ export default function Header({ profile, loggedIn }: Props) {
             💡
           </div>
           <div>
-            <h1 className="text-base font-bold leading-tight text-slate-900">アイデアファクトリー</h1>
+            <h1 className="text-base font-bold leading-tight text-slate-900">ヒラメキ工房</h1>
             <p className="text-[11px] leading-tight text-slate-500">考案者 × 3Dモデラー 共創プラットフォーム</p>
           </div>
         </div>

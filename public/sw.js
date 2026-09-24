@@ -1,5 +1,5 @@
-/* Idea Factory Service Worker */
-const CACHE_NAME = 'idea-factory-v1';
+/* ヒラメキ工房 Service Worker */
+const CACHE_NAME = 'hirameki-koubou-v1';
 const APP_SHELL = ['/', '/index.html', '/manifest.json'];
 
 /* API・認証・ストレージ・決済関連は絶対にキャッシュしない */
