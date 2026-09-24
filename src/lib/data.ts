@@ -1,4 +1,4 @@
-import { supabase } from './supabase';
+import { supabase, authFetch } from './supabase';
 import type { Comment, ExchangeRequest, Idea, Order, BalanceEntry, Profile } from './types';
 
 export const IDEA_SELECT = `*, creator:profiles!ideas_creator_id_fkey(username,display_name), modeler:profiles!ideas_modeler_id_fkey(username,display_name)`;
@@ -72,10 +72,30 @@ export async function updateIdeaStatus(id: number, status: '制作中' | '販売
   return (data as string) ?? '更新しました';
 }
 
-export async function buyItem(id: number, itemType: 'physical' | 'digital'): Promise<string> {
-  const { data, error } = await supabase.rpc('buy_item', { p_idea_id: id, p_item_type: itemType });
-  if (error) throw new Error(error.message);
-  return (data as string) ?? '購入しました';
+export async function createCheckout(
+  id: number,
+  itemType: 'physical' | 'digital',
+): Promise<{ kind: 'redirect'; url: string } | { kind: 'direct'; message: string }> {
+  const res = await authFetch('/api/create-checkout-session', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ idea_id: id, item_type: itemType }),
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.message || '決済の開始に失敗しました');
+  if (data.direct) return { kind: 'direct', message: data.message as string };
+  return { kind: 'redirect', url: data.url as string };
+}
+
+export async function completeCheckout(sessionId: string): Promise<string> {
+  const res = await authFetch('/api/complete-checkout', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ session_id: sessionId }),
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.message || '決済の確定処理に失敗しました');
+  return data.message as string;
 }
 
 export async function fetchProfile(userId: string): Promise<Profile | null> {

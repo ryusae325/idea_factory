@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import type { Idea, Profile } from './lib/types';
 import { supabase, auth } from './lib/supabase';
-import { fetchIdeas, fetchProfile, updateIdeaStatus, buyItem } from './lib/data';
+import { fetchIdeas, fetchProfile, updateIdeaStatus, createCheckout, completeCheckout } from './lib/data';
 import { toast } from './lib/toast';
 import Header from './components/Header';
 import ToastHost from './components/ToastHost';
@@ -73,6 +73,29 @@ export default function App() {
     refreshIdeas();
   }, [refreshIdeas, loggedIn]);
 
+  // Stripe Checkout からの戻り処理
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const payment = params.get('payment');
+    const sessionId = params.get('session_id');
+    if (!payment) return;
+    window.history.replaceState({}, '', window.location.pathname);
+    if (payment === 'success' && sessionId) {
+      completeCheckout(sessionId)
+        .then(async (msg) => {
+          toast(msg);
+          const { data } = await supabase.auth.getSession();
+          if (data.session) {
+            await refreshProfile(data.session.user.id);
+            await refreshIdeas();
+          }
+        })
+        .catch((e) => toast((e as Error).message, 'error'));
+    } else if (payment === 'cancelled') {
+      toast('決済をキャンセルしました', 'info');
+    }
+  }, [refreshProfile, refreshIdeas]);
+
   const handleAction = async (idea: Idea, action: 'accept' | 'complete' | 'buy-physical' | 'buy-digital') => {
     if (!loggedIn) return toast('ログインしてください', 'error');
     try {
@@ -82,12 +105,14 @@ export default function App() {
         await refreshIdeas();
       } else {
         const itemType = action === 'buy-physical' ? 'physical' : 'digital';
-        const price = itemType === 'physical' ? idea.price_physical : idea.price_digital;
-        const label = itemType === 'physical' ? '物理プリント品' : 'STLデータ';
-        if (!confirm(`${price.toLocaleString('ja-JP')}円でこの商品（${label}）を購入しますか？`)) return;
-        const msg = await buyItem(idea.id, itemType);
-        toast(msg);
-        if (profile) await refreshProfile(profile.id);
+        const result = await createCheckout(idea.id, itemType);
+        if (result.kind === 'direct') {
+          toast(result.message);
+          if (profile) await refreshProfile(profile.id);
+          await refreshIdeas();
+        } else {
+          window.location.assign(result.url);
+        }
       }
     } catch (e) {
       toast((e as Error).message, 'error');

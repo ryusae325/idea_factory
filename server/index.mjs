@@ -2,6 +2,7 @@ import express from 'express';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { randomUUID } from 'node:crypto';
+import Stripe from 'stripe';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const DIST = path.join(__dirname, '..', 'dist');
@@ -10,7 +11,9 @@ const SUPABASE_URL = (process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL 
 const SUPABASE_ANON_KEY =
   process.env.SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_PUBLISHABLE_KEY || '';
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY || '';
+const STRIPE_SECRET_KEY = process.env.STRIPE_SECRET_KEY || '';
 const PORT = Number(process.env.PORT || 8080);
+const stripe = STRIPE_SECRET_KEY ? new Stripe(STRIPE_SECRET_KEY) : null;
 
 const app = express();
 app.disable('x-powered-by');
@@ -54,6 +57,163 @@ if (SUPABASE_URL && SUPABASE_ANON_KEY) {
 }
 
 app.use(express.json({ limit: '2mb' }));
+
+// ---------- 共通ヘルパー ----------
+async function getAuthUser(req) {
+  const jwt = String(req.headers.authorization || '').replace(/^Bearer /i, '');
+  if (!jwt || !SUPABASE_URL || !SUPABASE_ANON_KEY) return null;
+  try {
+    const ures = await fetch(`${SUPABASE_URL}/auth/v1/user`, {
+      headers: { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${jwt}` },
+    });
+    if (!ures.ok) return null;
+    return await ures.json();
+  } catch {
+    return null;
+  }
+}
+
+async function callRpc(name, args, jwt) {
+  const r = await fetch(`${SUPABASE_URL}/rest/v1/rpc/${name}`, {
+    method: 'POST',
+    headers: {
+      apikey: SUPABASE_ANON_KEY,
+      Authorization: `Bearer ${jwt}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(args),
+  });
+  if (!r.ok) {
+    let msg = `RPC ${name} failed`;
+    try {
+      const err = await r.json();
+      if (err?.message) msg = err.message;
+    } catch {}
+    throw new Error(msg);
+  }
+  return r.json();
+}
+
+async function fetchIdeaById(ideaId) {
+  const ir = await fetch(`${SUPABASE_URL}/rest/v1/ideas?id=eq.${Number(ideaId)}&select=*`, {
+    headers: { apikey: SUPABASE_ANON_KEY },
+  });
+  if (!ir.ok) return null;
+  const rows = await ir.json();
+  return rows?.[0] ?? null;
+}
+
+// ---------- Stripe Checkout ----------
+app.post('/api/create-checkout-session', async (req, res) => {
+  const jwt = String(req.headers.authorization || '').replace(/^Bearer /i, '');
+  const user = await getAuthUser(req);
+  if (!user) {
+    return res.status(401).json({ status: 'error', message: 'ログインが必要です' });
+  }
+
+  const { idea_id, item_type } = req.body || {};
+  if (!['physical', 'digital'].includes(item_type)) {
+    return res.status(400).json({ status: 'error', message: '不正な商品種別です' });
+  }
+
+  try {
+    const idea = await fetchIdeaById(idea_id);
+    if (!idea) {
+      return res.status(404).json({ status: 'error', message: '商品が見つかりません' });
+    }
+    if (idea.status !== '販売中') {
+      return res.status(400).json({ status: 'error', message: '販売中の商品のみ購入できます' });
+    }
+
+    const price = item_type === 'physical' ? idea.price_physical : idea.price_digital;
+
+    // 無料（0円）の場合は決済を挟まず直接確定
+    if (price <= 0) {
+      const msg = await callRpc('buy_item', { p_idea_id: idea.id, p_item_type: item_type }, jwt);
+      return res.json({ status: 'ok', direct: true, message: msg });
+    }
+
+    if (!stripe) {
+      return res.status(500).json({ status: 'error', message: '決済機能が設定されていません' });
+    }
+
+    const origin = req.headers.origin || `http://localhost:${PORT}`;
+    const session = await stripe.checkout.sessions.create({
+      mode: 'payment',
+      line_items: [
+        {
+          quantity: 1,
+          price_data: {
+            currency: 'jpy',
+            unit_amount: price,
+            product_data: {
+              name: idea.title,
+              description: item_type === 'physical' ? '物理プリント品' : 'STLデータ',
+            },
+          },
+        },
+      ],
+      success_url: `${origin}/?payment=success&session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${origin}/?payment=cancelled`,
+      client_reference_id: user.id,
+      metadata: { idea_id: String(idea.id), item_type, user_id: user.id },
+    });
+
+    const ins = await fetch(`${SUPABASE_URL}/rest/v1/payment_sessions`, {
+      method: 'POST',
+      headers: {
+        apikey: SUPABASE_ANON_KEY,
+        Authorization: `Bearer ${jwt}`,
+        'Content-Type': 'application/json',
+        Prefer: 'return=minimal',
+      },
+      body: JSON.stringify({
+        id: session.id,
+        user_id: user.id,
+        idea_id: idea.id,
+        item_type,
+        amount: price,
+      }),
+    });
+    if (!ins.ok) {
+      console.error('payment_sessions insert error:', (await ins.text()).slice(0, 300));
+      throw new Error('決済セッションの記録に失敗しました');
+    }
+
+    return res.json({ status: 'ok', url: session.url });
+  } catch (e) {
+    console.error('create-checkout-session error:', e);
+    return res.status(500).json({ status: 'error', message: e.message || '決済の開始に失敗しました' });
+  }
+});
+
+app.post('/api/complete-checkout', async (req, res) => {
+  const jwt = String(req.headers.authorization || '').replace(/^Bearer /i, '');
+  const user = await getAuthUser(req);
+  if (!user) {
+    return res.status(401).json({ status: 'error', message: 'ログインが必要です' });
+  }
+  if (!stripe) {
+    return res.status(500).json({ status: 'error', message: '決済機能が設定されていません' });
+  }
+
+  const { session_id } = req.body || {};
+  if (!session_id) {
+    return res.status(400).json({ status: 'error', message: 'session_id が必要です' });
+  }
+
+  try {
+    const session = await stripe.checkout.sessions.retrieve(session_id);
+    if (session.payment_status !== 'paid') {
+      return res.status(400).json({ status: 'error', message: '決済が完了していません' });
+    }
+    const msg = await callRpc('complete_purchase', { p_session_id: session_id }, jwt);
+    return res.json({ status: 'ok', message: msg });
+  } catch (e) {
+    console.error('complete-checkout error:', e);
+    return res.status(500).json({ status: 'error', message: e.message || '決済の確定処理に失敗しました' });
+  }
+});
 
 // ---------- AI image generation (Gemini) ----------
 app.post('/api/generate-ai-image', async (req, res) => {
