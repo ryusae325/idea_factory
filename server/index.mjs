@@ -265,6 +265,69 @@ app.post('/api/complete-checkout', async (req, res) => {
   }
 });
 
+// ---------- AI status（キー設定済みかどうかのみ返す） ----------
+app.get('/api/ai-status', (_req, res) => {
+  res.json({ imageReady: !!GEMINI_API_KEY, checkReady: !!GEMINI_API_KEY });
+});
+
+// ---------- AI 権利侵害チェック（Gemini テキストモデル） ----------
+app.post('/api/check-infringement', async (req, res) => {
+  const user = await getAuthUser(req);
+  if (!user) {
+    return res.status(401).json({ status: 'error', message: 'ログインが必要です' });
+  }
+  if (!GEMINI_API_KEY) {
+    return res.status(503).json({ status: 'unavailable', message: 'AIチェック機能は現在準備中です。' });
+  }
+
+  const { title = '', desc = '' } = req.body || {};
+  if (!String(title).trim()) {
+    return res.status(400).json({ status: 'error', message: 'タイトルを入力してください' });
+  }
+
+  try {
+    const prompt = `あなたは日本の知的財産権の専門家です。以下の3Dプリント製品のアイデアについて、商標権・著作権・意匠権・既存商品との類似性の観点からリスクを評価してください。
+
+【アイデアタイトル】${String(title).trim()}
+【詳細説明】${String(desc).trim() || '（記載なし）'}
+
+以下のJSON形式のみで回答してください（前後に説明文を入れないでください）:
+{"risk_level": "低" | "中" | "高", "summary": "50文字以内の総評", "points": ["懸念点または問題なしの理由を30〜80文字ずつ、最大3点"]}`;
+
+    const gr = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [{ parts: [{ text: prompt }] }],
+          generationConfig: { temperature: 0.2 },
+        }),
+        signal: AbortSignal.timeout(30000),
+      },
+    );
+    const gdata = await gr.json();
+    const text = gdata?.candidates?.[0]?.content?.parts?.[0]?.text;
+    if (!gr.ok || !text) {
+      console.error('Gemini check error:', JSON.stringify(gdata).slice(0, 500));
+      throw new Error(gdata?.error?.message || 'AIチェックに失敗しました');
+    }
+
+    let parsed;
+    try {
+      const m = text.match(/\{[\s\S]*\}/);
+      parsed = JSON.parse(m ? m[0] : text);
+    } catch {
+      parsed = { risk_level: '不明', summary: text.slice(0, 120), points: [] };
+    }
+
+    return res.json({ status: 'ok', ...parsed });
+  } catch (e) {
+    console.error('check-infringement error:', e);
+    return res.status(500).json({ status: 'error', message: e.message || 'AIチェックに失敗しました' });
+  }
+});
+
 // ---------- AI image generation (Gemini) ----------
 app.post('/api/generate-ai-image', async (req, res) => {
   const jwt = String(req.headers.authorization || '').replace(/^Bearer /i, '');

@@ -19,15 +19,40 @@ export default function CreatorTab({ profile, onCreated }: Props) {
   const [aiUrl, setAiUrl] = useState<string | null>(null);
   const [aiBusy, setAiBusy] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [checkBusy, setCheckBusy] = useState(false);
+  const [checkResult, setCheckResult] = useState<{
+    risk_level: string;
+    summary: string;
+    points: string[];
+  } | null>(null);
 
   const modelerShare = 100 - creatorShare;
 
-  const checkInfringement = () => {
+  const checkInfringement = async () => {
     if (!title.trim()) return toast('アイデアのタイトルを入力してからチェックしてください', 'error');
-    toast(
-      '※権利チェック機能は今後実装予定です。将来的にAIが商標・著作権・類似アイデアを自動チェックします。',
-      'info',
-    );
+    setCheckBusy(true);
+    setCheckResult(null);
+    try {
+      const res = await authFetch('/api/check-infringement', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title, desc }),
+      });
+      const data = await res.json();
+      if (res.ok && data.status === 'ok') {
+        setCheckResult({
+          risk_level: data.risk_level ?? '不明',
+          summary: data.summary ?? '',
+          points: Array.isArray(data.points) ? data.points : [],
+        });
+      } else {
+        toast(data.message || 'AIチェックに失敗しました', 'error');
+      }
+    } catch {
+      toast('通信エラーが発生しました', 'error');
+    } finally {
+      setCheckBusy(false);
+    }
   };
 
   const generateAIImage = async () => {
@@ -117,9 +142,10 @@ export default function CreatorTab({ profile, onCreated }: Props) {
           <button
             type="button"
             onClick={checkInfringement}
-            className="flex-1 rounded-lg bg-rose-50 px-3 py-2 text-[11px] font-bold text-rose-600 ring-1 ring-rose-200 transition hover:bg-rose-100"
+            disabled={checkBusy}
+            className="flex-1 rounded-lg bg-rose-50 px-3 py-2 text-[11px] font-bold text-rose-600 ring-1 ring-rose-200 transition hover:bg-rose-100 disabled:opacity-50"
           >
-            🔍 権利侵害をAIでチェック
+            {checkBusy ? '🤖 チェック中…' : '🔍 権利侵害をAIでチェック'}
           </button>
           <button
             type="button"
@@ -130,6 +156,50 @@ export default function CreatorTab({ profile, onCreated }: Props) {
             {aiBusy ? '🤖 生成中…' : '✨ AIでイメージ画像を作成'}
           </button>
         </div>
+
+        {checkBusy && (
+          <p className="mt-2 text-[11px] font-medium text-rose-600">
+            AIが商標・著作権・類似性をチェック中です…（10秒ほどかかります）
+          </p>
+        )}
+        {checkResult && (
+          <div
+            className={`mt-2 rounded-xl p-3 ring-1 ${
+              checkResult.risk_level === '高'
+                ? 'bg-rose-50 ring-rose-200'
+                : checkResult.risk_level === '中'
+                  ? 'bg-amber-50 ring-amber-200'
+                  : 'bg-emerald-50 ring-emerald-200'
+            }`}
+          >
+            <p className="text-[11px] font-bold">
+              <span
+                className={
+                  checkResult.risk_level === '高'
+                    ? 'text-rose-700'
+                    : checkResult.risk_level === '中'
+                      ? 'text-amber-700'
+                      : 'text-emerald-700'
+                }
+              >
+                リスク: {checkResult.risk_level}
+              </span>
+            </p>
+            {checkResult.summary && (
+              <p className="mt-1 text-[12px] leading-relaxed text-slate-700">{checkResult.summary}</p>
+            )}
+            {checkResult.points.length > 0 && (
+              <ul className="mt-1.5 list-disc space-y-1 pl-4 text-[11px] leading-relaxed text-slate-600">
+                {checkResult.points.map((p, i) => (
+                  <li key={i}>{p}</li>
+                ))}
+              </ul>
+            )}
+            <p className="mt-1.5 text-[10px] text-slate-400">
+              ※AIによる参考評価です。法的判断の代わりにはなりません。
+            </p>
+          </div>
+        )}
 
         {aiBusy && (
           <p className="mt-2 text-[11px] font-medium text-violet-600">
