@@ -367,23 +367,57 @@ app.post('/api/generate-ai-image', async (req, res) => {
 
   try {
     const prompt = `3D printable product concept: ${String(title).trim()}. ${String(desc).trim()}. Clear product design, isolated on clean white background, isometric view, studio lighting, high detail.`;
-    const gr = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/imagen-3.0-generate-002:predict?key=${GEMINI_API_KEY}`,
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          instances: [{ prompt }],
-          parameters: { sampleCount: 1, aspectRatio: '1:1' },
-        }),
-        signal: AbortSignal.timeout(45000),
-      },
-    );
-    const gdata = await gr.json();
-    const b64 = gdata?.predictions?.[0]?.bytesBase64Encoded;
-    if (!gr.ok || !b64) {
-      console.error('Gemini API error:', JSON.stringify(gdata).slice(0, 500));
-      throw new Error(gdata?.error?.message || 'AI生成に失敗しました');
+
+    // 1) まず Imagen（有料プラン向け）を試し、2) 失敗したら Gemini 画像生成モデルにフォールバック
+    let b64 = null;
+    let lastErr = null;
+
+    try {
+      const gr = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/imagen-3.0-generate-002:predict?key=${GEMINI_API_KEY}`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            instances: [{ prompt }],
+            parameters: { sampleCount: 1, aspectRatio: '1:1' },
+          }),
+          signal: AbortSignal.timeout(45000),
+        },
+      );
+      const gdata = await gr.json();
+      b64 = gdata?.predictions?.[0]?.bytesBase64Encoded ?? null;
+      if (!gr.ok || !b64) {
+        lastErr = new Error(gdata?.error?.message || 'imagen failed');
+        console.error('Imagen error:', JSON.stringify(gdata).slice(0, 300));
+      }
+    } catch (e) {
+      lastErr = e;
+      console.error('Imagen request error:', e.message);
+    }
+
+    if (!b64) {
+      // フォールバック: gemini-2.5-flash-image（無料枠で利用可能なモデル）
+      const fr = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-image:generateContent?key=${GEMINI_API_KEY}`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            contents: [{ parts: [{ text: prompt }] }],
+            generationConfig: { responseModalities: ['IMAGE'] },
+          }),
+          signal: AbortSignal.timeout(60000),
+        },
+      );
+      const fdata = await fr.json();
+      const parts = fdata?.candidates?.[0]?.content?.parts ?? [];
+      const imgPart = parts.find((p) => p.inlineData?.data);
+      b64 = imgPart?.inlineData?.data ?? null;
+      if (!fr.ok || !b64) {
+        console.error('Gemini image fallback error:', JSON.stringify(fdata).slice(0, 300));
+        throw new Error(fdata?.error?.message || lastErr?.message || 'AI生成に失敗しました');
+      }
     }
 
     const img = Buffer.from(b64, 'base64');
