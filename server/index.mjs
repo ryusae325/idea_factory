@@ -174,6 +174,9 @@ async function fetchIdeaById(ideaId) {
 }
 
 // ---------- Stripe Checkout ----------
+// 製造・配送費（購入者負担・サイズ階級別固定額）
+const FULFILLMENT_FEES = { S: 900, M: 1600, L: 2900, XL: 5500 };
+
 app.post('/api/create-checkout-session', async (req, res) => {
   const jwt = String(req.headers.authorization || '').replace(/^Bearer /i, '');
   const user = await getAuthUser(req);
@@ -196,9 +199,10 @@ app.post('/api/create-checkout-session', async (req, res) => {
     }
 
     const price = item_type === 'physical' ? idea.price_physical : idea.price_digital;
+    const fee = item_type === 'physical' ? FULFILLMENT_FEES[idea.size_tier] ?? FULFILLMENT_FEES.S : 0;
 
     // 無料（0円）の場合は決済を挟まず直接確定
-    if (price <= 0) {
+    if (price <= 0 && fee <= 0) {
       const msg = await callRpc('buy_item', { p_idea_id: idea.id, p_item_type: item_type }, jwt);
       return res.json({ status: 'ok', direct: true, message: msg });
     }
@@ -228,6 +232,21 @@ app.post('/api/create-checkout-session', async (req, res) => {
             },
           },
         },
+        ...(fee > 0
+          ? [
+              {
+                quantity: 1,
+                price_data: {
+                  currency: 'jpy',
+                  unit_amount: fee,
+                  product_data: {
+                    name: '製造・配送費',
+                    description: `サイズ階級: ${idea.size_tier ?? 'S'}`,
+                  },
+                },
+              },
+            ]
+          : []),
       ],
       success_url: `${origin}/?payment=success&session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${origin}/?payment=cancelled`,
@@ -249,6 +268,7 @@ app.post('/api/create-checkout-session', async (req, res) => {
         idea_id: idea.id,
         item_type,
         amount: price,
+        fulfillment_fee: fee,
       }),
     });
     if (!ins.ok) {

@@ -56,6 +56,7 @@ export interface Order {
   idea_id: number;
   item_type: 'physical' | 'digital';
   price: number;
+  fulfillment_fee: number;
   shipping_status: string;
   tracking_number: string;
   shipping_name: string;

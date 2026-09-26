@@ -15,7 +15,7 @@ export default function CreatorTab({ profile, onCreated }: Props) {
   const [creatorShare, setCreatorShare] = useState(50);
   const [mfgCost, setMfgCost] = useState(0);
   const [sizeTier, setSizeTier] = useState<SizeTier>('S');
-  const [pricePhysical, setPricePhysical] = useState(2700);
+  const [pricePhysical, setPricePhysical] = useState(1000);
   const [priceDigital, setPriceDigital] = useState(500);
   const [file, setFile] = useState<File | null>(null);
   const [busy, setBusy] = useState(false);
@@ -96,7 +96,7 @@ export default function CreatorTab({ profile, onCreated }: Props) {
       setDesc('');
       setMfgCost(0);
       setSizeTier('S');
-      setPricePhysical(2700);
+      setPricePhysical(1000);
       setFile(null);
       onCreated();
     } catch (err) {
@@ -150,7 +150,7 @@ export default function CreatorTab({ profile, onCreated }: Props) {
               <b>{o.tier}サイズ</b>
               <span className="text-stone-500">{o.range}</span>
               <span className="ml-auto text-[11px] font-semibold text-stone-500">
-                最低 ¥{o.min.toLocaleString()}
+                最低 ¥{o.min.toLocaleString()} ＋ 製造・配送費 ¥{o.fee.toLocaleString()}
               </span>
             </label>
           ))}

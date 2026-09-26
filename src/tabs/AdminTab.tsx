@@ -182,6 +182,7 @@ export default function AdminTab({ onChanged }: { onChanged: () => void }) {
                     #{o.id} {o.idea?.title ?? `#${o.idea_id}`}
                     <span className="ml-2 text-xs font-medium text-stone-400">
                       {o.buyer?.display_name || o.buyer?.username || '—'} ・ {fmtDate(o.created_at)} ・ {fmtYen(o.price)}円
+                      {o.fulfillment_fee > 0 ? `（＋製造・配送費 ${fmtYen(o.fulfillment_fee)}円）` : ''}
                     </span>
                   </p>
                   <span

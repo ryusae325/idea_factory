@@ -105,15 +105,17 @@ export default function IdeaCard({ idea, profile, onOpen, onAction }: Props) {
       <div className="flex flex-1 flex-col gap-2 p-4">
         <h3 className="line-clamp-1 text-sm font-bold text-stone-900">{idea.title}</h3>
         <p className="text-[11px] leading-relaxed text-stone-500">
-          考案: {name(idea.creator) || '不明'} ／ モデラー:{' '}
+          プランナー: {name(idea.creator) || '不明'} ／ モデラー:{' '}
           {name(idea.modeler) || (idea.status === 'アイデア募集' ? '募集中' : '—')}
         </p>
         <p className="text-[11px] text-stone-400">
-          分配 考案 {idea.creator_share}% / モデラー {idea.modeler_share}%
+          分配 プランナー {idea.creator_share}% / モデラー {idea.modeler_share}%
         </p>
         <div className="mt-auto flex items-baseline gap-2 pt-1">
           <span className="text-sm font-bold text-orange-600">{fmtYen(idea.price_physical)}円</span>
-          <span className="text-[11px] text-stone-400">プリント品</span>
+          <span className="text-[11px] text-stone-400">
+            プリント品<span className="block">＋製造・配送費</span>
+          </span>
           <span className="ml-auto text-xs font-bold text-stone-700">
             STL {fmtYen(idea.price_digital)}円
           </span>

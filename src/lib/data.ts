@@ -60,19 +60,24 @@ export async function createIdea(values: {
   if (error) throw new Error(error.message);
 }
 
-/** サイズ階級の定義（損益分岐＝JLC3DP費用×3.8 に基づく最低価格） */
+/** サイズ階級の定義（最低価格＝商品代金。fee＝製造・配送費は購入者負担） */
 export const SIZE_OPTIONS = [
-  { tier: 'S', range: '〜60mm × 60mm × 60mm', min: 2700 },
-  { tier: 'M', range: '〜120mm × 120mm × 120mm', min: 5000 },
-  { tier: 'L', range: '〜200mm × 200mm × 200mm', min: 9500 },
-  { tier: 'XL', range: '200mm × 200mm × 200mm 超', min: 19000 },
+  { tier: 'S', range: '〜60mm × 60mm × 60mm', min: 1000, fee: 900 },
+  { tier: 'M', range: '〜120mm × 120mm × 120mm', min: 2000, fee: 1600 },
+  { tier: 'L', range: '〜200mm × 200mm × 200mm', min: 4000, fee: 2900 },
+  { tier: 'XL', range: '200mm × 200mm × 200mm 超', min: 8000, fee: 5500 },
 ] as const;
 
 export type SizeTier = (typeof SIZE_OPTIONS)[number]['tier'];
 
 /** 階級から最低プリント価格を判定 */
 export function tierMinPrice(tier: SizeTier): number {
-  return SIZE_OPTIONS.find((o) => o.tier === tier)?.min ?? 2700;
+  return SIZE_OPTIONS.find((o) => o.tier === tier)?.min ?? 1000;
+}
+
+/** 階級から製造・配送費を判定 */
+export function fulfillmentFee(tier: SizeTier): number {
+  return SIZE_OPTIONS.find((o) => o.tier === tier)?.fee ?? 900;
 }
 
 export async function deleteIdea(id: number) {

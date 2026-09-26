@@ -49,7 +49,12 @@ export default function OrdersTable({ orders }: { orders: Order[] }) {
                   {o.item_type === 'physical' ? '物理プリント' : 'STLデータ'}
                 </span>
               </td>
-              <td className="px-4 py-2.5 text-stone-700">{fmtYen(o.price)}円</td>
+              <td className="px-4 py-2.5 text-stone-700">
+                {fmtYen(o.price)}円
+                {o.item_type === 'physical' && o.fulfillment_fee > 0 && (
+                  <span className="block text-[10px] text-stone-400">＋製造・配送費 {fmtYen(o.fulfillment_fee)}円</span>
+                )}
+              </td>
               <td className="px-4 py-2.5 font-bold text-stone-700">{o.shipping_status}</td>
               <td className="px-4 py-2.5 text-stone-500">{o.tracking_number || '—'}</td>
               <td className="px-4 py-2.5">

@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import type { Comment, Idea, Profile } from '../lib/types';
 import { fmtDate, fmtYen } from '../lib/types';
-import { deleteComment, deleteIdea, fetchComments, fetchIdea, postComment, getStlDownloadUrl, setIdeaStl, uploadStl, SIZE_OPTIONS } from '../lib/data';
+import { deleteComment, deleteIdea, fetchComments, fetchIdea, postComment, getStlDownloadUrl, setIdeaStl, uploadStl, SIZE_OPTIONS, fulfillmentFee } from '../lib/data';
 import { toast } from '../lib/toast';
 
 interface Props {
@@ -148,7 +148,7 @@ export default function DetailModal({ ideaId, profile, onClose, onChanged }: Pro
         <Row label="収益分配" value={`プランナー ${idea.creator_share}% / モデラー ${idea.modeler_share}%`} />
         <Row
           label="価格"
-          value={`物理プリント ${fmtYen(idea.price_physical)}円 ／ STLデータ ${fmtYen(idea.price_digital)}円`}
+          value={`物理プリント ${fmtYen(idea.price_physical)}円（＋製造・配送費 ${fmtYen(fulfillmentFee(idea.size_tier ?? 'S'))}円）／ STLデータ ${fmtYen(idea.price_digital)}円`}
         />
         <Row
           label="サイズ"
