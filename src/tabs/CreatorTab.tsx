@@ -13,9 +13,7 @@ export default function CreatorTab({ profile, onCreated }: Props) {
   const [title, setTitle] = useState('');
   const [desc, setDesc] = useState('');
   const [creatorShare, setCreatorShare] = useState(50);
-  const [mfgCost, setMfgCost] = useState(0);
   const [sizeTier, setSizeTier] = useState<SizeTier>('S');
-  const [pricePhysical, setPricePhysical] = useState(1000);
   const [priceDigital, setPriceDigital] = useState(500);
   const [files, setFiles] = useState<File[]>([]);
   const [busy, setBusy] = useState(false);
@@ -27,14 +25,11 @@ export default function CreatorTab({ profile, onCreated }: Props) {
   } | null>(null);
 
   const modelerShare = 100 - creatorShare;
-  const tierMin = tierMinPrice(sizeTier);
-  const minPhysicalPrice = Math.max(tierMin, mfgCost * 4);
+  /** プリント品価格はサイズ階級で自動決定 */
+  const pricePhysical = tierMinPrice(sizeTier);
 
-  /** 階級変更時、最低価格を下回っていたら自動的に引き上げる */
   const selectTier = (t: SizeTier) => {
     setSizeTier(t);
-    const next = Math.max(tierMinPrice(t), mfgCost * 4);
-    setPricePhysical((p) => (p < next ? next : p));
   };
 
   const checkInfringement = async () => {
@@ -70,12 +65,6 @@ export default function CreatorTab({ profile, onCreated }: Props) {
     if (priceDigital > 0 && priceDigital < 300) {
       return toast('STLデータ価格は300円以上に設定してください（無料の場合は0円）', 'error');
     }
-    if (pricePhysical < minPhysicalPrice) {
-      return toast(
-        `物理プリント価格は最低 ${minPhysicalPrice}円（サイズ階級またはJLC3DP見積×4に基づく）以上に設定してください`,
-        'error',
-      );
-    }
     setBusy(true);
     try {
       const images: string[] = [];
@@ -90,17 +79,15 @@ export default function CreatorTab({ profile, onCreated }: Props) {
         creator_id: profile.id,
         creator_share: creatorShare,
         modeler_share: modelerShare,
-        price_physical: Math.max(0, pricePhysical),
+        price_physical: pricePhysical,
         price_digital: Math.max(0, priceDigital),
-        mfg_cost: Math.max(0, mfgCost),
+        mfg_cost: 0,
         size_tier: sizeTier,
       });
       toast('アイデアを投稿しました！');
       setTitle('');
       setDesc('');
-      setMfgCost(0);
       setSizeTier('S');
-      setPricePhysical(1000);
       setFiles([]);
       onCreated();
     } catch (err) {
@@ -154,7 +141,7 @@ export default function CreatorTab({ profile, onCreated }: Props) {
               <b>{o.tier}サイズ</b>
               <span className="text-stone-500">{o.range}</span>
               <span className="ml-auto text-[11px] font-semibold text-stone-500">
-                最低 ¥{o.min.toLocaleString()} ＋ 製造・配送費 ¥{o.fee.toLocaleString()}
+                価格 ¥{o.min.toLocaleString()} ＋ 製造・配送費 ¥{o.fee.toLocaleString()}
               </span>
             </label>
           ))}
@@ -234,48 +221,18 @@ export default function CreatorTab({ profile, onCreated }: Props) {
               className="mt-1 w-full rounded-lg border border-stone-200 bg-stone-50 px-3 py-2 text-sm text-stone-500"
             />
           </div>
-          <div className="col-span-2">
+          <div>
             <label className="block text-xs font-bold text-stone-600">
-              JLC3DP 見積原価 (円・任意)
+              プリント品 価格（サイズ階級で自動決定）
             </label>
             <input
-              type="number"
-              min={0}
-              value={mfgCost || ''}
-              placeholder="例: 800（サイズ階級より高い最低価格が必要な場合のみ）"
-              onChange={(e) => {
-                const v = Math.max(0, Number(e.target.value) || 0);
-                setMfgCost(v);
-                const next = Math.max(tierMin, v * 4);
-                setPricePhysical((p) => (p < next ? next : p));
-              }}
-              className="mt-1 w-full rounded-lg border border-stone-300 px-3 py-2 text-sm outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-100"
+              type="text"
+              value={`¥${pricePhysical.toLocaleString()} ＋ 製造・配送費`}
+              readOnly
+              className="mt-1 w-full cursor-default rounded-lg border border-stone-200 bg-stone-50 px-3 py-2 text-sm text-stone-500"
             />
             <p className="mt-1 text-[11px] text-stone-500">
-              JLC3DP で「Instant Quote」した製造＋配送の合計金額を入力してください。入力すると「見積 × 4」を最低価格として自動チェックします（通常はサイズ階級で十分です）。
-            </p>
-          </div>
-          <div>
-            <label className="block text-xs font-bold text-stone-600">プリント品 価格 (円)</label>
-            <input
-              type="number"
-              min={minPhysicalPrice}
-              value={pricePhysical}
-              onChange={(e) => setPricePhysical(Number(e.target.value))}
-              className={`mt-1 w-full rounded-lg border px-3 py-2 text-sm outline-none focus:ring-2 ${
-                pricePhysical < minPhysicalPrice
-                  ? 'border-rose-400 bg-rose-50 focus:border-rose-500 focus:ring-rose-100'
-                  : 'border-stone-300 focus:border-orange-500 focus:ring-orange-100'
-              }`}
-            />
-            <p
-              className={`mt-1 text-[11px] font-semibold ${
-                pricePhysical < minPhysicalPrice ? 'text-rose-600' : 'text-emerald-600'
-              }`}
-            >
-              {pricePhysical < minPhysicalPrice
-                ? `⚠️ 最低価格は ${minPhysicalPrice}円（サイズ階級: ${sizeTier}）です`
-                : `✓ 最低価格 ${minPhysicalPrice}円 を満たしています`}
+              上の「サイズ」を選ぶと、プリント品の価格は自動的に決まります（S ¥1,000 / M ¥2,000 / L ¥4,000 / XL ¥8,000）。
             </p>
           </div>
           <div>
