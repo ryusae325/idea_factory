@@ -1,7 +1,9 @@
+import { useState } from 'react';
 import type { Profile } from '../lib/types';
 import { fmtYen } from '../lib/types';
 import { supabase, auth } from '../lib/supabase';
 import NotificationBell from './NotificationBell';
+import SettingsModal from './SettingsModal';
 
 interface Props {
   profile: Profile | null;
@@ -9,6 +11,7 @@ interface Props {
 }
 
 export default function Header({ profile, loggedIn }: Props) {
+  const [showSettings, setShowSettings] = useState(false);
   return (
     <header className="wood-panel sticky top-0 z-40 border-b border-[#312217] shadow-lg shadow-[#4a3524]/50">
       <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-4 py-3">
@@ -23,6 +26,15 @@ export default function Header({ profile, loggedIn }: Props) {
         </div>
 
         <div className="flex items-center gap-2.5">
+          {loggedIn && profile && (
+            <button
+              onClick={() => setShowSettings(true)}
+              aria-label="設定"
+              className="grid h-9 w-9 place-items-center rounded-full bg-[#5f4530]/70 text-base ring-1 ring-[#8a6a4a] transition hover:bg-[#6d5138]"
+            >
+              ⚙️
+            </button>
+          )}
           {loggedIn && profile && <NotificationBell profile={profile} />}
           {loggedIn && profile && (
             <>
@@ -55,6 +67,8 @@ export default function Header({ profile, loggedIn }: Props) {
           )}
         </div>
       </div>
+
+      {showSettings && profile && <SettingsModal profile={profile} onClose={() => setShowSettings(false)} />}
     </header>
   );
 }

@@ -276,6 +276,13 @@ export async function fetchLifetimeEarnings(userId: string): Promise<number> {
   return (data ?? []).reduce((sum, r) => sum + ((r as { amount: number }).amount ?? 0), 0);
 }
 
+/** 退会（アカウント削除）。profiles 削除で関連データが連鎖削除される */
+export async function deleteMyAccount(): Promise<string> {
+  const { data, error } = await supabase.rpc('delete_my_account');
+  if (error) throw new Error(error.message);
+  return (data as string) ?? '退会処理が完了しました';
+}
+
 // ---------- STLファイル管理 ----------
 
 export async function uploadStl(userId: string, file: File): Promise<string> {

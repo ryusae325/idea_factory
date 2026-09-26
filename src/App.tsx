@@ -37,9 +37,21 @@ export default function App() {
 
   const refreshProfile = useCallback(async (userId: string) => {
     try {
-      const p = await fetchProfile(userId);
+      let p = await fetchProfile(userId);
+      if (!p) {
+        // プロフィール作成が間に合っていない可能性に備えて一度だけ再試行
+        await new Promise((r) => setTimeout(r, 1200));
+        p = await fetchProfile(userId);
+      }
+      if (!p) {
+        // プロフィールが存在しない＝退会済みアカウント
+        await supabase.auth.signOut();
+        setLoggedIn(false);
+        toast('このアカウントは退会済みです', 'info');
+        return;
+      }
       setProfile(p);
-      setNeedsProfile(!!p && !p.display_name);
+      setNeedsProfile(!p.display_name);
     } catch {
       /* profile may not be created yet */
     }
