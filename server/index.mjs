@@ -83,6 +83,10 @@ app.post(
         const sigHmac = createHmac('sha256', STRIPE_WEBHOOK_TOKEN)
           .update(sessionId)
           .digest('hex');
+        const shipping = extractShipping(session);
+        const body = shipping
+          ? { p_session_id: sessionId, p_sig: sigHmac, p_shipping: shipping }
+          : { p_session_id: sessionId, p_sig: sigHmac };
         const r = await fetch(`${SUPABASE_URL}/rest/v1/rpc/complete_purchase_webhook`, {
           method: 'POST',
           headers: {
@@ -90,7 +94,7 @@ app.post(
             Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
             'Content-Type': 'application/json',
           },
-          body: JSON.stringify({ p_session_id: sessionId, p_sig: sigHmac }),
+          body: JSON.stringify(body),
         });
         if (!r.ok) {
           console.error('webhook rpc error:', (await r.text()).slice(0, 300));
@@ -107,6 +111,22 @@ app.post(
 );
 
 app.use(express.json({ limit: '2mb' }));
+
+// ---------- Stripe住所の抽出（新旧API両対応） ----------
+function extractShipping(session) {
+  const det = session?.collected_information?.shipping_details ?? session?.shipping_details ?? null;
+  if (!det?.address) return null;
+  const a = det.address;
+  const street = [a.line1, a.line2].filter(Boolean).join(' ');
+  const full = [a.state, a.city, street].filter(Boolean).join(' ');
+  return {
+    name: det.name ?? '',
+    postal: a.postal_code ? `〒${a.postal_code}` : '',
+    address: full,
+    phone:
+      session?.collected_information?.phone_number ?? session?.customer_details?.phone ?? '',
+  };
+}
 
 // ---------- 共通ヘルパー ----------
 async function getAuthUser(req) {
@@ -190,6 +210,12 @@ app.post('/api/create-checkout-session', async (req, res) => {
     const origin = req.headers.origin || `http://localhost:${PORT}`;
     const session = await stripe.checkout.sessions.create({
       mode: 'payment',
+      ...(item_type === 'physical'
+        ? {
+            shipping_address_collection: { allowed_countries: ['JP'] },
+            phone_number_collection: { enabled: true },
+          }
+        : {}),
       line_items: [
         {
           quantity: 1,
@@ -257,7 +283,12 @@ app.post('/api/complete-checkout', async (req, res) => {
     if (session.payment_status !== 'paid') {
       return res.status(400).json({ status: 'error', message: '決済が完了していません' });
     }
-    const msg = await callRpc('complete_purchase', { p_session_id: session_id }, jwt);
+    const shipping = extractShipping(session);
+    const msg = await callRpc(
+      'complete_purchase',
+      shipping ? { p_session_id: session_id, p_shipping: shipping } : { p_session_id: session_id },
+      jwt,
+    );
     return res.json({ status: 'ok', message: msg });
   } catch (e) {
     console.error('complete-checkout error:', e);

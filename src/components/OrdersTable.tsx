@@ -53,13 +53,19 @@ export default function OrdersTable({ orders }: { orders: Order[] }) {
               <td className="px-4 py-2.5 font-bold text-stone-700">{o.shipping_status}</td>
               <td className="px-4 py-2.5 text-stone-500">{o.tracking_number || '—'}</td>
               <td className="px-4 py-2.5">
-                {o.item_type === 'digital' && (
+                {o.item_type === 'digital' ? (
                   <button
                     onClick={() => download(o)}
                     className="rounded-lg bg-emerald-50 px-2.5 py-1.5 text-[10px] font-bold text-emerald-700 ring-1 ring-emerald-200 transition hover:bg-emerald-100"
                   >
                     ⬇️ STL
                   </button>
+                ) : (
+                  <p className="whitespace-pre-line text-[10px] leading-relaxed text-stone-500">
+                    {o.shipping_address
+                      ? `${o.shipping_name || ''}\n${o.shipping_postal || ''} ${o.shipping_address}`
+                      : '配送先なし'}
+                  </p>
                 )}
               </td>
             </tr>

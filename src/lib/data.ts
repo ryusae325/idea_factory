@@ -199,6 +199,15 @@ export async function updateShipping(
   return (data as string) ?? '更新しました';
 }
 
+export async function recordPartnerOrder(orderId: number, partnerOrderId: string): Promise<string> {
+  const { data, error } = await supabase.rpc('record_partner_order', {
+    p_order_id: orderId,
+    p_partner_order_id: partnerOrderId,
+  });
+  if (error) throw new Error(error.message);
+  return (data as string) ?? '発注を記録しました';
+}
+
 export async function uploadImage(userId: string, file: File): Promise<string> {
   const ext = file.name.includes('.') ? file.name.split('.').pop()!.toLowerCase() : 'png';
   const path = `${userId}/img_${crypto.randomUUID()}.${ext}`;

@@ -56,6 +56,13 @@ export interface Order {
   price: number;
   shipping_status: string;
   tracking_number: string;
+  shipping_name: string;
+  shipping_postal: string;
+  shipping_address: string;
+  shipping_phone: string;
+  partner_status: string;
+  partner_order_id: string;
+  ordered_at: string | null;
   created_at: string;
   idea?: { title: string; stl_path?: string | null } | null;
   buyer?: ProfileLite | null;
