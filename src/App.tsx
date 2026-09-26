@@ -128,15 +128,15 @@ export default function App() {
   const gridProps = { profile, onOpen: setDetailId, onAction: handleAction };
 
   return (
-    <div className="min-h-screen bg-stone-100 pb-16">
+    <div className="min-h-screen pb-16">
       <Header profile={profile} loggedIn={loggedIn} />
 
       <main className="mx-auto max-w-6xl px-4 pt-5">
         {loading ? (
-          <p className="py-24 text-center text-sm text-stone-400">読み込み中…</p>
+          <p className="py-24 text-center text-sm text-stone-500">読み込み中…</p>
         ) : (
           <>
-            <nav className="mb-5 flex gap-1.5 overflow-x-auto rounded-2xl border border-stone-200 bg-[#fffdf8] p-1.5 shadow-sm">
+            <nav className="wood-panel mb-5 flex gap-1.5 overflow-x-auto rounded-2xl border border-[#312217] p-1.5 shadow-md shadow-[#4a3524]/40">
               {TABS.filter((t) => t.id !== 'admin' || profile?.is_admin).map((t) => (
                 <button
                   key={t.id}
@@ -144,9 +144,9 @@ export default function App() {
                   className={`flex-1 whitespace-nowrap rounded-xl px-3.5 py-2.5 text-xs font-bold transition ${
                     tab === t.id
                       ? t.id === 'admin'
-                        ? 'bg-amber-600 text-white shadow-md shadow-amber-500/30'
-                        : 'bg-orange-600 text-white shadow-md shadow-orange-500/30'
-                      : 'text-stone-500 hover:bg-stone-50 hover:text-stone-700'
+                        ? 'bg-gradient-to-b from-amber-500 to-amber-600 text-white shadow-md shadow-amber-900/50'
+                        : 'brass-btn text-[#3a2715]'
+                      : 'text-[#cbb48d] hover:bg-white/10 hover:text-[#f0e2c4]'
                   }`}
                 >
                   <span className="mr-1">{t.icon}</span>
@@ -212,11 +212,11 @@ export default function App() {
           </>
         )}
 
-        <footer className="mt-16 border-t border-stone-200 pt-6 text-center text-xs text-stone-400">
-          <p>© ヒラメキ工房 — 考案者と3Dモデラーをつなぐ共創プラットフォーム</p>
+        <footer className="stitch mt-16 rounded-xl bg-[#fff9ec]/70 px-4 pt-6 pb-2 text-center text-xs text-stone-500 backdrop-blur-sm">
+          <p>🪵 © ヒラメキ工房 — 考案者と3Dモデラーをつなぐ共創プラットフォーム</p>
           <button
             onClick={() => setShowLegal(true)}
-            className="mt-2 font-semibold text-orange-500 transition hover:text-orange-700 hover:underline"
+            className="mt-2 font-semibold text-orange-600 transition hover:text-orange-800 hover:underline"
           >
             利用規約・プライバシーポリシー・特商法表記
           </button>

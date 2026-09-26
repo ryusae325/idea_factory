@@ -4,6 +4,7 @@
   --font-sans:
     "Zen Maru Gothic", ui-sans-serif, system-ui, -apple-system, "Hiragino Kaku Gothic ProN",
     "Noto Sans JP", Meiryo, sans-serif;
+  --font-display: "Kaisei Decol", "Zen Maru Gothic", ui-serif, serif;
 }
 
 @keyframes toastIn {
@@ -21,16 +22,50 @@ html {
   -webkit-tap-highlight-color: transparent;
 }
 
-/* 木目調のやさしい背景 */
+/* 工房風の木目板背景（縦筋＋節＋板の明暗） */
 body {
   font-family: var(--font-sans);
   color: #44403c;
-  background-color: #faf6ef;
+  background-color: #f2e8d6;
   background-image:
-    repeating-linear-gradient(90deg, rgba(180, 140, 90, 0.07) 0px, rgba(180, 140, 90, 0.07) 2px, transparent 2px, transparent 9px),
-    repeating-linear-gradient(90deg, rgba(160, 120, 70, 0.05) 0px, rgba(160, 120, 70, 0.05) 1px, transparent 1px, transparent 15px),
-    linear-gradient(180deg, #fbf7f0 0%, #f4ecdf 100%);
+    radial-gradient(ellipse 240px 30px at 76% 10%, rgba(150, 110, 65, 0.13), transparent 70%),
+    radial-gradient(ellipse 280px 34px at 10% 44%, rgba(150, 110, 65, 0.1), transparent 70%),
+    radial-gradient(ellipse 260px 30px at 52% 80%, rgba(140, 100, 55, 0.12), transparent 70%),
+    repeating-linear-gradient(90deg, rgba(166, 124, 74, 0.14) 0px, rgba(166, 124, 74, 0.14) 2px, transparent 2px, transparent 11px),
+    repeating-linear-gradient(90deg, rgba(150, 110, 60, 0.08) 0px, rgba(150, 110, 60, 0.08) 1px, transparent 1px, transparent 19px),
+    repeating-linear-gradient(90deg, rgba(112, 80, 42, 0.05) 0px, rgba(112, 80, 42, 0.05) 3px, transparent 3px, transparent 37px),
+    linear-gradient(180deg, #f7efde 0%, #eee0c4 60%, #e5d2ae 100%);
   background-attachment: fixed;
+}
+
+/* 濃色の木パネル（ヘッダー・ナビ・工房の看板部分） */
+.wood-panel {
+  background-color: #4a3524;
+  background-image:
+    repeating-linear-gradient(90deg, rgba(255, 244, 220, 0.05) 0px, rgba(255, 244, 220, 0.05) 1px, transparent 1px, transparent 9px),
+    repeating-linear-gradient(90deg, rgba(0, 0, 0, 0.07) 0px, rgba(0, 0, 0, 0.07) 2px, transparent 2px, transparent 17px),
+    repeating-linear-gradient(90deg, rgba(0, 0, 0, 0.04) 0px, rgba(0, 0, 0, 0.04) 4px, transparent 4px, transparent 43px),
+    radial-gradient(ellipse 340px 44px at 80% 0%, rgba(255, 236, 200, 0.09), transparent 70%),
+    linear-gradient(180deg, #5c422c 0%, #44301f 100%);
+}
+
+/* 木札風の見出しフォント */
+h1, h2, h3 {
+  font-family: var(--font-display);
+  letter-spacing: 0.03em;
+}
+
+/* ステッチ風の点線枠（革工作風の縁飾り） */
+.stitch {
+  border: 1.5px dashed rgba(122, 85, 50, 0.4);
+}
+
+/* 真鍮（黄銅）風ボタン */
+.brass-btn {
+  background-image: linear-gradient(180deg, #d9a05b 0%, #b97f42 100%);
+  box-shadow:
+    0 2px 6px rgba(110, 70, 25, 0.4),
+    inset 0 1px 0 rgba(255, 240, 210, 0.55);
 }
 
 ::-webkit-scrollbar {
@@ -38,7 +73,7 @@ body {
   height: 8px;
 }
 ::-webkit-scrollbar-thumb {
-  background: #d6c3a5;
+  background: #c9ac82;
   border-radius: 8px;
 }
 ::-webkit-scrollbar-track {
