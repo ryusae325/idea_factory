@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import type { Comment, Idea, Profile } from '../lib/types';
 import { fmtDate, fmtYen } from '../lib/types';
-import { deleteComment, deleteIdea, fetchComments, fetchIdea, postComment, getStlDownloadUrl, setIdeaStl, uploadStl } from '../lib/data';
+import { deleteComment, deleteIdea, fetchComments, fetchIdea, postComment, getStlDownloadUrl, setIdeaStl, uploadStl, SIZE_OPTIONS } from '../lib/data';
 import { toast } from '../lib/toast';
 
 interface Props {
@@ -150,12 +150,10 @@ export default function DetailModal({ ideaId, profile, onClose, onChanged }: Pro
           label="価格"
           value={`物理プリント ${fmtYen(idea.price_physical)}円 ／ STLデータ ${fmtYen(idea.price_digital)}円`}
         />
-        {(idea.size_w > 0 || idea.size_d > 0 || idea.size_h > 0) && (
-          <Row
-            label="サイズ"
-            value={`${idea.size_w} × ${idea.size_d} × ${idea.size_h} mm（幅 × 奥行き × 高さ）`}
-          />
-        )}
+        <Row
+          label="サイズ"
+          value={`${idea.size_tier}サイズ（${SIZE_OPTIONS.find((o) => o.tier === idea.size_tier)?.range ?? ''}）`}
+        />
       </dl>
 
       <div className="mt-3 rounded-xl bg-stone-50 p-3.5 ring-1 ring-stone-200">

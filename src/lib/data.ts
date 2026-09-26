@@ -54,31 +54,25 @@ export async function createIdea(values: {
   price_physical: number;
   price_digital: number;
   mfg_cost: number;
-  size_w: number;
-  size_d: number;
-  size_h: number;
+  size_tier: 'S' | 'M' | 'L' | 'XL';
 }) {
   const { error } = await supabase.from('ideas').insert(values);
   if (error) throw new Error(error.message);
 }
 
-/** サイズ（最長辺）から段階的な最低プリント価格を判定 */
-export function tierMinPrice(w: number, d: number, h: number): number {
-  const maxSide = Math.max(w || 0, d || 0, h || 0);
-  if (maxSide <= 60) return 4000;
-  if (maxSide <= 120) return 7000;
-  if (maxSide <= 200) return 12000;
-  return 20000;
-}
+/** サイズ階級の定義（損益分岐＝JLC3DP費用×3.8 に基づく最低価格） */
+export const SIZE_OPTIONS = [
+  { tier: 'S', range: '〜60mm × 60mm × 60mm', min: 2700 },
+  { tier: 'M', range: '〜120mm × 120mm × 120mm', min: 5000 },
+  { tier: 'L', range: '〜200mm × 200mm × 200mm', min: 9500 },
+  { tier: 'XL', range: '200mm × 200mm × 200mm 超', min: 19000 },
+] as const;
 
-/** サイズ階級の表示名 */
-export function sizeTierLabel(w: number, d: number, h: number): string {
-  const maxSide = Math.max(w || 0, d || 0, h || 0);
-  if (maxSide <= 0) return '未入力（S相当）';
-  if (maxSide <= 60) return `S（${maxSide}mm・最低¥4,000）`;
-  if (maxSide <= 120) return `M（${maxSide}mm・最低¥7,000）`;
-  if (maxSide <= 200) return `L（${maxSide}mm・最低¥12,000）`;
-  return `XL（${maxSide}mm・最低¥20,000）`;
+export type SizeTier = (typeof SIZE_OPTIONS)[number]['tier'];
+
+/** 階級から最低プリント価格を判定 */
+export function tierMinPrice(tier: SizeTier): number {
+  return SIZE_OPTIONS.find((o) => o.tier === tier)?.min ?? 2700;
 }
 
 export async function deleteIdea(id: number) {

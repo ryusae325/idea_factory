@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import type { Profile } from '../lib/types';
-import { createIdea, uploadImage, tierMinPrice, sizeTierLabel } from '../lib/data';
+import { createIdea, uploadImage, tierMinPrice, SIZE_OPTIONS, type SizeTier } from '../lib/data';
 import { authFetch } from '../lib/supabase';
 import { toast } from '../lib/toast';
 
@@ -14,10 +14,8 @@ export default function CreatorTab({ profile, onCreated }: Props) {
   const [desc, setDesc] = useState('');
   const [creatorShare, setCreatorShare] = useState(50);
   const [mfgCost, setMfgCost] = useState(0);
-  const [sizeW, setSizeW] = useState(0);
-  const [sizeD, setSizeD] = useState(0);
-  const [sizeH, setSizeH] = useState(0);
-  const [pricePhysical, setPricePhysical] = useState(4000);
+  const [sizeTier, setSizeTier] = useState<SizeTier>('S');
+  const [pricePhysical, setPricePhysical] = useState(2700);
   const [priceDigital, setPriceDigital] = useState(500);
   const [file, setFile] = useState<File | null>(null);
   const [busy, setBusy] = useState(false);
@@ -29,20 +27,13 @@ export default function CreatorTab({ profile, onCreated }: Props) {
   } | null>(null);
 
   const modelerShare = 100 - creatorShare;
-  const tierMin = tierMinPrice(sizeW, sizeD, sizeH);
+  const tierMin = tierMinPrice(sizeTier);
   const minPhysicalPrice = Math.max(tierMin, mfgCost * 4);
 
-  /** サイズ変更時、最低価格を下回っていたら自動的に引き上げる */
-  const updateSize = (
-    setter: (v: number) => void,
-  ) => (e: React.ChangeEvent<HTMLInputElement>) => {
-    const v = Math.max(0, Number(e.target.value) || 0);
-    setter(v);
-    const next = Math.max(tierMinPrice(
-      e.target.name === 'w' ? v : sizeW,
-      e.target.name === 'd' ? v : sizeD,
-      e.target.name === 'h' ? v : sizeH,
-    ), mfgCost * 4);
+  /** 階級変更時、最低価格を下回っていたら自動的に引き上げる */
+  const selectTier = (t: SizeTier) => {
+    setSizeTier(t);
+    const next = Math.max(tierMinPrice(t), mfgCost * 4);
     setPricePhysical((p) => (p < next ? next : p));
   };
 
@@ -98,18 +89,14 @@ export default function CreatorTab({ profile, onCreated }: Props) {
         price_physical: Math.max(0, pricePhysical),
         price_digital: Math.max(0, priceDigital),
         mfg_cost: Math.max(0, mfgCost),
-        size_w: Math.max(0, sizeW),
-        size_d: Math.max(0, sizeD),
-        size_h: Math.max(0, sizeH),
+        size_tier: sizeTier,
       });
       toast('アイデアを投稿しました！');
       setTitle('');
       setDesc('');
       setMfgCost(0);
-      setSizeW(0);
-      setSizeD(0);
-      setSizeH(0);
-      setPricePhysical(4000);
+      setSizeTier('S');
+      setPricePhysical(2700);
       setFile(null);
       onCreated();
     } catch (err) {
@@ -142,51 +129,32 @@ export default function CreatorTab({ profile, onCreated }: Props) {
           className="mt-1 w-full resize-none rounded-lg border border-stone-300 px-3 py-2.5 text-sm outline-none transition focus:border-orange-500 focus:ring-2 focus:ring-orange-100"
         />
 
-        <label className="mt-3 block text-xs font-bold text-stone-600">
-          サイズ W(幅) × D(奥行き) × H(高さ) (mm)
-        </label>
-        <div className="mt-1 grid grid-cols-3 gap-2">
-          <div className="relative">
-            <input
-              type="number"
-              min={0}
-              name="w"
-              value={sizeW || ''}
-              placeholder="W"
-              onChange={updateSize(setSizeW)}
-              className="w-full rounded-lg border border-stone-300 px-3 py-2 pr-8 text-sm outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-100"
-            />
-            <span className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-[10px] text-stone-400">mm</span>
-          </div>
-          <div className="relative">
-            <input
-              type="number"
-              min={0}
-              name="d"
-              value={sizeD || ''}
-              placeholder="D"
-              onChange={updateSize(setSizeD)}
-              className="w-full rounded-lg border border-stone-300 px-3 py-2 pr-8 text-sm outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-100"
-            />
-            <span className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-[10px] text-stone-400">mm</span>
-          </div>
-          <div className="relative">
-            <input
-              type="number"
-              min={0}
-              name="h"
-              value={sizeH || ''}
-              placeholder="H"
-              onChange={updateSize(setSizeH)}
-              className="w-full rounded-lg border border-stone-300 px-3 py-2 pr-8 text-sm outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-100"
-            />
-            <span className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-[10px] text-stone-400">mm</span>
-          </div>
+        <label className="mt-3 block text-xs font-bold text-stone-600">サイズ *</label>
+        <div className="mt-1 space-y-1.5">
+          {SIZE_OPTIONS.map((o) => (
+            <label
+              key={o.tier}
+              className={`flex cursor-pointer items-center gap-2 rounded-lg border px-3 py-2 text-[12px] transition ${
+                sizeTier === o.tier
+                  ? 'border-orange-500 bg-orange-50 text-stone-800'
+                  : 'border-stone-300 bg-white text-stone-600 hover:border-stone-400'
+              }`}
+            >
+              <input
+                type="radio"
+                name="size_tier"
+                checked={sizeTier === o.tier}
+                onChange={() => selectTier(o.tier)}
+                className="accent-orange-600"
+              />
+              <b>{o.tier}サイズ</b>
+              <span className="text-stone-500">{o.range}</span>
+              <span className="ml-auto text-[11px] font-semibold text-stone-500">
+                最低 ¥{o.min.toLocaleString()}
+              </span>
+            </label>
+          ))}
         </div>
-        <p className="mt-1.5 text-[11px] text-stone-500">
-          サイズ階級: <b className="text-stone-700">{sizeTierLabel(sizeW, sizeD, sizeH)}</b>
-          <span className="ml-1 text-stone-400">— S:〜60mm / M:〜120mm / L:〜200mm / XL:200mm超</span>
-        </p>
 
         <button
           type="button"
@@ -302,7 +270,7 @@ export default function CreatorTab({ profile, onCreated }: Props) {
               }`}
             >
               {pricePhysical < minPhysicalPrice
-                ? `⚠️ 最低価格は ${minPhysicalPrice}円（サイズ階級: ${sizeTierLabel(sizeW, sizeD, sizeH)}）です`
+                ? `⚠️ 最低価格は ${minPhysicalPrice}円（サイズ階級: ${sizeTier}）です`
                 : `✓ 最低価格 ${minPhysicalPrice}円 を満たしています`}
             </p>
           </div>
