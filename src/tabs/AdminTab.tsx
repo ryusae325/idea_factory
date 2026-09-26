@@ -1,10 +1,10 @@
 import { useCallback, useEffect, useState } from 'react';
-import type { Announcement, ExchangeRequest, Order } from '../lib/types';
+import type { Announcement, ExchangeRequest, GiftStock, Order } from '../lib/types';
 import { fmtDate, fmtYen } from '../lib/types';
-import { fetchAllExchangeRequests, fetchAllOrders, processExchange, updateShipping, recordPartnerOrder, getStlDownloadUrl, fetchAnnouncements, createAnnouncement, deactivateAnnouncement } from '../lib/data';
+import { fetchAllExchangeRequests, fetchAllOrders, processExchange, updateShipping, recordPartnerOrder, getStlDownloadUrl, fetchAnnouncements, createAnnouncement, deactivateAnnouncement, fetchGiftStock, addGiftCodes, deleteGiftCode } from '../lib/data';
 import { toast } from '../lib/toast';
 
-type Section = 'exchange' | 'fulfillment' | 'orders' | 'announcements';
+type Section = 'exchange' | 'fulfillment' | 'orders' | 'giftstock' | 'announcements';
 
 export default function AdminTab({ onChanged }: { onChanged: () => void }) {
   const [requests, setRequests] = useState<ExchangeRequest[]>([]);
@@ -18,12 +18,18 @@ export default function AdminTab({ onChanged }: { onChanged: () => void }) {
   const [annTitle, setAnnTitle] = useState('');
   const [annBody, setAnnBody] = useState('');
   const [annBusy, setAnnBusy] = useState(false);
+  const [stock, setStock] = useState<GiftStock[]>([]);
+  const [stockType, setStockType] = useState('Amazonギフトカード');
+  const [stockAmount, setStockAmount] = useState(1000);
+  const [stockCodes, setStockCodes] = useState('');
+  const [stockBusy, setStockBusy] = useState(false);
 
   const reload = useCallback(async () => {
-    const [r, o, a] = await Promise.all([fetchAllExchangeRequests(), fetchAllOrders(), fetchAnnouncements()]);
+    const [r, o, a, s] = await Promise.all([fetchAllExchangeRequests(), fetchAllOrders(), fetchAnnouncements(), fetchGiftStock()]);
     setRequests(r);
     setOrders(o);
     setAnnList(a);
+    setStock(s);
   }, []);
 
   useEffect(() => {
@@ -117,6 +123,33 @@ export default function AdminTab({ onChanged }: { onChanged: () => void }) {
     }
   };
 
+  const registerStock = async () => {
+    const list = stockCodes.split('\n').map((c) => c.trim()).filter(Boolean);
+    if (!list.length) return toast('ギフトコードを入力してください（1行に1コード）', 'error');
+    if (!Number.isFinite(stockAmount) || stockAmount <= 0) return toast('金額を正しく入力してください', 'error');
+    setStockBusy(true);
+    try {
+      await addGiftCodes(stockType, stockAmount, list);
+      toast(`${list.length}件のコードを在庫に登録しました`);
+      setStockCodes('');
+      await reload();
+    } catch (e) {
+      toast((e as Error).message, 'error');
+    } finally {
+      setStockBusy(false);
+    }
+  };
+
+  const removeStockCode = async (id: number) => {
+    try {
+      await deleteGiftCode(id);
+      toast('コードを削除しました');
+      await reload();
+    } catch (e) {
+      toast((e as Error).message, 'error');
+    }
+  };
+
   const physicalOrders = orders.filter((o) => o.item_type === 'physical');
   const pendingPhysical = physicalOrders.filter((o) => o.partner_status !== '発注済');
   const toShip = physicalOrders.filter((o) => o.shipping_status !== '発送済み');
@@ -134,8 +167,20 @@ export default function AdminTab({ onChanged }: { onChanged: () => void }) {
     { key: 'exchange', label: '🎁 交換申請', badge: pendingRequests.length },
     { key: 'fulfillment', label: '🏭 製造・発送', badge: pendingPhysical.length },
     { key: 'orders', label: '📦 注文一覧', badge: 0 },
+    { key: 'giftstock', label: '🎫 ギフト在庫', badge: 0 },
     { key: 'announcements', label: '📢 お知らせ', badge: 0 },
   ];
+
+  // 在庫を種類×金額ごとに集計
+  const stockGroups = Object.entries(
+    stock.reduce<Record<string, { type: string; amount: number; unused: GiftStock[]; used: number }>>((acc, s) => {
+      const key = `${s.exchange_type}|${s.amount}`;
+      acc[key] ??= { type: s.exchange_type, amount: s.amount, unused: [], used: 0 };
+      if (s.used_by) acc[key].used += 1;
+      else acc[key].unused.push(s);
+      return acc;
+    }, {}),
+  ).sort((a, b) => (a[1].type === b[1].type ? a[1].amount - b[1].amount : a[1].type.localeCompare(b[1].type)));
 
   return (
     <div className="space-y-5">
@@ -409,6 +454,94 @@ export default function AdminTab({ onChanged }: { onChanged: () => void }) {
           )}
         </section>
       )}
+      {section === 'giftstock' && (
+        <section className="space-y-4">
+          <div className="rounded-xl bg-[#fffdf8] p-5 ring-1 ring-stone-200">
+            <p className="text-sm font-bold text-stone-800">🎫 ギフトコードの在庫登録</p>
+            <p className="mt-1 text-[11px] leading-relaxed text-stone-500">
+              事前に購入したギフトコードをここに登録しておくと、ユーザーが<b>同じ種類・同じ金額</b>で交換申請した際に自動発行されます（在庫がない場合は手動処理の「未処理」になります）。
+            </p>
+            <div className="mt-3 grid gap-2.5 sm:grid-cols-2">
+              <div>
+                <label className="block text-xs font-bold text-stone-600">ギフト種類</label>
+                <select
+                  value={stockType}
+                  onChange={(e) => setStockType(e.target.value)}
+                  className="mt-1 w-full rounded-lg border border-stone-300 bg-white px-3 py-2 text-sm outline-none focus:border-orange-500"
+                >
+                  <option>Amazonギフトカード</option>
+                  <option>Apple Gift Card</option>
+                  <option>Google Play ギフトコード</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-stone-600">金額 (円分)</label>
+                <input
+                  type="number"
+                  min={1}
+                  step={500}
+                  value={stockAmount}
+                  onChange={(e) => setStockAmount(Number(e.target.value))}
+                  className="mt-1 w-full rounded-lg border border-stone-300 px-3 py-2 text-sm outline-none focus:border-orange-500"
+                />
+              </div>
+            </div>
+            <textarea
+              value={stockCodes}
+              onChange={(e) => setStockCodes(e.target.value)}
+              placeholder={'ギフトコードを1行に1つずつ貼り付け\n例:\nABCD-EFGH-IJKL\nMNOP-QRST-UVWX'}
+              rows={5}
+              className="mt-2.5 w-full rounded-lg border border-stone-300 px-3 py-2 text-sm outline-none focus:border-orange-500"
+            />
+            <button
+              onClick={registerStock}
+              disabled={stockBusy}
+              className="mt-2.5 rounded-lg bg-orange-600 px-4 py-2 text-xs font-bold text-white transition hover:bg-orange-700 disabled:opacity-50"
+            >
+              {stockBusy ? '登録中…' : '在庫に登録する'}
+            </button>
+          </div>
+
+          {stockGroups.length === 0 ? (
+            <Empty text="登録済みのギフトコード在庫はありません。" />
+          ) : (
+            <div className="space-y-2">
+              {stockGroups.map(([key, g]) => (
+                <details key={key} className="group rounded-xl bg-[#fffdf8] ring-1 ring-stone-200">
+                  <summary className="flex cursor-pointer list-none items-center justify-between px-4 py-3">
+                    <span className="text-xs font-bold text-stone-800">
+                      {g.type}（{fmtYen(g.amount)}円分）
+                    </span>
+                    <span className="flex items-center gap-2">
+                      <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${g.unused.length > 0 ? 'bg-emerald-50 text-emerald-600' : 'bg-stone-100 text-stone-400'}`}>
+                        在庫 {g.unused.length}件
+                      </span>
+                      <span className="text-[10px] text-stone-400">使用済 {g.used}件</span>
+                      <span className="text-[10px] font-medium text-stone-400 group-open:hidden">開く ▾</span>
+                      <span className="hidden text-[10px] font-medium text-stone-400 group-open:inline">閉じる ▴</span>
+                    </span>
+                  </summary>
+                  <div className="space-y-1 border-t border-stone-100 px-4 pb-3 pt-2">
+                    {g.unused.map((s) => (
+                      <div key={s.id} className="flex items-center justify-between gap-2 text-[11px]">
+                        <code className="truncate text-stone-600">{s.code}</code>
+                        <button
+                          onClick={() => removeStockCode(s.id)}
+                          className="shrink-0 rounded-lg bg-stone-100 px-2 py-1 text-[10px] font-semibold text-stone-500 ring-1 ring-stone-200 transition hover:bg-red-50 hover:text-red-600"
+                        >
+                          削除
+                        </button>
+                      </div>
+                    ))}
+                    {g.used > 0 && <p className="text-[10px] text-stone-400">使用済みコード {g.used}件は履歴保持のため表示しません。</p>}
+                  </div>
+                </details>
+              ))}
+            </div>
+          )}
+        </section>
+      )}
+
       {section === 'announcements' && (
         <section className="space-y-4">
           <div className="rounded-xl bg-[#fffdf8] p-5 ring-1 ring-stone-200">

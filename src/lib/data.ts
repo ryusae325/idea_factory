@@ -1,5 +1,5 @@
 import { supabase, authFetch } from './supabase';
-import type { Comment, ExchangeRequest, Idea, Order, BalanceEntry, Profile, Announcement } from './types';
+import type { Comment, ExchangeRequest, Idea, Order, BalanceEntry, Profile, Announcement, GiftStock } from './types';
 
 export const IDEA_SELECT = `*, creator:profiles!ideas_creator_id_fkey(username,display_name), modeler:profiles!ideas_modeler_id_fkey(username,display_name)`;
 
@@ -281,6 +281,38 @@ export async function deleteMyAccount(): Promise<string> {
   const { data, error } = await supabase.rpc('delete_my_account');
   if (error) throw new Error(error.message);
   return (data as string) ?? '退会処理が完了しました';
+}
+
+// ---------- ギフトコード在庫（交換の自動発行） ----------
+
+/** 自動発行可能なギフト（種類・金額・在庫数）。ユーザー向け表示用 */
+export async function fetchAvailableGiftAmounts(): Promise<{ exchange_type: string; amount: number; stock: number }[]> {
+  const { data, error } = await supabase.rpc('available_gift_amounts');
+  if (error) throw new Error(error.message);
+  return (data ?? []) as unknown as { exchange_type: string; amount: number; stock: number }[];
+}
+
+/** 管理者: 在庫コード一括登録（1行1コード） */
+export async function addGiftCodes(exchangeType: string, amount: number, codes: string[]) {
+  const rows = codes.map((code) => ({ exchange_type: exchangeType, amount, code }));
+  const { error } = await supabase.from('gift_code_stock').insert(rows);
+  if (error) throw new Error(error.message);
+}
+
+/** 管理者: 在庫一覧（使用済み含む） */
+export async function fetchGiftStock(): Promise<GiftStock[]> {
+  const { data, error } = await supabase
+    .from('gift_code_stock')
+    .select('*')
+    .order('id', { ascending: false });
+  if (error) throw new Error(error.message);
+  return (data ?? []) as unknown as GiftStock[];
+}
+
+/** 管理者: 未使用コードの削除 */
+export async function deleteGiftCode(id: number) {
+  const { error } = await supabase.from('gift_code_stock').delete().eq('id', id).is('used_by', null);
+  if (error) throw new Error(error.message);
 }
 
 // ---------- STLファイル管理 ----------

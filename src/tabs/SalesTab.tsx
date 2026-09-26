@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import type { ExchangeRequest, Profile } from '../lib/types';
 import { fmtDate, fmtYen } from '../lib/types';
-import { fetchMyExchangeRequests, requestExchange } from '../lib/data';
+import { fetchMyExchangeRequests, requestExchange, fetchAvailableGiftAmounts } from '../lib/data';
 import { toast } from '../lib/toast';
 
 interface Props {
@@ -15,11 +15,18 @@ export default function SalesTab({ profile, onBalanceChanged }: Props) {
   const [type, setType] = useState(GIFT_TYPES[0]);
   const [amount, setAmount] = useState(1000);
   const [history, setHistory] = useState<ExchangeRequest[]>([]);
+  const [available, setAvailable] = useState<{ exchange_type: string; amount: number; stock: number }[]>([]);
   const [busy, setBusy] = useState(false);
+
+  const loadAvailable = () => fetchAvailableGiftAmounts().then(setAvailable).catch(() => {});
 
   useEffect(() => {
     fetchMyExchangeRequests(profile.id).then(setHistory).catch(() => {});
+    loadAvailable();
   }, [profile]);
+
+  const instantStock = available.find((a) => a.exchange_type === type && a.amount === amount)?.stock ?? 0;
+  const instantAmounts = available.filter((a) => a.exchange_type === type);
 
   const apply = async () => {
     setBusy(true);
@@ -29,6 +36,7 @@ export default function SalesTab({ profile, onBalanceChanged }: Props) {
       const h = await fetchMyExchangeRequests(profile.id);
       setHistory(h);
       onBalanceChanged();
+      loadAvailable();
     } catch (e) {
       toast((e as Error).message, 'error');
     } finally {
@@ -64,6 +72,24 @@ export default function SalesTab({ profile, onBalanceChanged }: Props) {
           </select>
 
           <label className="mt-3 block text-xs font-bold text-stone-600">交換金額 (円分)</label>
+          {instantAmounts.length > 0 && (
+            <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
+              <span className="text-[10px] font-bold text-emerald-700">⚡ 即時発行:</span>
+              {instantAmounts.map((a) => (
+                <button
+                  key={`${a.exchange_type}|${a.amount}`}
+                  onClick={() => setAmount(a.amount)}
+                  className={`rounded-full px-2.5 py-1 text-[10px] font-bold ring-1 transition ${
+                    amount === a.amount
+                      ? 'bg-emerald-600 text-white ring-emerald-600'
+                      : 'bg-emerald-50 text-emerald-700 ring-emerald-200 hover:bg-emerald-100'
+                  }`}
+                >
+                  {fmtYen(a.amount)}円（在庫{a.stock}）
+                </button>
+              ))}
+            </div>
+          )}
           <input
             type="number"
             value={amount}
@@ -72,6 +98,11 @@ export default function SalesTab({ profile, onBalanceChanged }: Props) {
             onChange={(e) => setAmount(Number(e.target.value))}
             className="mt-1 w-full rounded-lg border border-stone-300 px-3 py-2.5 text-sm outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-100"
           />
+          <p className={`mt-1.5 text-[11px] font-semibold ${instantStock > 0 ? 'text-emerald-600' : 'text-stone-400'}`}>
+            {instantStock > 0
+              ? '⚡ 在庫あり — 申請するとすぐにギフトコードが発行されます'
+              : 'この金額は運営の確認後に発行されます（通常数日以内）'}
+          </p>
 
           <button
             onClick={apply}

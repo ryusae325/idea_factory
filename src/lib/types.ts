@@ -96,6 +96,16 @@ export interface Announcement {
   created_at: string;
 }
 
+export interface GiftStock {
+  id: number;
+  exchange_type: string;
+  amount: number;
+  code: string;
+  used_by: string | null;
+  used_at: string | null;
+  created_at: string;
+}
+
 export const fmtYen = (n: number) => n.toLocaleString('ja-JP');
 
 export const fmtDate = (iso: string) => (iso ? iso.slice(5, 16).replace('T', ' ') : '');
