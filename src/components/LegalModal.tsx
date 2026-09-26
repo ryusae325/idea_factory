@@ -66,7 +66,7 @@ function H({ children }: { children: React.ReactNode }) {
 function Terms() {
   return (
     <div className="space-y-1.5">
-      <p>本規約（以下「本規約」）は、ヒラメキ工房（以下「本サービス」）の利用条件を定めるものです。本サービスを利用するすべての方（以下「利用者」）は、本サービスを利用した時点で本規約に同意したものとみなされます。</p>
+      <p>本規約（以下「本規約」）は、PlanMo（以下「本サービス」）の利用条件を定めるものです。本サービスを利用するすべての方（以下「利用者」）は、本サービスを利用した時点で本規約に同意したものとみなされます。</p>
 
       <H>第1条（定義）</H>
       <p>
@@ -175,7 +175,7 @@ function Privacy() {
     <div className="space-y-1.5">
       <H>1. 事業者情報</H>
       <p>
-        本サービス「ヒラメキ工房」の個人情報保護管理者は {OPERATOR_NAME} です。お問い合わせは {OPERATOR_EMAIL} までお願いします。
+        本サービス「PlanMo」の個人情報保護管理者は {OPERATOR_NAME} です。お問い合わせは {OPERATOR_EMAIL} までお願いします。
       </p>
 
       <H>2. 取得する情報</H>

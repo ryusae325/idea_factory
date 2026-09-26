@@ -213,7 +213,7 @@ export default function App() {
         )}
 
         <footer className="stitch mt-16 rounded-xl bg-[#fff9ec]/70 px-4 pt-6 pb-2 text-center text-xs text-stone-500 backdrop-blur-sm">
-          <p>🪵 © ヒラメキ工房 — 考案者と3Dモデラーをつなぐ共創プラットフォーム</p>
+          <p>🪵 © PlanMo — 考案者と3Dモデラーをつなぐ共創プラットフォーム</p>
           <button
             onClick={() => setShowLegal(true)}
             className="mt-2 font-semibold text-orange-600 transition hover:text-orange-800 hover:underline"
