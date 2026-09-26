@@ -162,7 +162,7 @@ export default function CreatorTab({ profile, onCreated }: Props) {
 
         <div className="mt-3 grid grid-cols-2 gap-3">
           <div>
-            <label className="block text-xs font-bold text-stone-600">考案者 分配率 (%)</label>
+            <label className="block text-xs font-bold text-stone-600">プランナー 分配率 (%)</label>
             <input
               type="number"
               min={0}

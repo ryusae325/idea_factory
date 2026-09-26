@@ -1,7 +1,7 @@
 {
   "name": "PlanMo",
   "short_name": "PlanMo",
-  "description": "考案者と3Dモデラーをつなぐ共創プラットフォーム",
+  "description": "プランナーと3Dモデラーをつなぐ共創プラットフォーム",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#f7efde",

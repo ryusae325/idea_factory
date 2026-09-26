@@ -10,7 +10,7 @@ interface Props {
 }
 
 const ROLES: { value: Role; desc: string }[] = [
-  { value: '考案者', desc: 'アイデアを投稿してモデラーを募集する' },
+  { value: 'プランナー', desc: 'アイデアを投稿してモデラーを募集する' },
   { value: 'モデラー', desc: 'アイデアを引き受けて3Dデータ化する' },
   { value: '購入者', desc: '完成した商品を購入する' },
 ];

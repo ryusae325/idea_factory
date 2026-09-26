@@ -1,4 +1,4 @@
-export type Role = '考案者' | 'モデラー' | '購入者' | '運営者';
+export type Role = 'プランナー' | 'モデラー' | '購入者' | '運営者';
 
 export interface Profile {
   id: string;

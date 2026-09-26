@@ -241,7 +241,7 @@ export async function setIdeaStl(ideaId: number, path: string): Promise<string> 
   return (data as string) ?? '設定しました';
 }
 
-/** 購入者（または考案者・モデラー・管理者）が署名付きURLを取得。権限がなければエラー */
+/** 購入者（またはプランナー・モデラー・管理者）が署名付きURLを取得。権限がなければエラー */
 export async function getStlDownloadUrl(path: string): Promise<string> {
   const { data, error } = await supabase.storage.from('models').createSignedUrl(path, 300);
   if (error || !data?.signedUrl) {

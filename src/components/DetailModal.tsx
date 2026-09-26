@@ -142,10 +142,10 @@ export default function DetailModal({ ideaId, profile, onClose, onChanged }: Pro
       <dl className="mt-4 space-y-1.5 text-[13px]">
         <Row label="ステータス" value={idea.status} accent />
         <Row
-          label="考案者 / モデラー"
+          label="プランナー / モデラー"
           value={`${name(idea.creator) || '不明'} ／ ${name(idea.modeler) || '未定'}`}
         />
-        <Row label="収益分配" value={`考案者 ${idea.creator_share}% / モデラー ${idea.modeler_share}%`} />
+        <Row label="収益分配" value={`プランナー ${idea.creator_share}% / モデラー ${idea.modeler_share}%`} />
         <Row
           label="価格"
           value={`物理プリント ${fmtYen(idea.price_physical)}円 ／ STLデータ ${fmtYen(idea.price_digital)}円`}
