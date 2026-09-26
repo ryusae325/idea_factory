@@ -1,6 +1,7 @@
 import type { Profile } from '../lib/types';
 import { fmtYen } from '../lib/types';
 import { supabase, auth } from '../lib/supabase';
+import NotificationBell from './NotificationBell';
 
 interface Props {
   profile: Profile | null;
@@ -22,6 +23,7 @@ export default function Header({ profile, loggedIn }: Props) {
         </div>
 
         <div className="flex items-center gap-2.5">
+          {loggedIn && profile && <NotificationBell profile={profile} />}
           {loggedIn && profile && (
             <>
               <span className="hidden items-center gap-1.5 rounded-full bg-[#5f4530]/70 px-3 py-1.5 text-xs font-semibold text-[#f0e2c4] ring-1 ring-[#8a6a4a] sm:inline-flex">

@@ -1,10 +1,10 @@
 import { useCallback, useEffect, useState } from 'react';
-import type { ExchangeRequest, Order } from '../lib/types';
+import type { Announcement, ExchangeRequest, Order } from '../lib/types';
 import { fmtDate, fmtYen } from '../lib/types';
-import { fetchAllExchangeRequests, fetchAllOrders, processExchange, updateShipping, recordPartnerOrder, getStlDownloadUrl } from '../lib/data';
+import { fetchAllExchangeRequests, fetchAllOrders, processExchange, updateShipping, recordPartnerOrder, getStlDownloadUrl, fetchAnnouncements, createAnnouncement, deactivateAnnouncement } from '../lib/data';
 import { toast } from '../lib/toast';
 
-type Section = 'exchange' | 'fulfillment' | 'orders';
+type Section = 'exchange' | 'fulfillment' | 'orders' | 'announcements';
 
 export default function AdminTab({ onChanged }: { onChanged: () => void }) {
   const [requests, setRequests] = useState<ExchangeRequest[]>([]);
@@ -14,11 +14,16 @@ export default function AdminTab({ onChanged }: { onChanged: () => void }) {
   const [partners, setPartners] = useState<Record<number, string>>({});
   const [showAll, setShowAll] = useState(false);
   const [section, setSection] = useState<Section>('exchange');
+  const [annList, setAnnList] = useState<Announcement[]>([]);
+  const [annTitle, setAnnTitle] = useState('');
+  const [annBody, setAnnBody] = useState('');
+  const [annBusy, setAnnBusy] = useState(false);
 
   const reload = useCallback(async () => {
-    const [r, o] = await Promise.all([fetchAllExchangeRequests(), fetchAllOrders()]);
+    const [r, o, a] = await Promise.all([fetchAllExchangeRequests(), fetchAllOrders(), fetchAnnouncements()]);
     setRequests(r);
     setOrders(o);
+    setAnnList(a);
   }, []);
 
   useEffect(() => {
@@ -86,6 +91,32 @@ export default function AdminTab({ onChanged }: { onChanged: () => void }) {
     }
   };
 
+  const postAnnouncement = async () => {
+    if (!annTitle.trim() || !annBody.trim()) return toast('タイトルと本文を入力してください', 'error');
+    setAnnBusy(true);
+    try {
+      await createAnnouncement(annTitle.trim(), annBody.trim());
+      toast('お知らせを投稿しました');
+      setAnnTitle('');
+      setAnnBody('');
+      await reload();
+    } catch (e) {
+      toast((e as Error).message, 'error');
+    } finally {
+      setAnnBusy(false);
+    }
+  };
+
+  const removeAnnouncement = async (id: number) => {
+    try {
+      await deactivateAnnouncement(id);
+      toast('お知らせを削除しました');
+      await reload();
+    } catch (e) {
+      toast((e as Error).message, 'error');
+    }
+  };
+
   const physicalOrders = orders.filter((o) => o.item_type === 'physical');
   const pendingPhysical = physicalOrders.filter((o) => o.partner_status !== '発注済');
   const toShip = physicalOrders.filter((o) => o.shipping_status !== '発送済み');
@@ -103,6 +134,7 @@ export default function AdminTab({ onChanged }: { onChanged: () => void }) {
     { key: 'exchange', label: '🎁 交換申請', badge: pendingRequests.length },
     { key: 'fulfillment', label: '🏭 製造・発送', badge: pendingPhysical.length },
     { key: 'orders', label: '📦 注文一覧', badge: 0 },
+    { key: 'announcements', label: '📢 お知らせ', badge: 0 },
   ];
 
   return (
@@ -373,6 +405,60 @@ export default function AdminTab({ onChanged }: { onChanged: () => void }) {
                   ))}
                 </tbody>
               </table>
+            </div>
+          )}
+        </section>
+      )}
+      {section === 'announcements' && (
+        <section className="space-y-4">
+          <div className="rounded-xl bg-[#fffdf8] p-5 ring-1 ring-stone-200">
+            <p className="text-sm font-bold text-stone-800">📢 運営からのお知らせを投稿</p>
+            <p className="mt-1 text-[11px] text-stone-500">
+              投稿した内容は全ユーザーの 🔔 通知パネルに表示されます（更新情報・メンテナンス告知などにご利用ください）。
+            </p>
+            <div className="mt-3 space-y-2.5">
+              <input
+                value={annTitle}
+                onChange={(e) => setAnnTitle(e.target.value)}
+                placeholder="タイトル（例: サービス修正のお知らせ）"
+                className="w-full rounded-lg border border-stone-300 px-3 py-2 text-sm outline-none focus:border-orange-500"
+              />
+              <textarea
+                value={annBody}
+                onChange={(e) => setAnnBody(e.target.value)}
+                placeholder="本文・詳細"
+                rows={4}
+                className="w-full rounded-lg border border-stone-300 px-3 py-2 text-sm outline-none focus:border-orange-500"
+              />
+              <button
+                onClick={postAnnouncement}
+                disabled={annBusy}
+                className="rounded-lg bg-orange-600 px-4 py-2 text-xs font-bold text-white transition hover:bg-orange-700 disabled:opacity-50"
+              >
+                {annBusy ? '投稿中…' : '投稿する'}
+              </button>
+            </div>
+          </div>
+
+          {annList.length === 0 ? (
+            <Empty text="投稿済みのお知らせはありません。" />
+          ) : (
+            <div className="space-y-2">
+              {annList.map((a) => (
+                <div key={a.id} className="flex items-start justify-between gap-3 rounded-xl bg-[#fffdf8] p-4 ring-1 ring-stone-200">
+                  <div className="min-w-0">
+                    <p className="text-[10px] font-semibold text-stone-400">{fmtDate(a.created_at)}</p>
+                    <p className="text-xs font-bold text-stone-800">{a.title}</p>
+                    <p className="mt-0.5 whitespace-pre-line text-[11px] leading-relaxed text-stone-600">{a.body}</p>
+                  </div>
+                  <button
+                    onClick={() => removeAnnouncement(a.id)}
+                    className="shrink-0 rounded-lg bg-stone-100 px-2.5 py-1.5 text-[10px] font-semibold text-stone-500 ring-1 ring-stone-200 transition hover:bg-red-50 hover:text-red-600"
+                  >
+                    🗑 削除
+                  </button>
+                </div>
+              ))}
             </div>
           )}
         </section>

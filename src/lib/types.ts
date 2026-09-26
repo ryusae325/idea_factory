@@ -91,6 +91,14 @@ export interface BalanceEntry {
   created_at: string;
 }
 
+export interface Announcement {
+  id: number;
+  title: string;
+  body: string;
+  is_active: boolean;
+  created_at: string;
+}
+
 export const fmtYen = (n: number) => n.toLocaleString('ja-JP');
 
 export const fmtDate = (iso: string) => (iso ? iso.slice(5, 16).replace('T', ' ') : '');

@@ -1,5 +1,5 @@
 import { supabase, authFetch } from './supabase';
-import type { Comment, ExchangeRequest, Idea, Order, BalanceEntry, Profile } from './types';
+import type { Comment, ExchangeRequest, Idea, Order, BalanceEntry, Profile, Announcement } from './types';
 
 export const IDEA_SELECT = `*, creator:profiles!ideas_creator_id_fkey(username,display_name), modeler:profiles!ideas_modeler_id_fkey(username,display_name)`;
 
@@ -241,6 +241,39 @@ export async function uploadImage(userId: string, file: File): Promise<string> {
   if (error) throw new Error(error.message);
   const { data } = supabase.storage.from('uploads').getPublicUrl(path);
   return data.publicUrl;
+}
+
+// ---------- お知らせ（🔔通知） ----------
+
+export async function fetchAnnouncements(): Promise<Announcement[]> {
+  const { data, error } = await supabase
+    .from('announcements')
+    .select('*')
+    .eq('is_active', true)
+    .order('id', { ascending: false });
+  if (error) throw new Error(error.message);
+  return (data ?? []) as unknown as Announcement[];
+}
+
+export async function createAnnouncement(title: string, body: string) {
+  const { error } = await supabase.from('announcements').insert({ title, body });
+  if (error) throw new Error(error.message);
+}
+
+export async function deactivateAnnouncement(id: number) {
+  const { error } = await supabase.from('announcements').update({ is_active: false }).eq('id', id);
+  if (error) throw new Error(error.message);
+}
+
+/** 累計売上分配額（確定申告通知の判定用。「売上分配」レコードの合計） */
+export async function fetchLifetimeEarnings(userId: string): Promise<number> {
+  const { data, error } = await supabase
+    .from('balance_history')
+    .select('amount')
+    .eq('user_id', userId)
+    .eq('type', '売上分配');
+  if (error) throw new Error(error.message);
+  return (data ?? []).reduce((sum, r) => sum + ((r as { amount: number }).amount ?? 0), 0);
 }
 
 // ---------- STLファイル管理 ----------
