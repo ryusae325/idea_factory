@@ -156,21 +156,23 @@ export default function App() {
             </nav>
 
             {tab === 'creator' && (
-              <div className="space-y-6">
-                {loggedIn && profile ? (
-                  <CreatorTab profile={profile} onCreated={refreshIdeas} />
-                ) : (
-                  <div className="grid place-items-center rounded-2xl border border-dashed border-orange-200 bg-orange-50/50 py-16 text-center">
-                    <p className="text-sm font-semibold text-orange-900">ログインしてアイデアを投稿しましょう</p>
-                    <button
-                      onClick={() => auth.openSignInModal()}
-                      className="mt-4 rounded-xl bg-orange-600 px-6 py-2.5 text-sm font-bold text-white shadow-md shadow-orange-500/30 transition hover:bg-orange-700"
-                    >
-                      ログイン / 登録
-                    </button>
-                  </div>
-                )}
-                <section>
+              <div className="grid items-start gap-6 lg:grid-cols-[400px_1fr]">
+                <div className="space-y-3">
+                  {loggedIn && profile ? (
+                    <CreatorTab profile={profile} onCreated={refreshIdeas} />
+                  ) : (
+                    <div className="grid place-items-center rounded-2xl border border-dashed border-orange-200 bg-orange-50/50 py-16 text-center">
+                      <p className="text-sm font-semibold text-orange-900">ログインしてアイデアを投稿しましょう</p>
+                      <button
+                        onClick={() => auth.openSignInModal()}
+                        className="mt-4 rounded-xl bg-orange-600 px-6 py-2.5 text-sm font-bold text-white shadow-md shadow-orange-500/30 transition hover:bg-orange-700"
+                      >
+                        ログイン / 登録
+                      </button>
+                    </div>
+                  )}
+                </div>
+                <section className="min-w-0">
                   <h3 className="mb-3 text-sm font-bold text-stone-800">📌 モデラー募集中一覧</h3>
                   <IdeaGrid ideas={recruiting} {...gridProps} emptyMessage="募集中のアイデアはまだありません。" />
                 </section>

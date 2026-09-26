@@ -98,7 +98,7 @@ export default function CreatorTab({ profile, onCreated }: Props) {
   };
 
   return (
-    <div className="grid gap-6 lg:grid-cols-[380px_1fr]">
+    <div className="grid gap-3">
       <form onSubmit={submit} className="rounded-2xl border border-stone-200 bg-[#fffdf8] p-5 shadow-sm">
         <h3 className="text-base font-bold text-stone-900">➕ 新しいアイデアを投稿</h3>
 
@@ -278,37 +278,39 @@ export default function CreatorTab({ profile, onCreated }: Props) {
         </button>
       </form>
 
-      <div className="rounded-2xl border border-dashed border-orange-200 bg-orange-50/50 p-6">
-        <h3 className="text-sm font-bold text-orange-900">💡 アイデア投稿の流れ</h3>
-        <ol className="mt-3 space-y-3 text-[13px] leading-relaxed text-orange-900/80">
-          <li className="flex gap-2.5">
+      <details className="group rounded-xl border border-stone-200 bg-[#fffdf8] open:shadow-sm">
+        <summary className="flex cursor-pointer list-none items-center justify-between px-4 py-2.5 text-[12px] font-bold text-stone-600 transition hover:text-stone-900">
+          <span>💡 アイデア投稿の流れ</span>
+          <span className="text-[10px] font-medium text-stone-400 group-open:hidden">開く ▾</span>
+          <span className="hidden text-[10px] font-medium text-stone-400 group-open:inline">閉じる ▴</span>
+        </summary>
+        <ol className="space-y-2 border-t border-stone-100 px-4 pb-3.5 pt-3 text-[12px] leading-relaxed text-stone-600">
+          <li className="flex gap-2">
             <Step n={1} />
             <span>
-              <b>アイデアを投稿</b> — タイトル・仕様・希望価格・収益分配率を設定。
-              正面・横・上面など角度違いの画像を複数枚添えると、モデラーに形が伝わりやすくなります。
+              <b>アイデアを投稿</b> — 画像は角度違いを複数枚添えるとモデラーに伝わりやすいです。
             </span>
           </li>
-          <li className="flex gap-2.5">
+          <li className="flex gap-2">
             <Step n={2} />
             <span>
-              <b>モデラーが引き受け</b> — 3Dモデラーが案件を引き受け、制作が始まります。
-              コメント欄で仕様の相談ができます。
+              <b>モデラーが引き受け</b> — コメント欄で仕様を相談しながら制作が進みます。
             </span>
           </li>
-          <li className="flex gap-2.5">
+          <li className="flex gap-2">
             <Step n={3} />
             <span>
-              <b>3Dデータ完成 → 販売開始</b> — 商品カタログに掲載され、物理プリント品とSTLデータが購入可能に。
+              <b>3Dデータ完成 → 販売開始</b> — プリント品・STLデータが商品カタログに掲載されます。
             </span>
           </li>
-          <li className="flex gap-2.5">
+          <li className="flex gap-2">
             <Step n={4} />
             <span>
-              <b>売上を自動分配</b> — 購入ごとに設定した分配率で売上残高に加算され、デジタルギフトへ交換できます。
+              <b>売上を自動分配</b> — 設定した分配率で残高に加算、ギフトへ交換できます。
             </span>
           </li>
         </ol>
-      </div>
+      </details>
     </div>
   );
 }
