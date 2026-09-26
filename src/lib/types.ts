@@ -39,6 +39,9 @@ export interface Idea {
   price_physical: number;
   price_digital: number;
   mfg_cost: number;
+  size_w: number;
+  size_d: number;
+  size_h: number;
   total_sales: number;
   platform_fee: number;
   creator_reward: number;

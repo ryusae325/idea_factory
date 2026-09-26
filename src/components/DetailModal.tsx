@@ -150,6 +150,12 @@ export default function DetailModal({ ideaId, profile, onClose, onChanged }: Pro
           label="価格"
           value={`物理プリント ${fmtYen(idea.price_physical)}円 ／ STLデータ ${fmtYen(idea.price_digital)}円`}
         />
+        {(idea.size_w > 0 || idea.size_d > 0 || idea.size_h > 0) && (
+          <Row
+            label="サイズ"
+            value={`${idea.size_w} × ${idea.size_d} × ${idea.size_h} mm（幅 × 奥行き × 高さ）`}
+          />
+        )}
       </dl>
 
       <div className="mt-3 rounded-xl bg-stone-50 p-3.5 ring-1 ring-stone-200">

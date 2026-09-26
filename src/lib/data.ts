@@ -54,9 +54,31 @@ export async function createIdea(values: {
   price_physical: number;
   price_digital: number;
   mfg_cost: number;
+  size_w: number;
+  size_d: number;
+  size_h: number;
 }) {
   const { error } = await supabase.from('ideas').insert(values);
   if (error) throw new Error(error.message);
+}
+
+/** サイズ（最長辺）から段階的な最低プリント価格を判定 */
+export function tierMinPrice(w: number, d: number, h: number): number {
+  const maxSide = Math.max(w || 0, d || 0, h || 0);
+  if (maxSide <= 60) return 4000;
+  if (maxSide <= 120) return 7000;
+  if (maxSide <= 200) return 12000;
+  return 20000;
+}
+
+/** サイズ階級の表示名 */
+export function sizeTierLabel(w: number, d: number, h: number): string {
+  const maxSide = Math.max(w || 0, d || 0, h || 0);
+  if (maxSide <= 0) return '未入力（S相当）';
+  if (maxSide <= 60) return `S（${maxSide}mm・最低¥4,000）`;
+  if (maxSide <= 120) return `M（${maxSide}mm・最低¥7,000）`;
+  if (maxSide <= 200) return `L（${maxSide}mm・最低¥12,000）`;
+  return `XL（${maxSide}mm・最低¥20,000）`;
 }
 
 export async function deleteIdea(id: number) {

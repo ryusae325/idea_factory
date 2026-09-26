@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import type { Profile } from '../lib/types';
-import { createIdea, uploadImage } from '../lib/data';
+import { createIdea, uploadImage, tierMinPrice, sizeTierLabel } from '../lib/data';
 import { authFetch } from '../lib/supabase';
 import { toast } from '../lib/toast';
 
@@ -14,7 +14,10 @@ export default function CreatorTab({ profile, onCreated }: Props) {
   const [desc, setDesc] = useState('');
   const [creatorShare, setCreatorShare] = useState(50);
   const [mfgCost, setMfgCost] = useState(0);
-  const [pricePhysical, setPricePhysical] = useState(2500);
+  const [sizeW, setSizeW] = useState(0);
+  const [sizeD, setSizeD] = useState(0);
+  const [sizeH, setSizeH] = useState(0);
+  const [pricePhysical, setPricePhysical] = useState(4000);
   const [priceDigital, setPriceDigital] = useState(500);
   const [file, setFile] = useState<File | null>(null);
   const [busy, setBusy] = useState(false);
@@ -26,7 +29,22 @@ export default function CreatorTab({ profile, onCreated }: Props) {
   } | null>(null);
 
   const modelerShare = 100 - creatorShare;
-  const minPhysicalPrice = Math.max(0, mfgCost) * 2;
+  const tierMin = tierMinPrice(sizeW, sizeD, sizeH);
+  const minPhysicalPrice = Math.max(tierMin, mfgCost * 4);
+
+  /** サイズ変更時、最低価格を下回っていたら自動的に引き上げる */
+  const updateSize = (
+    setter: (v: number) => void,
+  ) => (e: React.ChangeEvent<HTMLInputElement>) => {
+    const v = Math.max(0, Number(e.target.value) || 0);
+    setter(v);
+    const next = Math.max(tierMinPrice(
+      e.target.name === 'w' ? v : sizeW,
+      e.target.name === 'd' ? v : sizeD,
+      e.target.name === 'h' ? v : sizeH,
+    ), mfgCost * 4);
+    setPricePhysical((p) => (p < next ? next : p));
+  };
 
   const checkInfringement = async () => {
     if (!title.trim()) return toast('アイデアのタイトルを入力してからチェックしてください', 'error');
@@ -60,7 +78,7 @@ export default function CreatorTab({ profile, onCreated }: Props) {
     if (!title.trim()) return toast('タイトルを入力してください', 'error');
     if (pricePhysical < minPhysicalPrice) {
       return toast(
-        `物理プリント価格は JLC3DP 見積（${mfgCost}円）の2倍以上（${minPhysicalPrice}円以上）に設定してください`,
+        `物理プリント価格は最低 ${minPhysicalPrice}円（サイズ階級またはJLC3DP見積×4に基づく）以上に設定してください`,
         'error',
       );
     }
@@ -80,11 +98,18 @@ export default function CreatorTab({ profile, onCreated }: Props) {
         price_physical: Math.max(0, pricePhysical),
         price_digital: Math.max(0, priceDigital),
         mfg_cost: Math.max(0, mfgCost),
+        size_w: Math.max(0, sizeW),
+        size_d: Math.max(0, sizeD),
+        size_h: Math.max(0, sizeH),
       });
       toast('アイデアを投稿しました！');
       setTitle('');
       setDesc('');
       setMfgCost(0);
+      setSizeW(0);
+      setSizeD(0);
+      setSizeH(0);
+      setPricePhysical(4000);
       setFile(null);
       onCreated();
     } catch (err) {
@@ -116,6 +141,52 @@ export default function CreatorTab({ profile, onCreated }: Props) {
           placeholder="商品の詳細やデザインの希望、サイズ感など"
           className="mt-1 w-full resize-none rounded-lg border border-stone-300 px-3 py-2.5 text-sm outline-none transition focus:border-orange-500 focus:ring-2 focus:ring-orange-100"
         />
+
+        <label className="mt-3 block text-xs font-bold text-stone-600">
+          サイズ W(幅) × D(奥行き) × H(高さ) (mm)
+        </label>
+        <div className="mt-1 grid grid-cols-3 gap-2">
+          <div className="relative">
+            <input
+              type="number"
+              min={0}
+              name="w"
+              value={sizeW || ''}
+              placeholder="W"
+              onChange={updateSize(setSizeW)}
+              className="w-full rounded-lg border border-stone-300 px-3 py-2 pr-8 text-sm outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-100"
+            />
+            <span className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-[10px] text-stone-400">mm</span>
+          </div>
+          <div className="relative">
+            <input
+              type="number"
+              min={0}
+              name="d"
+              value={sizeD || ''}
+              placeholder="D"
+              onChange={updateSize(setSizeD)}
+              className="w-full rounded-lg border border-stone-300 px-3 py-2 pr-8 text-sm outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-100"
+            />
+            <span className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-[10px] text-stone-400">mm</span>
+          </div>
+          <div className="relative">
+            <input
+              type="number"
+              min={0}
+              name="h"
+              value={sizeH || ''}
+              placeholder="H"
+              onChange={updateSize(setSizeH)}
+              className="w-full rounded-lg border border-stone-300 px-3 py-2 pr-8 text-sm outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-100"
+            />
+            <span className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-[10px] text-stone-400">mm</span>
+          </div>
+        </div>
+        <p className="mt-1.5 text-[11px] text-stone-500">
+          サイズ階級: <b className="text-stone-700">{sizeTierLabel(sizeW, sizeD, sizeH)}</b>
+          <span className="ml-1 text-stone-400">— S:〜60mm / M:〜120mm / L:〜200mm / XL:200mm超</span>
+        </p>
 
         <button
           type="button"
@@ -199,12 +270,17 @@ export default function CreatorTab({ profile, onCreated }: Props) {
               type="number"
               min={0}
               value={mfgCost || ''}
-              placeholder="例: 800（未入力なら価格チェックなし）"
-              onChange={(e) => setMfgCost(Math.max(0, Number(e.target.value) || 0))}
+              placeholder="例: 800（サイズ階級より高い最低価格が必要な場合のみ）"
+              onChange={(e) => {
+                const v = Math.max(0, Number(e.target.value) || 0);
+                setMfgCost(v);
+                const next = Math.max(tierMin, v * 4);
+                setPricePhysical((p) => (p < next ? next : p));
+              }}
               className="mt-1 w-full rounded-lg border border-stone-300 px-3 py-2 text-sm outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-100"
             />
             <p className="mt-1 text-[11px] text-stone-500">
-              JLC3DP で「Instant Quote」した製造＋配送の合計金額を入力してください。入力すると赤字防止のため価格が自動チェックされます。
+              JLC3DP で「Instant Quote」した製造＋配送の合計金額を入力してください。入力すると「見積 × 4」を最低価格として自動チェックします（通常はサイズ階級で十分です）。
             </p>
           </div>
           <div>
@@ -215,22 +291,20 @@ export default function CreatorTab({ profile, onCreated }: Props) {
               value={pricePhysical}
               onChange={(e) => setPricePhysical(Number(e.target.value))}
               className={`mt-1 w-full rounded-lg border px-3 py-2 text-sm outline-none focus:ring-2 ${
-                mfgCost > 0 && pricePhysical < minPhysicalPrice
+                pricePhysical < minPhysicalPrice
                   ? 'border-rose-400 bg-rose-50 focus:border-rose-500 focus:ring-rose-100'
                   : 'border-stone-300 focus:border-orange-500 focus:ring-orange-100'
               }`}
             />
-            {mfgCost > 0 && (
-              <p
-                className={`mt-1 text-[11px] font-semibold ${
-                  pricePhysical < minPhysicalPrice ? 'text-rose-600' : 'text-emerald-600'
-                }`}
-              >
-                {pricePhysical < minPhysicalPrice
-                  ? `⚠️ 最低価格は ${minPhysicalPrice}円（見積の2倍）です`
-                  : `✓ 最低価格 ${minPhysicalPrice}円 を満たしています`}
-              </p>
-            )}
+            <p
+              className={`mt-1 text-[11px] font-semibold ${
+                pricePhysical < minPhysicalPrice ? 'text-rose-600' : 'text-emerald-600'
+              }`}
+            >
+              {pricePhysical < minPhysicalPrice
+                ? `⚠️ 最低価格は ${minPhysicalPrice}円（サイズ階級: ${sizeTierLabel(sizeW, sizeD, sizeH)}）です`
+                : `✓ 最低価格 ${minPhysicalPrice}円 を満たしています`}
+            </p>
           </div>
           <div>
             <label className="block text-xs font-bold text-stone-600">STLデータ 価格 (円)</label>
