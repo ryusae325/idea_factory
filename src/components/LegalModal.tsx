@@ -9,6 +9,9 @@ const TABS: { id: LegalTab; label: string }[] = [
 ];
 
 const LAST_UPDATED = '2026年9月26日';
+const OPERATOR_NAME = '須田 竜冴';
+const OPERATOR_ADDRESS = '埼玉県三郷市早稲田7-21-27';
+const OPERATOR_EMAIL = 'suda.ryuga.325@gmail.com';
 
 export default function LegalModal({ onClose }: { onClose: () => void }) {
   const [tab, setTab] = useState<LegalTab>('terms');
@@ -57,14 +60,6 @@ function H({ children }: { children: React.ReactNode }) {
       <span className="inline-block h-4 w-1 rounded-full bg-orange-400" aria-hidden />
       {children}
     </h4>
-  );
-}
-
-function Pending() {
-  return (
-    <div className="rounded-xl bg-amber-50 px-4 py-3 text-[11px] leading-relaxed text-amber-800 ring-1 ring-amber-200">
-      ⚠️ 【 】内の運営者情報は現在準備中です。サービス公開前に必ずご入力ください。
-    </div>
   );
 }
 
@@ -177,10 +172,9 @@ function Terms() {
 function Privacy() {
   return (
     <div className="space-y-1.5">
-      <Pending />
       <H>1. 事業者情報</H>
       <p>
-        本サービス「ヒラメキ工房」の個人情報保護管理者は【運営者名】です。お問い合わせは【連絡先メールアドレス】までお願いします。
+        本サービス「ヒラメキ工房」の個人情報保護管理者は {OPERATOR_NAME} です。お問い合わせは {OPERATOR_EMAIL} までお願いします。
       </p>
 
       <H>2. 取得する情報</H>
@@ -215,7 +209,7 @@ function Privacy() {
 
       <H>7. 開示・訂正・削除等の請求</H>
       <p>
-        利用者は、ご自身の個人情報の開示・訂正・利用停止・削除を求めることができます。【連絡先メールアドレス】までご連絡ください。本人確認のうえ対応します。
+        利用者は、ご自身の個人情報の開示・訂正・利用停止・削除を求めることができます。{OPERATOR_EMAIL} までご連絡ください。本人確認のうえ対応します。
       </p>
 
       <H>8. アクセス解析</H>
@@ -230,13 +224,12 @@ function Privacy() {
 function Act() {
   return (
     <div className="space-y-2">
-      <Pending />
       <table className="w-full text-left text-[13px]">
         <tbody>
           {[
-            ['販売業者', '【運営者名／屋号】'],
-            ['所在地', '【住所】'],
-            ['連絡先', '【メールアドレス】\n（対応は平日【9:00〜18:00】とさせていただきます）'],
+            ['販売業者', OPERATOR_NAME],
+            ['所在地', OPERATOR_ADDRESS],
+            ['連絡先', OPERATOR_EMAIL + '\n（対応は平日【9:00〜18:00】とさせていただきます）'],
             ['販売価格', '各商品ページに表示された価格（消費税込み）'],
             ['販売数量', '商品ごとに在庫・数量を定める場合があります'],
             ['支払方法', 'クレジットカード（Stripe 経由の外部決済）\n※本サービスはカード情報を保持しません'],
