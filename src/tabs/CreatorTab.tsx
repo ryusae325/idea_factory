@@ -117,25 +117,25 @@ export default function CreatorTab({ profile, onCreated }: Props) {
 
   return (
     <div className="grid gap-6 lg:grid-cols-[380px_1fr]">
-      <form onSubmit={submit} className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-        <h3 className="text-base font-bold text-slate-900">➕ 新しいアイデアを投稿</h3>
+      <form onSubmit={submit} className="rounded-2xl border border-stone-200 bg-[#fffdf8] p-5 shadow-sm">
+        <h3 className="text-base font-bold text-stone-900">➕ 新しいアイデアを投稿</h3>
 
-        <label className="mt-4 block text-xs font-bold text-slate-600">タイトル *</label>
+        <label className="mt-4 block text-xs font-bold text-stone-600">タイトル *</label>
         <input
           value={title}
           onChange={(e) => setTitle(e.target.value)}
           required
           placeholder="例: 卓上ミニハンディファンスタンド"
-          className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2.5 text-sm outline-none transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
+          className="mt-1 w-full rounded-lg border border-stone-300 px-3 py-2.5 text-sm outline-none transition focus:border-orange-500 focus:ring-2 focus:ring-orange-100"
         />
 
-        <label className="mt-3 block text-xs font-bold text-slate-600">詳細説明・仕様</label>
+        <label className="mt-3 block text-xs font-bold text-stone-600">詳細説明・仕様</label>
         <textarea
           value={desc}
           onChange={(e) => setDesc(e.target.value)}
           rows={4}
           placeholder="商品の詳細やデザインの希望、サイズ感など"
-          className="mt-1 w-full resize-none rounded-lg border border-slate-300 px-3 py-2.5 text-sm outline-none transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
+          className="mt-1 w-full resize-none rounded-lg border border-stone-300 px-3 py-2.5 text-sm outline-none transition focus:border-orange-500 focus:ring-2 focus:ring-orange-100"
         />
 
         <div className="mt-3 flex gap-2">
@@ -151,7 +151,7 @@ export default function CreatorTab({ profile, onCreated }: Props) {
             type="button"
             onClick={generateAIImage}
             disabled={aiBusy}
-            className="flex-1 rounded-lg bg-violet-50 px-3 py-2 text-[11px] font-bold text-violet-700 ring-1 ring-violet-200 transition hover:bg-violet-100 disabled:opacity-50"
+            className="flex-1 rounded-lg bg-amber-50 px-3 py-2 text-[11px] font-bold text-amber-700 ring-1 ring-amber-200 transition hover:bg-amber-100 disabled:opacity-50"
           >
             {aiBusy ? '🤖 生成中…' : '✨ AIでイメージ画像を作成'}
           </button>
@@ -186,98 +186,98 @@ export default function CreatorTab({ profile, onCreated }: Props) {
               </span>
             </p>
             {checkResult.summary && (
-              <p className="mt-1 text-[12px] leading-relaxed text-slate-700">{checkResult.summary}</p>
+              <p className="mt-1 text-[12px] leading-relaxed text-stone-700">{checkResult.summary}</p>
             )}
             {checkResult.points.length > 0 && (
-              <ul className="mt-1.5 list-disc space-y-1 pl-4 text-[11px] leading-relaxed text-slate-600">
+              <ul className="mt-1.5 list-disc space-y-1 pl-4 text-[11px] leading-relaxed text-stone-600">
                 {checkResult.points.map((p, i) => (
                   <li key={i}>{p}</li>
                 ))}
               </ul>
             )}
-            <p className="mt-1.5 text-[10px] text-slate-400">
+            <p className="mt-1.5 text-[10px] text-stone-400">
               ※AIによる参考評価です。法的判断の代わりにはなりません。
             </p>
           </div>
         )}
 
         {aiBusy && (
-          <p className="mt-2 text-[11px] font-medium text-violet-600">
+          <p className="mt-2 text-[11px] font-medium text-amber-600">
             AIがモデラー向けイメージ画像を生成中です…（10秒ほどかかります）
           </p>
         )}
         {aiUrl && (
-          <div className="mt-2 rounded-xl border border-violet-200 bg-violet-50 p-3">
-            <p className="text-[10px] font-bold text-violet-700">✨ AI生成イメージ（投稿時に保存されます）</p>
+          <div className="mt-2 rounded-xl border border-amber-200 bg-amber-50 p-3">
+            <p className="text-[10px] font-bold text-amber-700">✨ AI生成イメージ（投稿時に保存されます）</p>
             <img src={aiUrl} alt="AI生成イメージ" className="mt-1.5 h-32 w-32 rounded-lg object-cover" />
           </div>
         )}
 
         <div className="mt-3 grid grid-cols-2 gap-3">
           <div>
-            <label className="block text-xs font-bold text-slate-600">考案者 分配率 (%)</label>
+            <label className="block text-xs font-bold text-stone-600">考案者 分配率 (%)</label>
             <input
               type="number"
               min={0}
               max={100}
               value={creatorShare}
               onChange={(e) => setCreatorShare(Math.min(100, Math.max(0, Number(e.target.value))))}
-              className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
+              className="mt-1 w-full rounded-lg border border-stone-300 px-3 py-2 text-sm outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-100"
             />
           </div>
           <div>
-            <label className="block text-xs font-bold text-slate-600">モデラー 分配率 (%)</label>
+            <label className="block text-xs font-bold text-stone-600">モデラー 分配率 (%)</label>
             <input
               type="number"
               value={modelerShare}
               readOnly
-              className="mt-1 w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-500"
+              className="mt-1 w-full rounded-lg border border-stone-200 bg-stone-50 px-3 py-2 text-sm text-stone-500"
             />
           </div>
           <div>
-            <label className="block text-xs font-bold text-slate-600">プリント品 価格 (円)</label>
+            <label className="block text-xs font-bold text-stone-600">プリント品 価格 (円)</label>
             <input
               type="number"
               min={0}
               value={pricePhysical}
               onChange={(e) => setPricePhysical(Number(e.target.value))}
-              className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
+              className="mt-1 w-full rounded-lg border border-stone-300 px-3 py-2 text-sm outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-100"
             />
           </div>
           <div>
-            <label className="block text-xs font-bold text-slate-600">STLデータ 価格 (円)</label>
+            <label className="block text-xs font-bold text-stone-600">STLデータ 価格 (円)</label>
             <input
               type="number"
               min={0}
               value={priceDigital}
               onChange={(e) => setPriceDigital(Number(e.target.value))}
-              className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
+              className="mt-1 w-full rounded-lg border border-stone-300 px-3 py-2 text-sm outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-100"
             />
           </div>
         </div>
 
-        <label className="mt-3 block text-xs font-bold text-slate-600">
+        <label className="mt-3 block text-xs font-bold text-stone-600">
           画像をアップロード（任意・AI画像より優先）
         </label>
         <input
           type="file"
           accept="image/*"
           onChange={(e) => setFile(e.target.files?.[0] ?? null)}
-          className="mt-1 w-full text-xs text-slate-500 file:mr-3 file:rounded-lg file:border-0 file:bg-slate-100 file:px-3 file:py-2 file:text-xs file:font-semibold file:text-slate-600 hover:file:bg-slate-200"
+          className="mt-1 w-full text-xs text-stone-500 file:mr-3 file:rounded-lg file:border-0 file:bg-stone-100 file:px-3 file:py-2 file:text-xs file:font-semibold file:text-stone-600 hover:file:bg-stone-200"
         />
 
         <button
           type="submit"
           disabled={busy}
-          className="mt-5 w-full rounded-xl bg-indigo-600 py-3 text-sm font-bold text-white shadow-md shadow-indigo-500/30 transition hover:bg-indigo-700 disabled:opacity-50"
+          className="mt-5 w-full rounded-xl bg-orange-600 py-3 text-sm font-bold text-white shadow-md shadow-orange-500/30 transition hover:bg-orange-700 disabled:opacity-50"
         >
           {busy ? '投稿中…' : 'アイデアを投稿する'}
         </button>
       </form>
 
-      <div className="rounded-2xl border border-dashed border-indigo-200 bg-indigo-50/50 p-6">
-        <h3 className="text-sm font-bold text-indigo-900">💡 アイデア投稿の流れ</h3>
-        <ol className="mt-3 space-y-3 text-[13px] leading-relaxed text-indigo-900/80">
+      <div className="rounded-2xl border border-dashed border-orange-200 bg-orange-50/50 p-6">
+        <h3 className="text-sm font-bold text-orange-900">💡 アイデア投稿の流れ</h3>
+        <ol className="mt-3 space-y-3 text-[13px] leading-relaxed text-orange-900/80">
           <li className="flex gap-2.5">
             <Step n={1} />
             <span>
@@ -312,7 +312,7 @@ export default function CreatorTab({ profile, onCreated }: Props) {
 
 function Step({ n }: { n: number }) {
   return (
-    <span className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-indigo-600 text-[11px] font-bold text-white">
+    <span className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-orange-600 text-[11px] font-bold text-white">
       {n}
     </span>
   );

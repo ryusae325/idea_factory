@@ -12,25 +12,25 @@ export default function LegalModal({ onClose }: { onClose: () => void }) {
   const [tab, setTab] = useState<LegalTab>('terms');
 
   return (
-    <div className="fixed inset-0 z-50 grid place-items-center bg-slate-900/50 p-4 backdrop-blur-sm">
-      <div className="max-h-[88vh] w-full max-w-2xl overflow-hidden rounded-2xl bg-white shadow-2xl">
-        <div className="flex items-center justify-between border-b border-slate-200 px-5 py-4">
-          <h3 className="text-base font-bold text-slate-900">📜 法務・規約</h3>
+    <div className="fixed inset-0 z-50 grid place-items-center bg-stone-900/50 p-4 backdrop-blur-sm">
+      <div className="max-h-[88vh] w-full max-w-2xl overflow-hidden rounded-2xl bg-[#fffdf8] shadow-2xl">
+        <div className="flex items-center justify-between border-b border-stone-200 px-5 py-4">
+          <h3 className="text-base font-bold text-stone-900">📜 法務・規約</h3>
           <button
             onClick={onClose}
-            className="rounded-lg px-2.5 py-1.5 text-sm text-slate-400 transition hover:bg-slate-100 hover:text-slate-600"
+            className="rounded-lg px-2.5 py-1.5 text-sm text-stone-400 transition hover:bg-stone-100 hover:text-stone-600"
           >
             ✕
           </button>
         </div>
 
-        <div className="flex gap-1 border-b border-slate-200 bg-slate-50 px-4 py-2">
+        <div className="flex gap-1 border-b border-stone-200 bg-stone-50 px-4 py-2">
           {TABS.map((t) => (
             <button
               key={t.id}
               onClick={() => setTab(t.id)}
               className={`rounded-lg px-3 py-1.5 text-xs font-bold transition ${
-                tab === t.id ? 'bg-indigo-600 text-white' : 'text-slate-500 hover:bg-slate-100'
+                tab === t.id ? 'bg-orange-600 text-white' : 'text-stone-500 hover:bg-stone-100'
               }`}
             >
               {t.label}
@@ -38,7 +38,7 @@ export default function LegalModal({ onClose }: { onClose: () => void }) {
           ))}
         </div>
 
-        <div className="max-h-[70vh] overflow-y-auto px-6 py-5 text-[13px] leading-relaxed text-slate-700">
+        <div className="max-h-[70vh] overflow-y-auto px-6 py-5 text-[13px] leading-relaxed text-stone-700">
           {tab === 'terms' && <Terms />}
           {tab === 'privacy' && <Privacy />}
           {tab === 'act' && <Act />}
@@ -49,7 +49,7 @@ export default function LegalModal({ onClose }: { onClose: () => void }) {
 }
 
 function H({ children }: { children: React.ReactNode }) {
-  return <h4 className="mt-5 text-sm font-bold text-slate-900 first:mt-0">{children}</h4>;
+  return <h4 className="mt-5 text-sm font-bold text-stone-900 first:mt-0">{children}</h4>;
 }
 
 function Terms() {
@@ -131,9 +131,9 @@ function Act() {
             ['返品・返金', 'デジタルデータの性格上、購入確定後の返品・返金はできません。物理プリント品に不備があった場合、【配送後7日以内】にご連絡ください。良品と交換または返金いたします。'],
             ['動作環境', 'STLデータは3Dプリンター用標準形式（STL）です。お使いのプリンター・スライサーとの互換性はご自身でご確認ください。'],
           ].map(([k, v]) => (
-            <tr key={k} className="border-b border-slate-100 align-top">
-              <th className="w-32 shrink-0 py-2 pr-3 font-semibold text-slate-500">{k}</th>
-              <td className="py-2 text-slate-700">{v}</td>
+            <tr key={k} className="border-b border-stone-100 align-top">
+              <th className="w-32 shrink-0 py-2 pr-3 font-semibold text-stone-500">{k}</th>
+              <td className="py-2 text-stone-700">{v}</td>
             </tr>
           ))}
         </tbody>

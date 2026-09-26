@@ -38,23 +38,23 @@ export default function SalesTab({ profile, onBalanceChanged }: Props) {
 
   return (
     <div className="space-y-6">
-      <div className="rounded-2xl bg-gradient-to-br from-indigo-600 to-violet-700 p-6 text-white shadow-lg shadow-indigo-500/25">
-        <p className="text-xs font-semibold text-indigo-200">現在の売上残高</p>
+      <div className="rounded-2xl bg-gradient-to-br from-orange-600 to-amber-700 p-6 text-white shadow-lg shadow-orange-500/25">
+        <p className="text-xs font-semibold text-orange-200">現在の売上残高</p>
         <p className="mt-1 text-3xl font-extrabold tracking-wide">{fmtYen(profile.balance)}円</p>
-        <p className="mt-2 text-[11px] text-indigo-200">
+        <p className="mt-2 text-[11px] text-orange-200">
           ※売上分配金の有効期限は付与から180日間です。1,000円分から各種デジタルギフトへ交換できます。
         </p>
       </div>
 
       <div className="grid gap-6 lg:grid-cols-2">
-        <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-          <h3 className="text-sm font-bold text-slate-900">🎁 デジタルギフト交換申請</h3>
+        <div className="rounded-2xl border border-stone-200 bg-[#fffdf8] p-5 shadow-sm">
+          <h3 className="text-sm font-bold text-stone-900">🎁 デジタルギフト交換申請</h3>
 
-          <label className="mt-4 block text-xs font-bold text-slate-600">交換先</label>
+          <label className="mt-4 block text-xs font-bold text-stone-600">交換先</label>
           <select
             value={type}
             onChange={(e) => setType(e.target.value)}
-            className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2.5 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
+            className="mt-1 w-full rounded-lg border border-stone-300 px-3 py-2.5 text-sm outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-100"
           >
             {GIFT_TYPES.map((g) => (
               <option key={g} value={g}>
@@ -63,40 +63,40 @@ export default function SalesTab({ profile, onBalanceChanged }: Props) {
             ))}
           </select>
 
-          <label className="mt-3 block text-xs font-bold text-slate-600">交換金額 (円分)</label>
+          <label className="mt-3 block text-xs font-bold text-stone-600">交換金額 (円分)</label>
           <input
             type="number"
             value={amount}
             min={1000}
             step={1000}
             onChange={(e) => setAmount(Number(e.target.value))}
-            className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2.5 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
+            className="mt-1 w-full rounded-lg border border-stone-300 px-3 py-2.5 text-sm outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-100"
           />
 
           <button
             onClick={apply}
             disabled={busy}
-            className="mt-4 w-full rounded-xl bg-indigo-600 py-3 text-sm font-bold text-white shadow-md shadow-indigo-500/30 transition hover:bg-indigo-700 disabled:opacity-50"
+            className="mt-4 w-full rounded-xl bg-orange-600 py-3 text-sm font-bold text-white shadow-md shadow-orange-500/30 transition hover:bg-orange-700 disabled:opacity-50"
           >
             {busy ? '申請中…' : '交換申請を行う'}
           </button>
         </div>
 
-        <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-          <h3 className="text-sm font-bold text-slate-900">📜 交換申請履歴</h3>
+        <div className="rounded-2xl border border-stone-200 bg-[#fffdf8] p-5 shadow-sm">
+          <h3 className="text-sm font-bold text-stone-900">📜 交換申請履歴</h3>
           {history.length === 0 ? (
-            <p className="mt-4 rounded-xl bg-slate-50 px-4 py-6 text-center text-xs text-slate-400 ring-1 ring-slate-200">
+            <p className="mt-4 rounded-xl bg-stone-50 px-4 py-6 text-center text-xs text-stone-400 ring-1 ring-stone-200">
               交換申請はまだありません。
             </p>
           ) : (
             <div className="mt-3 space-y-2">
               {history.map((r) => (
-                <div key={r.id} className="flex items-center justify-between rounded-xl bg-slate-50 px-4 py-3 ring-1 ring-slate-200">
+                <div key={r.id} className="flex items-center justify-between rounded-xl bg-stone-50 px-4 py-3 ring-1 ring-stone-200">
                   <div>
-                    <p className="text-[13px] font-semibold text-slate-800">
+                    <p className="text-[13px] font-semibold text-stone-800">
                       {r.exchange_type}（{fmtYen(r.amount)}円分）
                     </p>
-                    <p className="text-[10px] text-slate-400">{fmtDate(r.created_at)}</p>
+                    <p className="text-[10px] text-stone-400">{fmtDate(r.created_at)}</p>
                   </div>
                   <div className="text-right">
                     <span
@@ -106,7 +106,7 @@ export default function SalesTab({ profile, onBalanceChanged }: Props) {
                     >
                       {r.status}
                     </span>
-                    {r.gift_code && <p className="mt-1 max-w-[160px] truncate text-[10px] text-slate-500">コード: {r.gift_code}</p>}
+                    {r.gift_code && <p className="mt-1 max-w-[160px] truncate text-[10px] text-stone-500">コード: {r.gift_code}</p>}
                   </div>
                 </div>
               ))}

@@ -30,7 +30,7 @@ export default function DetailModal({ ideaId, profile, onClose, onChanged }: Pro
   if (!idea) {
     return (
       <Overlay onClose={onClose}>
-        <p className="py-10 text-center text-sm text-slate-400">読み込み中…</p>
+        <p className="py-10 text-center text-sm text-stone-400">読み込み中…</p>
       </Overlay>
     );
   }
@@ -112,7 +112,7 @@ export default function DetailModal({ ideaId, profile, onClose, onChanged }: Pro
   return (
     <Overlay onClose={onClose}>
       <div className="flex items-start justify-between gap-3">
-        <h3 className="text-lg font-bold text-slate-900">💡 {idea.title}</h3>
+        <h3 className="text-lg font-bold text-stone-900">💡 {idea.title}</h3>
         <div className="flex shrink-0 gap-2">
           {(isOwner || isAdmin) && (
             <button
@@ -124,18 +124,18 @@ export default function DetailModal({ ideaId, profile, onClose, onChanged }: Pro
           )}
           <button
             onClick={onClose}
-            className="rounded-lg px-2.5 py-1.5 text-sm text-slate-400 transition hover:bg-slate-100 hover:text-slate-600"
+            className="rounded-lg px-2.5 py-1.5 text-sm text-stone-400 transition hover:bg-stone-100 hover:text-stone-600"
           >
             ✕
           </button>
         </div>
       </div>
 
-      <div className="mt-3 h-44 overflow-hidden rounded-xl bg-gradient-to-br from-slate-100 to-slate-200">
+      <div className="mt-3 h-44 overflow-hidden rounded-xl bg-gradient-to-br from-stone-100 to-stone-200">
         {idea.image_url ? (
           <img src={idea.image_url} alt={idea.title} className="h-full w-full object-cover" />
         ) : (
-          <div className="grid h-full w-full place-items-center text-5xl text-slate-300">🧩</div>
+          <div className="grid h-full w-full place-items-center text-5xl text-stone-300">🧩</div>
         )}
       </div>
 
@@ -152,16 +152,16 @@ export default function DetailModal({ ideaId, profile, onClose, onChanged }: Pro
         />
       </dl>
 
-      <div className="mt-3 rounded-xl bg-slate-50 p-3.5 ring-1 ring-slate-200">
-        <p className="text-xs font-bold text-slate-600">詳細説明・仕様</p>
-        <p className="mt-1 whitespace-pre-wrap text-[13px] leading-relaxed text-slate-700">
+      <div className="mt-3 rounded-xl bg-stone-50 p-3.5 ring-1 ring-stone-200">
+        <p className="text-xs font-bold text-stone-600">詳細説明・仕様</p>
+        <p className="mt-1 whitespace-pre-wrap text-[13px] leading-relaxed text-stone-700">
           {idea.description || '詳細説明はありません。'}
         </p>
       </div>
 
-      <hr className="my-4 border-slate-200" />
+      <hr className="my-4 border-stone-200" />
 
-      <h4 className="text-sm font-bold text-slate-800">📦 3Dデータ（STL）</h4>
+      <h4 className="text-sm font-bold text-stone-800">📦 3Dデータ（STL）</h4>
       {idea.stl_path ? (
         <div className="mt-2 flex items-center justify-between rounded-xl bg-emerald-50 px-4 py-3 ring-1 ring-emerald-200">
           <p className="text-xs font-semibold text-emerald-800">
@@ -175,42 +175,42 @@ export default function DetailModal({ ideaId, profile, onClose, onChanged }: Pro
           </button>
         </div>
       ) : (
-        <p className="mt-2 rounded-xl bg-slate-50 px-4 py-3 text-xs text-slate-500 ring-1 ring-slate-200">
+        <p className="mt-2 rounded-xl bg-stone-50 px-4 py-3 text-xs text-stone-500 ring-1 ring-stone-200">
           3Dデータはまだ登録されていません。
         </p>
       )}
       {canManageStl && (
-        <div className="mt-2 rounded-xl bg-slate-50 p-3 ring-1 ring-slate-200">
-          <label className="block text-[11px] font-bold text-slate-600">
+        <div className="mt-2 rounded-xl bg-stone-50 p-3 ring-1 ring-stone-200">
+          <label className="block text-[11px] font-bold text-stone-600">
             STLファイルをアップロード（完成3Dデータ・.stl）
           </label>
           <input
             type="file"
             accept=".stl,model/stl,application/sla"
             onChange={handleStlUpload}
-            className="mt-1.5 w-full text-xs text-slate-500 file:mr-3 file:rounded-lg file:border-0 file:bg-indigo-100 file:px-3 file:py-2 file:text-xs file:font-semibold file:text-indigo-700 hover:file:bg-indigo-200"
+            className="mt-1.5 w-full text-xs text-stone-500 file:mr-3 file:rounded-lg file:border-0 file:bg-orange-100 file:px-3 file:py-2 file:text-xs file:font-semibold file:text-orange-700 hover:file:bg-orange-200"
           />
-          <p className="mt-1 text-[10px] text-slate-400">
+          <p className="mt-1 text-[10px] text-stone-400">
             ※アップロードしたSTLは、STLデータを購入したユーザーのみダウンロードできます。
           </p>
         </div>
       )}
 
-      <hr className="my-4 border-slate-200" />
+      <hr className="my-4 border-stone-200" />
 
-      <h4 className="text-sm font-bold text-slate-800">💬 コメント・相談</h4>
+      <h4 className="text-sm font-bold text-stone-800">💬 コメント・相談</h4>
       <div className="mt-2 max-h-44 space-y-2 overflow-y-auto pr-1">
         {comments.length === 0 ? (
-          <p className="py-2 text-xs text-slate-400">コメントはまだありません。</p>
+          <p className="py-2 text-xs text-stone-400">コメントはまだありません。</p>
         ) : (
           comments.map((c) => (
-            <div key={c.id} className="rounded-lg bg-slate-50 px-3 py-2 ring-1 ring-slate-200">
+            <div key={c.id} className="rounded-lg bg-stone-50 px-3 py-2 ring-1 ring-stone-200">
               <div className="flex items-center justify-between">
-                <span className="text-[11px] font-bold text-slate-600">
+                <span className="text-[11px] font-bold text-stone-600">
                   {name(c.author) || 'ユーザー'}
                 </span>
                 <span className="flex items-center gap-2">
-                  <span className="text-[10px] text-slate-400">{fmtDate(c.created_at)}</span>
+                  <span className="text-[10px] text-stone-400">{fmtDate(c.created_at)}</span>
                   {(profile?.id === c.user_id || isAdmin) && (
                     <button
                       onClick={() => removeComment(c.id)}
@@ -221,7 +221,7 @@ export default function DetailModal({ ideaId, profile, onClose, onChanged }: Pro
                   )}
                 </span>
               </div>
-              <p className="mt-0.5 whitespace-pre-wrap text-[13px] text-slate-800">{c.content}</p>
+              <p className="mt-0.5 whitespace-pre-wrap text-[13px] text-stone-800">{c.content}</p>
             </div>
           ))
         )}
@@ -234,18 +234,18 @@ export default function DetailModal({ ideaId, profile, onClose, onChanged }: Pro
             onChange={(e) => setText(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && submit()}
             placeholder="コメントを入力…"
-            className="flex-1 rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
+            className="flex-1 rounded-lg border border-stone-300 px-3 py-2 text-sm outline-none transition focus:border-orange-500 focus:ring-2 focus:ring-orange-100"
           />
           <button
             onClick={submit}
             disabled={busy}
-            className="rounded-lg bg-indigo-600 px-4 py-2 text-xs font-bold text-white transition hover:bg-indigo-700 disabled:opacity-50"
+            className="rounded-lg bg-orange-600 px-4 py-2 text-xs font-bold text-white transition hover:bg-orange-700 disabled:opacity-50"
           >
             送信
           </button>
         </div>
       ) : (
-        <p className="mt-3 text-xs text-slate-400">※コメントを投稿するにはログインしてください。</p>
+        <p className="mt-3 text-xs text-stone-400">※コメントを投稿するにはログインしてください。</p>
       )}
     </Overlay>
   );
@@ -254,8 +254,8 @@ export default function DetailModal({ ideaId, profile, onClose, onChanged }: Pro
 function Row({ label, value, accent }: { label: string; value: string; accent?: boolean }) {
   return (
     <div className="flex gap-2">
-      <dt className="w-28 shrink-0 text-slate-400">{label}</dt>
-      <dd className={accent ? 'font-bold text-indigo-600' : 'text-slate-700'}>{value}</dd>
+      <dt className="w-28 shrink-0 text-stone-400">{label}</dt>
+      <dd className={accent ? 'font-bold text-orange-600' : 'text-stone-700'}>{value}</dd>
     </div>
   );
 }
@@ -263,11 +263,11 @@ function Row({ label, value, accent }: { label: string; value: string; accent?: 
 function Overlay({ children, onClose }: { children: React.ReactNode; onClose: () => void }) {
   return (
     <div
-      className="fixed inset-0 z-50 grid place-items-center bg-slate-900/50 p-4 backdrop-blur-sm"
+      className="fixed inset-0 z-50 grid place-items-center bg-stone-900/50 p-4 backdrop-blur-sm"
       onClick={onClose}
     >
       <div
-        className="max-h-[88vh] w-full max-w-lg overflow-y-auto rounded-2xl bg-white p-5 shadow-2xl"
+        className="max-h-[88vh] w-full max-w-lg overflow-y-auto rounded-2xl bg-[#fffdf8] p-5 shadow-2xl"
         onClick={(e) => e.stopPropagation()}
       >
         {children}

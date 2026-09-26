@@ -14,7 +14,7 @@ interface Props {
 export default function IdeaGrid({ ideas, profile, onOpen, onAction, emptyMessage }: Props) {
   if (ideas.length === 0) {
     return (
-      <div className="grid place-items-center rounded-2xl border border-dashed border-slate-300 bg-white/60 py-16 text-sm text-slate-400">
+      <div className="grid place-items-center rounded-2xl border border-dashed border-stone-300 bg-[#fffdf8]/60 py-16 text-sm text-stone-400">
         {emptyMessage}
       </div>
     );

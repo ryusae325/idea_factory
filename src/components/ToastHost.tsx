@@ -4,7 +4,7 @@ import { subscribeToasts, type ToastItem } from '../lib/toast';
 const styles: Record<ToastItem['type'], string> = {
   success: 'bg-emerald-600',
   error: 'bg-rose-600',
-  info: 'bg-slate-800',
+  info: 'bg-stone-800',
 };
 
 export default function ToastHost() {
@@ -17,7 +17,7 @@ export default function ToastHost() {
       {items.map((t) => (
         <div
           key={t.id}
-          className={`animate-[toastIn_.2s_ease] rounded-xl px-4 py-3 text-sm font-medium text-white shadow-lg shadow-slate-900/20 ${styles[t.type]}`}
+          className={`animate-[toastIn_.2s_ease] rounded-xl px-4 py-3 text-sm font-medium text-white shadow-lg shadow-stone-900/20 ${styles[t.type]}`}
         >
           {t.message}
         </div>

@@ -128,15 +128,15 @@ export default function App() {
   const gridProps = { profile, onOpen: setDetailId, onAction: handleAction };
 
   return (
-    <div className="min-h-screen bg-slate-100 pb-16">
+    <div className="min-h-screen bg-stone-100 pb-16">
       <Header profile={profile} loggedIn={loggedIn} />
 
       <main className="mx-auto max-w-6xl px-4 pt-5">
         {loading ? (
-          <p className="py-24 text-center text-sm text-slate-400">読み込み中…</p>
+          <p className="py-24 text-center text-sm text-stone-400">読み込み中…</p>
         ) : (
           <>
-            <nav className="mb-5 flex gap-1.5 overflow-x-auto rounded-2xl border border-slate-200 bg-white p-1.5 shadow-sm">
+            <nav className="mb-5 flex gap-1.5 overflow-x-auto rounded-2xl border border-stone-200 bg-[#fffdf8] p-1.5 shadow-sm">
               {TABS.filter((t) => t.id !== 'admin' || profile?.is_admin).map((t) => (
                 <button
                   key={t.id}
@@ -144,9 +144,9 @@ export default function App() {
                   className={`flex-1 whitespace-nowrap rounded-xl px-3.5 py-2.5 text-xs font-bold transition ${
                     tab === t.id
                       ? t.id === 'admin'
-                        ? 'bg-violet-600 text-white shadow-md shadow-violet-500/30'
-                        : 'bg-indigo-600 text-white shadow-md shadow-indigo-500/30'
-                      : 'text-slate-500 hover:bg-slate-50 hover:text-slate-700'
+                        ? 'bg-amber-600 text-white shadow-md shadow-amber-500/30'
+                        : 'bg-orange-600 text-white shadow-md shadow-orange-500/30'
+                      : 'text-stone-500 hover:bg-stone-50 hover:text-stone-700'
                   }`}
                 >
                   <span className="mr-1">{t.icon}</span>
@@ -160,18 +160,18 @@ export default function App() {
                 {loggedIn && profile ? (
                   <CreatorTab profile={profile} onCreated={refreshIdeas} />
                 ) : (
-                  <div className="grid place-items-center rounded-2xl border border-dashed border-indigo-200 bg-indigo-50/50 py-16 text-center">
-                    <p className="text-sm font-semibold text-indigo-900">ログインしてアイデアを投稿しましょう</p>
+                  <div className="grid place-items-center rounded-2xl border border-dashed border-orange-200 bg-orange-50/50 py-16 text-center">
+                    <p className="text-sm font-semibold text-orange-900">ログインしてアイデアを投稿しましょう</p>
                     <button
                       onClick={() => auth.openSignInModal()}
-                      className="mt-4 rounded-xl bg-indigo-600 px-6 py-2.5 text-sm font-bold text-white shadow-md shadow-indigo-500/30 transition hover:bg-indigo-700"
+                      className="mt-4 rounded-xl bg-orange-600 px-6 py-2.5 text-sm font-bold text-white shadow-md shadow-orange-500/30 transition hover:bg-orange-700"
                     >
                       ログイン / 登録
                     </button>
                   </div>
                 )}
                 <section>
-                  <h3 className="mb-3 text-sm font-bold text-slate-800">📌 モデラー募集中一覧</h3>
+                  <h3 className="mb-3 text-sm font-bold text-stone-800">📌 モデラー募集中一覧</h3>
                   <IdeaGrid ideas={recruiting} {...gridProps} emptyMessage="募集中のアイデアはまだありません。" />
                 </section>
               </div>
@@ -179,14 +179,14 @@ export default function App() {
 
             {tab === 'modeler' && (
               <section>
-                <h3 className="mb-3 text-sm font-bold text-slate-800">🛠️ 制作中・モデリング作業中の案件</h3>
+                <h3 className="mb-3 text-sm font-bold text-stone-800">🛠️ 制作中・モデリング作業中の案件</h3>
                 <IdeaGrid ideas={inProgress} {...gridProps} emptyMessage="制作中の案件はありません。" />
               </section>
             )}
 
             {tab === 'shop' && (
               <section>
-                <h3 className="mb-3 text-sm font-bold text-slate-800">🛒 販売中の商品（プリント品・STLデータ）</h3>
+                <h3 className="mb-3 text-sm font-bold text-stone-800">🛒 販売中の商品（プリント品・STLデータ）</h3>
                 <IdeaGrid ideas={onSale} {...gridProps} emptyMessage="販売中の商品はまだありません。" />
               </section>
             )}
@@ -212,11 +212,11 @@ export default function App() {
           </>
         )}
 
-        <footer className="mt-16 border-t border-slate-200 pt-6 text-center text-xs text-slate-400">
+        <footer className="mt-16 border-t border-stone-200 pt-6 text-center text-xs text-stone-400">
           <p>© ヒラメキ工房 — 考案者と3Dモデラーをつなぐ共創プラットフォーム</p>
           <button
             onClick={() => setShowLegal(true)}
-            className="mt-2 font-semibold text-indigo-500 transition hover:text-indigo-700 hover:underline"
+            className="mt-2 font-semibold text-orange-500 transition hover:text-orange-700 hover:underline"
           >
             利用規約・プライバシーポリシー・特商法表記
           </button>
@@ -248,11 +248,11 @@ export default function App() {
 
 function LoginPrompt() {
   return (
-    <div className="grid place-items-center rounded-2xl border border-dashed border-slate-300 bg-white/60 py-20 text-center">
-      <p className="text-sm font-semibold text-slate-600">このページを利用するにはログインしてください</p>
+    <div className="grid place-items-center rounded-2xl border border-dashed border-stone-300 bg-[#fffdf8]/60 py-20 text-center">
+      <p className="text-sm font-semibold text-stone-600">このページを利用するにはログインしてください</p>
       <button
         onClick={() => auth.openSignInModal()}
-        className="mt-4 rounded-xl bg-indigo-600 px-6 py-2.5 text-sm font-bold text-white shadow-md shadow-indigo-500/30 transition hover:bg-indigo-700"
+        className="mt-4 rounded-xl bg-orange-600 px-6 py-2.5 text-sm font-bold text-white shadow-md shadow-orange-500/30 transition hover:bg-orange-700"
       >
         ログイン / 登録
       </button>
