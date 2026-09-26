@@ -16,8 +16,6 @@ export default function CreatorTab({ profile, onCreated }: Props) {
   const [pricePhysical, setPricePhysical] = useState(2500);
   const [priceDigital, setPriceDigital] = useState(500);
   const [file, setFile] = useState<File | null>(null);
-  const [aiUrl, setAiUrl] = useState<string | null>(null);
-  const [aiBusy, setAiBusy] = useState(false);
   const [busy, setBusy] = useState(false);
   const [checkBusy, setCheckBusy] = useState(false);
   const [checkResult, setCheckResult] = useState<{
@@ -55,40 +53,12 @@ export default function CreatorTab({ profile, onCreated }: Props) {
     }
   };
 
-  const generateAIImage = async () => {
-    if (!title.trim()) return toast('AI生成にはまず「タイトル」を入力してください', 'error');
-    setAiBusy(true);
-    setAiUrl(null);
-    try {
-      const res = await authFetch('/api/generate-ai-image', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ title, desc }),
-      });
-      const data = await res.json();
-      if (res.ok && data.status === 'ok') {
-        if (data.url) {
-          setAiUrl(data.url);
-          toast('AIイメージを生成しました！');
-        } else {
-          toast('AI画像生成は現在準備中です。画像をアップロードするか、テキストのみで投稿できます。', 'info');
-        }
-      } else {
-        toast(data.message || '生成に失敗しました', 'error');
-      }
-    } catch {
-      toast('通信エラーが発生しました', 'error');
-    } finally {
-      setAiBusy(false);
-    }
-  };
-
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!title.trim()) return toast('タイトルを入力してください', 'error');
     setBusy(true);
     try {
-      let imageUrl = aiUrl ?? '';
+      let imageUrl = '';
       if (file) {
         imageUrl = await uploadImage(profile.id, file);
       }
@@ -106,7 +76,6 @@ export default function CreatorTab({ profile, onCreated }: Props) {
       setTitle('');
       setDesc('');
       setFile(null);
-      setAiUrl(null);
       onCreated();
     } catch (err) {
       toast((err as Error).message, 'error');
@@ -138,24 +107,14 @@ export default function CreatorTab({ profile, onCreated }: Props) {
           className="mt-1 w-full resize-none rounded-lg border border-stone-300 px-3 py-2.5 text-sm outline-none transition focus:border-orange-500 focus:ring-2 focus:ring-orange-100"
         />
 
-        <div className="mt-3 flex gap-2">
-          <button
-            type="button"
-            onClick={checkInfringement}
-            disabled={checkBusy}
-            className="flex-1 rounded-lg bg-rose-50 px-3 py-2 text-[11px] font-bold text-rose-600 ring-1 ring-rose-200 transition hover:bg-rose-100 disabled:opacity-50"
-          >
-            {checkBusy ? '🤖 チェック中…' : '🔍 権利侵害をAIでチェック'}
-          </button>
-          <button
-            type="button"
-            onClick={generateAIImage}
-            disabled={aiBusy}
-            className="flex-1 rounded-lg bg-amber-50 px-3 py-2 text-[11px] font-bold text-amber-700 ring-1 ring-amber-200 transition hover:bg-amber-100 disabled:opacity-50"
-          >
-            {aiBusy ? '🤖 生成中…' : '✨ AIでイメージ画像を作成'}
-          </button>
-        </div>
+        <button
+          type="button"
+          onClick={checkInfringement}
+          disabled={checkBusy}
+          className="mt-3 w-full rounded-lg bg-rose-50 px-3 py-2 text-[11px] font-bold text-rose-600 ring-1 ring-rose-200 transition hover:bg-rose-100 disabled:opacity-50"
+        >
+          {checkBusy ? '🤖 チェック中…' : '🔍 権利侵害をAIでチェック'}
+        </button>
 
         {checkBusy && (
           <p className="mt-2 text-[11px] font-medium text-rose-600">
@@ -198,18 +157,6 @@ export default function CreatorTab({ profile, onCreated }: Props) {
             <p className="mt-1.5 text-[10px] text-stone-400">
               ※AIによる参考評価です。法的判断の代わりにはなりません。
             </p>
-          </div>
-        )}
-
-        {aiBusy && (
-          <p className="mt-2 text-[11px] font-medium text-amber-600">
-            AIがモデラー向けイメージ画像を生成中です…（10秒ほどかかります）
-          </p>
-        )}
-        {aiUrl && (
-          <div className="mt-2 rounded-xl border border-amber-200 bg-amber-50 p-3">
-            <p className="text-[10px] font-bold text-amber-700">✨ AI生成イメージ（投稿時に保存されます）</p>
-            <img src={aiUrl} alt="AI生成イメージ" className="mt-1.5 h-32 w-32 rounded-lg object-cover" />
           </div>
         )}
 
