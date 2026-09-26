@@ -102,7 +102,8 @@ export default function CreatorTab({ profile, onCreated }: Props) {
       <form onSubmit={submit} className="rounded-2xl border border-stone-200 bg-[#fffdf8] p-5 shadow-sm">
         <h3 className="text-base font-bold text-stone-900">➕ 新しいアイデアを投稿</h3>
 
-        <label className="mt-4 block text-xs font-bold text-stone-600">タイトル *</label>
+        <p className="mt-3 text-[11px] font-bold tracking-wide text-orange-600">1. 基本情報</p>
+        <label className="mt-1.5 block text-xs font-bold text-stone-600">タイトル *</label>
         <input
           value={title}
           onChange={(e) => setTitle(e.target.value)}
@@ -110,8 +111,7 @@ export default function CreatorTab({ profile, onCreated }: Props) {
           placeholder="例: 卓上ミニハンディファンスタンド"
           className="mt-1 w-full rounded-lg border border-stone-300 px-3 py-2.5 text-sm outline-none transition focus:border-orange-500 focus:ring-2 focus:ring-orange-100"
         />
-
-        <label className="mt-3 block text-xs font-bold text-stone-600">詳細説明・仕様</label>
+        <label className="mt-2.5 block text-xs font-bold text-stone-600">詳細説明・仕様</label>
         <textarea
           value={desc}
           onChange={(e) => setDesc(e.target.value)}
@@ -119,46 +119,17 @@ export default function CreatorTab({ profile, onCreated }: Props) {
           placeholder="商品の詳細やデザインの希望、サイズ感など"
           className="mt-1 w-full resize-none rounded-lg border border-stone-300 px-3 py-2.5 text-sm outline-none transition focus:border-orange-500 focus:ring-2 focus:ring-orange-100"
         />
-
-        <label className="mt-3 block text-xs font-bold text-stone-600">サイズ *</label>
-        <div className="mt-1 space-y-1.5">
-          {SIZE_OPTIONS.map((o) => (
-            <label
-              key={o.tier}
-              className={`flex cursor-pointer items-center gap-2 rounded-lg border px-3 py-2 text-[12px] transition ${
-                sizeTier === o.tier
-                  ? 'border-orange-500 bg-orange-50 text-stone-800'
-                  : 'border-stone-300 bg-white text-stone-600 hover:border-stone-400'
-              }`}
-            >
-              <input
-                type="radio"
-                name="size_tier"
-                checked={sizeTier === o.tier}
-                onChange={() => selectTier(o.tier)}
-                className="accent-orange-600"
-              />
-              <b>{o.tier}サイズ</b>
-              <span className="text-stone-500">{o.range}</span>
-              <span className="ml-auto text-[11px] font-semibold text-stone-500">
-                価格 ¥{o.min.toLocaleString()} ＋ 製造・配送費 ¥{o.fee.toLocaleString()}
-              </span>
-            </label>
-          ))}
-        </div>
-
         <button
           type="button"
           onClick={checkInfringement}
           disabled={checkBusy}
-          className="mt-3 w-full rounded-lg bg-rose-50 px-3 py-2 text-[11px] font-bold text-rose-600 ring-1 ring-rose-200 transition hover:bg-rose-100 disabled:opacity-50"
+          className="mt-2.5 rounded-lg bg-rose-50 px-3 py-2 text-[11px] font-bold text-rose-600 ring-1 ring-rose-200 transition hover:bg-rose-100 disabled:opacity-50"
         >
-          {checkBusy ? '🤖 チェック中…' : '🔍 権利侵害をAIでチェック'}
+          {checkBusy ? '🤖 AIチェック中…' : '🔍 権利侵害をAIでチェック'}
         </button>
-
         {checkBusy && (
           <p className="mt-2 text-[11px] font-medium text-rose-600">
-            AIが商標・著作権・類似性をチェック中です…（10秒ほどかかります）
+            商標・著作権・類似性をチェック中です…（10秒ほどかかります）
           </p>
         )}
         {checkResult && (
@@ -171,18 +142,16 @@ export default function CreatorTab({ profile, onCreated }: Props) {
                   : 'bg-emerald-50 ring-emerald-200'
             }`}
           >
-            <p className="text-[11px] font-bold">
-              <span
-                className={
-                  checkResult.risk_level === '高'
-                    ? 'text-rose-700'
-                    : checkResult.risk_level === '中'
-                      ? 'text-amber-700'
-                      : 'text-emerald-700'
-                }
-              >
-                リスク: {checkResult.risk_level}
-              </span>
+            <p
+              className={`text-[11px] font-bold ${
+                checkResult.risk_level === '高'
+                  ? 'text-rose-700'
+                  : checkResult.risk_level === '中'
+                    ? 'text-amber-700'
+                    : 'text-emerald-700'
+              }`}
+            >
+              リスク: {checkResult.risk_level}
             </p>
             {checkResult.summary && (
               <p className="mt-1 text-[12px] leading-relaxed text-stone-700">{checkResult.summary}</p>
@@ -200,9 +169,43 @@ export default function CreatorTab({ profile, onCreated }: Props) {
           </div>
         )}
 
-        <div className="mt-3 grid grid-cols-2 gap-3">
+        <hr className="my-4 border-stone-100" />
+        <p className="text-[11px] font-bold tracking-wide text-orange-600">2. サイズと価格</p>
+        <p className="mt-1 text-[11px] text-stone-400">サイズを選ぶとプリント品の価格が自動で決まります</p>
+        <div className="mt-2 grid grid-cols-2 gap-2">
+          {SIZE_OPTIONS.map((o) => (
+            <label
+              key={o.tier}
+              className={`cursor-pointer rounded-xl border px-3 py-2.5 transition ${
+                sizeTier === o.tier
+                  ? 'border-orange-500 bg-orange-50 ring-2 ring-orange-100'
+                  : 'border-stone-300 bg-white hover:border-stone-400'
+              }`}
+            >
+              <span className="flex items-center gap-1.5">
+                <input
+                  type="radio"
+                  name="size_tier"
+                  checked={sizeTier === o.tier}
+                  onChange={() => selectTier(o.tier)}
+                  className="accent-orange-600"
+                />
+                <b className="text-[13px] text-stone-800">{o.tier}</b>
+                <span className="text-[10px] text-stone-400">{o.range.split(' × ')[0]}まで</span>
+              </span>
+              <span className="mt-1 block text-[13px] font-bold text-orange-600">
+                ¥{o.min.toLocaleString()}
+              </span>
+              <span className="block text-[10px] text-stone-400">＋配送費 ¥{o.fee.toLocaleString()}</span>
+            </label>
+          ))}
+        </div>
+
+        <hr className="my-4 border-stone-100" />
+        <p className="text-[11px] font-bold tracking-wide text-orange-600">3. 収益設定</p>
+        <div className="mt-2 grid grid-cols-2 gap-3">
           <div>
-            <label className="block text-xs font-bold text-stone-600">プランナー 分配率 (%)</label>
+            <label className="block text-xs font-bold text-stone-600">プランナー分配率 (%)</label>
             <input
               type="number"
               min={0}
@@ -213,7 +216,7 @@ export default function CreatorTab({ profile, onCreated }: Props) {
             />
           </div>
           <div>
-            <label className="block text-xs font-bold text-stone-600">モデラー 分配率 (%)</label>
+            <label className="block text-xs font-bold text-stone-600">モデラー (%)</label>
             <input
               type="number"
               value={modelerShare}
@@ -221,21 +224,7 @@ export default function CreatorTab({ profile, onCreated }: Props) {
               className="mt-1 w-full rounded-lg border border-stone-200 bg-stone-50 px-3 py-2 text-sm text-stone-500"
             />
           </div>
-          <div>
-            <label className="block text-xs font-bold text-stone-600">
-              プリント品 価格（サイズ階級で自動決定）
-            </label>
-            <input
-              type="text"
-              value={`¥${pricePhysical.toLocaleString()} ＋ 製造・配送費`}
-              readOnly
-              className="mt-1 w-full cursor-default rounded-lg border border-stone-200 bg-stone-50 px-3 py-2 text-sm text-stone-500"
-            />
-            <p className="mt-1 text-[11px] text-stone-500">
-              上の「サイズ」を選ぶと、プリント品の価格は自動的に決まります（S ¥1,000 / M ¥2,000 / L ¥4,000 / XL ¥8,000）。
-            </p>
-          </div>
-          <div>
+          <div className="col-span-2">
             <label className="block text-xs font-bold text-stone-600">STLデータ 価格 (円)</label>
             <input
               type="number"
@@ -244,22 +233,21 @@ export default function CreatorTab({ profile, onCreated }: Props) {
               onChange={(e) => setPriceDigital(Number(e.target.value))}
               className="mt-1 w-full rounded-lg border border-stone-300 px-3 py-2 text-sm outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-100"
             />
-            <p className="mt-1 text-[11px] text-stone-400">最低 ¥300（無料にする場合は 0）</p>
+            <p className="mt-0.5 text-[11px] text-stone-400">最低 ¥300（無料なら 0）</p>
           </div>
         </div>
 
-        <label className="mt-3 block text-xs font-bold text-stone-600">
-          画像をアップロード（任意・複数枚可）
-        </label>
-        <p className="mt-0.5 text-[11px] leading-relaxed text-stone-500">
-          📷 <b>正面・横から・上から</b>など、角度の違う画像やイラストを複数枚アップロードすると、モデラーが形をイメージしやすくなり、完成度が上がります。
+        <hr className="my-4 border-stone-100" />
+        <p className="text-[11px] font-bold tracking-wide text-orange-600">4. 画像（任意）</p>
+        <p className="mt-1 text-[11px] text-stone-400">
+          📷 角度違いの画像（正面・横・上）を複数枚添えるとモデラーがイメージしやすくなります
         </p>
         <input
           type="file"
           accept="image/*"
           multiple
           onChange={(e) => setFiles(Array.from(e.target.files ?? []))}
-          className="mt-1 w-full text-xs text-stone-500 file:mr-3 file:rounded-lg file:border-0 file:bg-stone-100 file:px-3 file:py-2 file:text-xs file:font-semibold file:text-stone-600 hover:file:bg-stone-200"
+          className="mt-1.5 w-full text-xs text-stone-500 file:mr-3 file:rounded-lg file:border-0 file:bg-stone-100 file:px-3 file:py-2 file:text-xs file:font-semibold file:text-stone-600 hover:file:bg-stone-200"
         />
         {files.length > 0 && (
           <div className="mt-2 flex flex-wrap gap-2">
@@ -284,7 +272,7 @@ export default function CreatorTab({ profile, onCreated }: Props) {
         <button
           type="submit"
           disabled={busy}
-          className="mt-5 w-full rounded-xl bg-orange-600 py-3 text-sm font-bold text-white shadow-md shadow-orange-500/30 transition hover:bg-orange-700 disabled:opacity-50"
+          className="brass-btn mt-5 w-full rounded-xl py-3 text-sm font-bold text-[#3a2715] shadow-md transition hover:brightness-110 disabled:opacity-50"
         >
           {busy ? '投稿中…' : 'アイデアを投稿する'}
         </button>
