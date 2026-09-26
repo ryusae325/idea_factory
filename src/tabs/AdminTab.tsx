@@ -4,6 +4,8 @@ import { fmtDate, fmtYen } from '../lib/types';
 import { fetchAllExchangeRequests, fetchAllOrders, processExchange, updateShipping, recordPartnerOrder, getStlDownloadUrl } from '../lib/data';
 import { toast } from '../lib/toast';
 
+type Section = 'exchange' | 'fulfillment' | 'orders';
+
 export default function AdminTab({ onChanged }: { onChanged: () => void }) {
   const [requests, setRequests] = useState<ExchangeRequest[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
@@ -11,6 +13,7 @@ export default function AdminTab({ onChanged }: { onChanged: () => void }) {
   const [codes, setCodes] = useState<Record<number, string>>({});
   const [partners, setPartners] = useState<Record<number, string>>({});
   const [showAll, setShowAll] = useState(false);
+  const [section, setSection] = useState<Section>('exchange');
 
   const reload = useCallback(async () => {
     const [r, o] = await Promise.all([fetchAllExchangeRequests(), fetchAllOrders()]);
@@ -85,224 +88,295 @@ export default function AdminTab({ onChanged }: { onChanged: () => void }) {
 
   const physicalOrders = orders.filter((o) => o.item_type === 'physical');
   const pendingPhysical = physicalOrders.filter((o) => o.partner_status !== '発注済');
+  const toShip = physicalOrders.filter((o) => o.shipping_status !== '発送済み');
+  const pendingRequests = requests.filter((r) => r.status === '未処理');
   const visiblePhysical = showAll ? physicalOrders : pendingPhysical;
 
+  const kpis: { key: Section; label: string; value: string; icon: string; accent: string }[] = [
+    { key: 'exchange', label: '未処理の交換申請', value: `${pendingRequests.length}件`, icon: '🎁', accent: 'text-amber-600' },
+    { key: 'fulfillment', label: '未発注の物理注文', value: `${pendingPhysical.length}件`, icon: '🏭', accent: 'text-orange-600' },
+    { key: 'fulfillment', label: '発送待ち', value: `${toShip.length}件`, icon: '📦', accent: 'text-stone-700' },
+    { key: 'orders', label: '総注文数', value: `${orders.length}件`, icon: '🧾', accent: 'text-emerald-600' },
+  ];
+
+  const tabs: { key: Section; label: string; badge: number }[] = [
+    { key: 'exchange', label: '🎁 交換申請', badge: pendingRequests.length },
+    { key: 'fulfillment', label: '🏭 製造・発送', badge: pendingPhysical.length },
+    { key: 'orders', label: '📦 注文一覧', badge: 0 },
+  ];
+
   return (
-    <div className="space-y-8">
+    <div className="space-y-5">
       <div className="rounded-2xl border border-amber-200 bg-amber-50/60 p-5">
-        <h3 className="text-sm font-bold text-amber-900">⚙️ 運営管理ダッシュボード</h3>
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <h3 className="text-sm font-bold text-amber-900">⚙️ 運営管理ダッシュボード</h3>
+          <button
+            onClick={() => reload().catch((e) => toast((e as Error).message, 'error'))}
+            className="rounded-lg bg-white px-3 py-1.5 text-[11px] font-bold text-amber-800 ring-1 ring-amber-300 transition hover:bg-amber-100"
+          >
+            🔄 更新
+          </button>
+        </div>
         <p className="mt-1 text-xs text-amber-700">
-          交換申請の処理・注文の配送管理ができます。物理プリント注文は、3Dデータをダウンロードして製造パートナーに発注し、配送先（購入者）へ直接発送を依頼してください。
+          物理プリント注文は、3Dデータをダウンロードして製造パートナーに発注し、配送先（購入者）へ直接発送を依頼してください。
         </p>
       </div>
 
-      <section>
-        <h3 className="mb-3 text-sm font-bold text-stone-800">🎁 ギフト交換申請の処理</h3>
-        {requests.length === 0 ? (
-          <Empty text="交換申請はありません。" />
-        ) : (
-          <div className="overflow-x-auto rounded-xl ring-1 ring-stone-200">
-            <table className="w-full text-left text-[13px]">
-              <thead>
-                <tr className="bg-stone-50 text-[11px] uppercase tracking-wide text-stone-500">
-                  <th className="px-4 py-2.5 font-semibold">ID</th>
-                  <th className="px-4 py-2.5 font-semibold">ユーザー</th>
-                  <th className="px-4 py-2.5 font-semibold">種類</th>
-                  <th className="px-4 py-2.5 font-semibold">金額</th>
-                  <th className="px-4 py-2.5 font-semibold">状態</th>
-                  <th className="px-4 py-2.5 font-semibold">操作 / ギフトコード</th>
-                </tr>
-              </thead>
-              <tbody>
-                {requests.map((r) => (
-                  <tr key={r.id} className="border-t border-stone-100 bg-[#fffdf8]">
-                    <td className="px-4 py-2.5 text-stone-400">#{r.id}</td>
-                    <td className="px-4 py-2.5 font-medium text-stone-800">
-                      {r.requester?.display_name || r.requester?.username || '—'}
-                    </td>
-                    <td className="px-4 py-2.5 text-stone-600">{r.exchange_type}</td>
-                    <td className="px-4 py-2.5 font-bold text-stone-700">{fmtYen(r.amount)}円</td>
-                    <td className="px-4 py-2.5">
-                      <span
-                        className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${
-                          r.status === '完了' ? 'bg-emerald-50 text-emerald-600' : 'bg-amber-50 text-amber-600'
-                        }`}
-                      >
-                        {r.status}
-                      </span>
-                    </td>
-                    <td className="px-4 py-2.5">
-                      {r.status === '未処理' ? (
-                        <span className="flex items-center gap-2">
-                          <input
-                            value={codes[r.id] ?? ''}
-                            onChange={(e) => setCodes((s) => ({ ...s, [r.id]: e.target.value }))}
-                            placeholder="ギフトコード"
-                            className="w-40 rounded-lg border border-stone-300 px-2.5 py-1.5 text-xs outline-none focus:border-orange-500"
-                          />
-                          <button
-                            onClick={() => process(r.id)}
-                            className="rounded-lg bg-orange-600 px-3 py-1.5 text-[11px] font-bold text-white hover:bg-orange-700"
-                          >
-                            発行・処理
-                          </button>
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+        {kpis.map((k, i) => (
+          <button
+            key={i}
+            onClick={() => setSection(k.key)}
+            className={`rounded-xl bg-[#fffdf8] p-4 text-left ring-1 ring-stone-200 transition hover:shadow-md ${
+              section === k.key ? 'ring-2 ring-orange-400' : ''
+            }`}
+          >
+            <p className="text-[11px] font-bold text-stone-500">
+              {k.icon} {k.label}
+            </p>
+            <p className={`mt-1 text-xl font-extrabold ${k.accent}`}>{k.value}</p>
+          </button>
+        ))}
+      </div>
+
+      <div className="flex flex-wrap gap-2">
+        {tabs.map((t) => (
+          <button
+            key={t.key}
+            onClick={() => setSection(t.key)}
+            className={`flex items-center gap-1.5 rounded-xl px-4 py-2 text-xs font-bold transition ${
+              section === t.key
+                ? 'bg-stone-800 text-white shadow-md'
+                : 'bg-[#fffdf8] text-stone-600 ring-1 ring-stone-200 hover:bg-stone-100'
+            }`}
+          >
+            {t.label}
+            {t.badge > 0 && (
+              <span
+                className={`grid h-5 min-w-5 place-items-center rounded-full px-1 text-[10px] font-extrabold ${
+                  section === t.key ? 'bg-orange-500 text-white' : 'bg-orange-100 text-orange-700'
+                }`}
+              >
+                {t.badge}
+              </span>
+            )}
+          </button>
+        ))}
+      </div>
+
+      {section === 'exchange' && (
+        <section>
+          {requests.length === 0 ? (
+            <Empty text="交換申請はありません。" />
+          ) : (
+            <div className="overflow-x-auto rounded-xl ring-1 ring-stone-200">
+              <table className="w-full text-left text-[13px]">
+                <thead>
+                  <tr className="bg-stone-50 text-[11px] uppercase tracking-wide text-stone-500">
+                    <th className="px-4 py-2.5 font-semibold">ID</th>
+                    <th className="px-4 py-2.5 font-semibold">ユーザー</th>
+                    <th className="px-4 py-2.5 font-semibold">種類</th>
+                    <th className="px-4 py-2.5 font-semibold">金額</th>
+                    <th className="px-4 py-2.5 font-semibold">状態</th>
+                    <th className="px-4 py-2.5 font-semibold">操作 / ギフトコード</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {requests.map((r) => (
+                    <tr key={r.id} className="border-t border-stone-100 bg-[#fffdf8]">
+                      <td className="px-4 py-2.5 text-stone-400">#{r.id}</td>
+                      <td className="px-4 py-2.5 font-medium text-stone-800">
+                        {r.requester?.display_name || r.requester?.username || '—'}
+                      </td>
+                      <td className="px-4 py-2.5 text-stone-600">{r.exchange_type}</td>
+                      <td className="px-4 py-2.5 font-bold text-stone-700">{fmtYen(r.amount)}円</td>
+                      <td className="px-4 py-2.5">
+                        <span
+                          className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${
+                            r.status === '完了' ? 'bg-emerald-50 text-emerald-600' : 'bg-amber-50 text-amber-600'
+                          }`}
+                        >
+                          {r.status}
                         </span>
-                      ) : (
-                        <span className="text-xs text-stone-500">{r.gift_code}</span>
-                      )}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </section>
-
-      <section>
-        <div className="mb-3 flex items-center justify-between">
-          <h3 className="text-sm font-bold text-stone-800">🏭 製造・発送管理（物理プリント）</h3>
-          {physicalOrders.length > 0 && (
-            <button
-              onClick={() => setShowAll((s) => !s)}
-              className="rounded-lg px-2.5 py-1.5 text-[11px] font-semibold text-orange-700 ring-1 ring-orange-200 transition hover:bg-orange-50"
-            >
-              {showAll ? '未発注のみ表示' : `すべて表示（${physicalOrders.length}件）`}
-            </button>
+                      </td>
+                      <td className="px-4 py-2.5">
+                        {r.status === '未処理' ? (
+                          <span className="flex items-center gap-2">
+                            <input
+                              value={codes[r.id] ?? ''}
+                              onChange={(e) => setCodes((s) => ({ ...s, [r.id]: e.target.value }))}
+                              placeholder="ギフトコード"
+                              className="w-40 rounded-lg border border-stone-300 px-2.5 py-1.5 text-xs outline-none focus:border-orange-500"
+                            />
+                            <button
+                              onClick={() => process(r.id)}
+                              className="rounded-lg bg-orange-600 px-3 py-1.5 text-[11px] font-bold text-white hover:bg-orange-700"
+                            >
+                              発行・処理
+                            </button>
+                          </span>
+                        ) : (
+                          <span className="text-xs text-stone-500">{r.gift_code}</span>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           )}
-        </div>
-        {visiblePhysical.length === 0 ? (
-          <Empty text={physicalOrders.length === 0 ? '物理プリントの注文はありません。' : '未発注の注文はありません。'} />
-        ) : (
-          <div className="space-y-4">
-            {visiblePhysical.map((o) => (
-              <div key={o.id} className="rounded-xl bg-[#fffdf8] p-5 ring-1 ring-stone-200">
-                <div className="flex flex-wrap items-center justify-between gap-2">
-                  <p className="text-sm font-bold text-stone-800">
-                    #{o.id} {o.idea?.title ?? `#${o.idea_id}`}
-                    <span className="ml-2 text-xs font-medium text-stone-400">
-                      {o.buyer?.display_name || o.buyer?.username || '—'} ・ {fmtDate(o.created_at)} ・ {fmtYen(o.price)}円
-                      {o.fulfillment_fee > 0 ? `（＋製造・配送費 ${fmtYen(o.fulfillment_fee)}円）` : ''}
-                    </span>
-                  </p>
-                  <span
-                    className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${
-                      o.partner_status === '発注済' ? 'bg-emerald-50 text-emerald-600' : 'bg-amber-50 text-amber-600'
-                    }`}
-                  >
-                    {o.partner_status === '発注済' ? `発注済${o.partner_order_id ? `（${o.partner_order_id}）` : ''}` : '未発注'}
-                  </span>
-                </div>
+        </section>
+      )}
 
-                <div className="mt-3 rounded-lg bg-stone-50 p-3.5 ring-1 ring-stone-200">
-                  <p className="text-[11px] font-bold text-stone-600">📦 配送先（購入者）</p>
-                  {o.shipping_name || o.shipping_address ? (
-                    <p className="mt-1 whitespace-pre-line text-[13px] leading-relaxed text-stone-800">
-                      {o.shipping_name || '—'}
-                      {'\n'}
-                      {o.shipping_postal || ''} {o.shipping_address || ''}
-                      {o.shipping_phone ? `\nTel: ${o.shipping_phone}` : ''}
+      {section === 'fulfillment' && (
+        <section>
+          <div className="mb-3 flex items-center justify-between">
+            <p className="text-xs font-semibold text-stone-500">
+              {showAll ? `すべての物理プリント注文（${physicalOrders.length}件）` : '未発注のみ表示中'}
+            </p>
+            {physicalOrders.length > 0 && (
+              <button
+                onClick={() => setShowAll((s) => !s)}
+                className="rounded-lg px-2.5 py-1.5 text-[11px] font-semibold text-orange-700 ring-1 ring-orange-200 transition hover:bg-orange-50"
+              >
+                {showAll ? '未発注のみ表示' : `すべて表示（${physicalOrders.length}件）`}
+              </button>
+            )}
+          </div>
+          {visiblePhysical.length === 0 ? (
+            <Empty text={physicalOrders.length === 0 ? '物理プリントの注文はありません。' : '未発注の注文はありません。'} />
+          ) : (
+            <div className="space-y-4">
+              {visiblePhysical.map((o) => (
+                <div key={o.id} className="rounded-xl bg-[#fffdf8] p-5 ring-1 ring-stone-200">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <p className="text-sm font-bold text-stone-800">
+                      #{o.id} {o.idea?.title ?? `#${o.idea_id}`}
+                      <span className="ml-2 text-xs font-medium text-stone-400">
+                        {o.buyer?.display_name || o.buyer?.username || '—'} ・ {fmtDate(o.created_at)} ・ {fmtYen(o.price)}円
+                        {o.fulfillment_fee > 0 ? `（＋製造・配送費 ${fmtYen(o.fulfillment_fee)}円）` : ''}
+                      </span>
                     </p>
-                  ) : (
-                    <p className="mt-1 text-[13px] text-stone-400">配送先情報がありません（無料購入など）。</p>
-                  )}
-                  <button
-                    onClick={() => copyAddress(o)}
-                    className="mt-2 rounded-lg bg-stone-100 px-3 py-1.5 text-[10px] font-semibold text-stone-600 ring-1 ring-stone-200 transition hover:bg-stone-200"
-                  >
-                    📋 配送先情報をコピー
-                  </button>
-                </div>
-
-                <div className="mt-3 flex flex-wrap items-center gap-2">
-                  <button
-                    onClick={() => downloadStl(o)}
-                    className="rounded-lg bg-emerald-50 px-3 py-1.5 text-[10px] font-bold text-emerald-700 ring-1 ring-emerald-200 transition hover:bg-emerald-100"
-                  >
-                    ⬇️ 3Dデータ（STL）
-                  </button>
-                  {o.partner_status !== '発注済' ? (
-                    <span className="flex items-center gap-2">
-                      <input
-                        value={partners[o.id] ?? ''}
-                        onChange={(e) => setPartners((s) => ({ ...s, [o.id]: e.target.value }))}
-                        placeholder="パートナー注文番号（任意）"
-                        className="w-48 rounded-lg border border-stone-300 px-2.5 py-1.5 text-xs outline-none focus:border-orange-500"
-                      />
-                      <button
-                        onClick={() => partnerOrder(o.id)}
-                        className="rounded-lg bg-orange-600 px-3 py-1.5 text-[11px] font-bold text-white hover:bg-orange-700"
-                      >
-                        🚚 発注済みにする
-                      </button>
+                    <span
+                      className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${
+                        o.partner_status === '発注済' ? 'bg-emerald-50 text-emerald-600' : 'bg-amber-50 text-amber-600'
+                      }`}
+                    >
+                      {o.partner_status === '発注済' ? `発注済${o.partner_order_id ? `（${o.partner_order_id}）` : ''}` : '未発注'}
                     </span>
-                  ) : (
-                    <span className="text-[10px] text-stone-400">
-                      発注日時: {o.ordered_at ? fmtDate(o.ordered_at) : '—'}
-                    </span>
-                  )}
+                  </div>
+
+                  <div className="mt-3 rounded-lg bg-stone-50 p-3.5 ring-1 ring-stone-200">
+                    <p className="text-[11px] font-bold text-stone-600">📦 配送先（購入者）</p>
+                    {o.shipping_name || o.shipping_address ? (
+                      <p className="mt-1 whitespace-pre-line text-[13px] leading-relaxed text-stone-800">
+                        {o.shipping_name || '—'}
+                        {'\n'}
+                        {o.shipping_postal || ''} {o.shipping_address || ''}
+                        {o.shipping_phone ? `\nTel: ${o.shipping_phone}` : ''}
+                      </p>
+                    ) : (
+                      <p className="mt-1 text-[13px] text-stone-400">配送先情報がありません（無料購入など）。</p>
+                    )}
+                    <button
+                      onClick={() => copyAddress(o)}
+                      className="mt-2 rounded-lg bg-stone-100 px-3 py-1.5 text-[10px] font-semibold text-stone-600 ring-1 ring-stone-200 transition hover:bg-stone-200"
+                    >
+                      📋 配送先情報をコピー
+                    </button>
+                  </div>
+
+                  <div className="mt-3 flex flex-wrap items-center gap-2">
+                    <button
+                      onClick={() => downloadStl(o)}
+                      className="rounded-lg bg-emerald-50 px-3 py-1.5 text-[10px] font-bold text-emerald-700 ring-1 ring-emerald-200 transition hover:bg-emerald-100"
+                    >
+                      ⬇️ 3Dデータ（STL）
+                    </button>
+                    {o.partner_status !== '発注済' ? (
+                      <span className="flex items-center gap-2">
+                        <input
+                          value={partners[o.id] ?? ''}
+                          onChange={(e) => setPartners((s) => ({ ...s, [o.id]: e.target.value }))}
+                          placeholder="パートナー注文番号（任意）"
+                          className="w-48 rounded-lg border border-stone-300 px-2.5 py-1.5 text-xs outline-none focus:border-orange-500"
+                        />
+                        <button
+                          onClick={() => partnerOrder(o.id)}
+                          className="rounded-lg bg-orange-600 px-3 py-1.5 text-[11px] font-bold text-white hover:bg-orange-700"
+                        >
+                          🚚 発注済みにする
+                        </button>
+                      </span>
+                    ) : (
+                      <span className="text-[10px] text-stone-400">
+                        発注日時: {o.ordered_at ? fmtDate(o.ordered_at) : '—'}
+                      </span>
+                    )}
+                  </div>
+
+                  <hr className="my-3 border-stone-200" />
+
+                  <p className="flex flex-wrap items-center gap-2 text-[11px] text-stone-500">
+                    <span className="font-bold">配送状態: {o.shipping_status}</span>
+                    <input
+                      value={tracking[o.id] ?? o.tracking_number}
+                      onChange={(e) => setTracking((s) => ({ ...s, [o.id]: e.target.value }))}
+                      placeholder="追跡番号"
+                      className="w-32 rounded-lg border border-stone-300 px-2.5 py-1.5 text-xs outline-none focus:border-orange-500"
+                    />
+                    <button
+                      onClick={() => ship(o.id)}
+                      className="rounded-lg bg-stone-800 px-3 py-1.5 text-[11px] font-bold text-white hover:bg-stone-900"
+                    >
+                      📦 発送済みにする
+                    </button>
+                  </p>
                 </div>
+              ))}
+            </div>
+          )}
+        </section>
+      )}
 
-                <hr className="my-3 border-stone-200" />
-
-                <p className="flex flex-wrap items-center gap-2 text-[11px] text-stone-500">
-                  <span className="font-bold">配送状態: {o.shipping_status}</span>
-                  <input
-                    value={tracking[o.id] ?? o.tracking_number}
-                    onChange={(e) => setTracking((s) => ({ ...s, [o.id]: e.target.value }))}
-                    placeholder="追跡番号"
-                    className="w-32 rounded-lg border border-stone-300 px-2.5 py-1.5 text-xs outline-none focus:border-orange-500"
-                  />
-                  <button
-                    onClick={() => ship(o.id)}
-                    className="rounded-lg bg-stone-800 px-3 py-1.5 text-[11px] font-bold text-white hover:bg-stone-900"
-                  >
-                    📦 発送済みにする
-                  </button>
-                </p>
-              </div>
-            ))}
-          </div>
-        )}
-      </section>
-
-      <section>
-        <h3 className="mb-3 text-sm font-bold text-stone-800">📦 全ユーザーの注文一覧</h3>
-        {orders.length === 0 ? (
-          <Empty text="注文はありません。" />
-        ) : (
-          <div className="overflow-x-auto rounded-xl ring-1 ring-stone-200">
-            <table className="w-full text-left text-[13px]">
-              <thead>
-                <tr className="bg-stone-50 text-[11px] uppercase tracking-wide text-stone-500">
-                  <th className="px-4 py-2.5 font-semibold">ID</th>
-                  <th className="px-4 py-2.5 font-semibold">購入者</th>
-                  <th className="px-4 py-2.5 font-semibold">商品名</th>
-                  <th className="px-4 py-2.5 font-semibold">種別</th>
-                  <th className="px-4 py-2.5 font-semibold">状態</th>
-                  <th className="px-4 py-2.5 font-semibold">追跡番号</th>
-                </tr>
-              </thead>
-              <tbody>
-                {orders.map((o) => (
-                  <tr key={o.id} className="border-t border-stone-100 bg-[#fffdf8]">
-                    <td className="px-4 py-2.5 text-stone-400">#{o.id}</td>
-                    <td className="px-4 py-2.5 font-medium text-stone-800">
-                      {o.buyer?.display_name || o.buyer?.username || '—'}
-                    </td>
-                    <td className="px-4 py-2.5 font-medium text-stone-800">{o.idea?.title ?? `#${o.idea_id}`}</td>
-                    <td className="px-4 py-2.5 text-stone-600">
-                      {o.item_type === 'physical' ? '物理プリント' : 'STLデータ'}
-                    </td>
-                    <td className="px-4 py-2.5 font-bold text-stone-700">{o.shipping_status}</td>
-                    <td className="px-4 py-2.5 text-stone-500">{o.tracking_number || '—'}</td>
+      {section === 'orders' && (
+        <section>
+          {orders.length === 0 ? (
+            <Empty text="注文はありません。" />
+          ) : (
+            <div className="overflow-x-auto rounded-xl ring-1 ring-stone-200">
+              <table className="w-full text-left text-[13px]">
+                <thead>
+                  <tr className="bg-stone-50 text-[11px] uppercase tracking-wide text-stone-500">
+                    <th className="px-4 py-2.5 font-semibold">ID</th>
+                    <th className="px-4 py-2.5 font-semibold">購入者</th>
+                    <th className="px-4 py-2.5 font-semibold">商品名</th>
+                    <th className="px-4 py-2.5 font-semibold">種別</th>
+                    <th className="px-4 py-2.5 font-semibold">状態</th>
+                    <th className="px-4 py-2.5 font-semibold">追跡番号</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </section>
+                </thead>
+                <tbody>
+                  {orders.map((o) => (
+                    <tr key={o.id} className="border-t border-stone-100 bg-[#fffdf8]">
+                      <td className="px-4 py-2.5 text-stone-400">#{o.id}</td>
+                      <td className="px-4 py-2.5 font-medium text-stone-800">
+                        {o.buyer?.display_name || o.buyer?.username || '—'}
+                      </td>
+                      <td className="px-4 py-2.5 font-medium text-stone-800">{o.idea?.title ?? `#${o.idea_id}`}</td>
+                      <td className="px-4 py-2.5 text-stone-600">
+                        {o.item_type === 'physical' ? '物理プリント' : 'STLデータ'}
+                      </td>
+                      <td className="px-4 py-2.5 font-bold text-stone-700">{o.shipping_status}</td>
+                      <td className="px-4 py-2.5 text-stone-500">{o.tracking_number || '—'}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </section>
+      )}
     </div>
   );
 }
