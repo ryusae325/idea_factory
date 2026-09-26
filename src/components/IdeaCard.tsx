@@ -86,9 +86,9 @@ export default function IdeaCard({ idea, profile, onOpen, onAction }: Props) {
       className="group flex cursor-pointer flex-col overflow-hidden rounded-2xl border border-stone-200 bg-[#fffdf8] shadow-sm transition hover:-transtone-y-0.5 hover:shadow-lg hover:shadow-stone-900/5"
     >
       <div className="relative h-40 overflow-hidden bg-gradient-to-br from-stone-100 to-stone-200">
-        {idea.image_url ? (
+        {idea.images?.[0] ?? idea.image_url ? (
           <img
-            src={idea.image_url}
+            src={idea.images?.[0] ?? idea.image_url}
             alt={idea.title}
             className="h-full w-full object-cover transition duration-300 group-hover:scale-105"
           />

@@ -132,12 +132,42 @@ export default function DetailModal({ ideaId, profile, onClose, onChanged }: Pro
       </div>
 
       <div className="mt-3 h-44 overflow-hidden rounded-xl bg-gradient-to-br from-stone-100 to-stone-200">
-        {idea.image_url ? (
-          <img src={idea.image_url} alt={idea.title} className="h-full w-full object-cover" />
+        {(idea.images?.[0] ?? idea.image_url) ? (
+          <img
+            src={idea.images?.[0] ?? idea.image_url}
+            alt={idea.title}
+            className="h-full w-full object-cover"
+          />
         ) : (
           <div className="grid h-full w-full place-items-center text-5xl text-stone-300">🧩</div>
         )}
       </div>
+
+      {(idea.images?.length ?? 0) > 1 && (
+        <div className="mt-2">
+          <p className="text-[10px] font-bold text-stone-500">
+            📷 参考画像 {idea.images.length}枚（正面・横・上面など）
+          </p>
+          <div className="mt-1.5 grid grid-cols-4 gap-2">
+            {idea.images.map((url, i) => (
+              <a
+                key={`${url}-${i}`}
+                href={url}
+                target="_blank"
+                rel="noreferrer"
+                className="h-20 overflow-hidden rounded-lg bg-stone-100 ring-1 ring-stone-200 transition hover:ring-orange-400"
+              >
+                <img
+                  src={url}
+                  alt={`参考画像${i + 1}`}
+                  loading="lazy"
+                  className="h-full w-full object-cover transition hover:scale-105"
+                />
+              </a>
+            ))}
+          </div>
+        </div>
+      )}
 
       <dl className="mt-4 space-y-1.5 text-[13px]">
         <Row label="ステータス" value={idea.status} accent />

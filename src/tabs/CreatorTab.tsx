@@ -17,7 +17,7 @@ export default function CreatorTab({ profile, onCreated }: Props) {
   const [sizeTier, setSizeTier] = useState<SizeTier>('S');
   const [pricePhysical, setPricePhysical] = useState(1000);
   const [priceDigital, setPriceDigital] = useState(500);
-  const [file, setFile] = useState<File | null>(null);
+  const [files, setFiles] = useState<File[]>([]);
   const [busy, setBusy] = useState(false);
   const [checkBusy, setCheckBusy] = useState(false);
   const [checkResult, setCheckResult] = useState<{
@@ -78,14 +78,15 @@ export default function CreatorTab({ profile, onCreated }: Props) {
     }
     setBusy(true);
     try {
-      let imageUrl = '';
-      if (file) {
-        imageUrl = await uploadImage(profile.id, file);
+      const images: string[] = [];
+      for (const f of files) {
+        images.push(await uploadImage(profile.id, f));
       }
       await createIdea({
         title: title.trim(),
         description: desc.trim(),
-        image_url: imageUrl,
+        image_url: images[0] ?? '',
+        images,
         creator_id: profile.id,
         creator_share: creatorShare,
         modeler_share: modelerShare,
@@ -100,7 +101,7 @@ export default function CreatorTab({ profile, onCreated }: Props) {
       setMfgCost(0);
       setSizeTier('S');
       setPricePhysical(1000);
-      setFile(null);
+      setFiles([]);
       onCreated();
     } catch (err) {
       toast((err as Error).message, 'error');
@@ -291,14 +292,37 @@ export default function CreatorTab({ profile, onCreated }: Props) {
         </div>
 
         <label className="mt-3 block text-xs font-bold text-stone-600">
-          画像をアップロード（任意・AI画像より優先）
+          画像をアップロード（任意・複数枚可）
         </label>
+        <p className="mt-0.5 text-[11px] leading-relaxed text-stone-500">
+          📷 <b>正面・横から・上から</b>など、角度の違う画像やイラストを複数枚アップロードすると、モデラーが形をイメージしやすくなり、完成度が上がります。
+        </p>
         <input
           type="file"
           accept="image/*"
-          onChange={(e) => setFile(e.target.files?.[0] ?? null)}
+          multiple
+          onChange={(e) => setFiles(Array.from(e.target.files ?? []))}
           className="mt-1 w-full text-xs text-stone-500 file:mr-3 file:rounded-lg file:border-0 file:bg-stone-100 file:px-3 file:py-2 file:text-xs file:font-semibold file:text-stone-600 hover:file:bg-stone-200"
         />
+        {files.length > 0 && (
+          <div className="mt-2 flex flex-wrap gap-2">
+            {files.map((f, i) => (
+              <span
+                key={`${f.name}-${i}`}
+                className="inline-flex items-center gap-1 rounded-full bg-orange-50 px-2.5 py-1 text-[10px] font-semibold text-orange-700 ring-1 ring-orange-200"
+              >
+                🖼️ {f.name.length > 14 ? `${f.name.slice(0, 14)}…` : f.name}
+                <button
+                  type="button"
+                  onClick={() => setFiles((s) => s.filter((_, j) => j !== i))}
+                  className="ml-0.5 font-bold text-orange-400 hover:text-orange-600"
+                >
+                  ×
+                </button>
+              </span>
+            ))}
+          </div>
+        )}
 
         <button
           type="submit"
@@ -316,7 +340,7 @@ export default function CreatorTab({ profile, onCreated }: Props) {
             <Step n={1} />
             <span>
               <b>アイデアを投稿</b> — タイトル・仕様・希望価格・収益分配率を設定。
-              AI画像があればモデラーに完成イメージが伝わりやすくなります。
+              正面・横・上面など角度違いの画像を複数枚添えると、モデラーに形が伝わりやすくなります。
             </span>
           </li>
           <li className="flex gap-2.5">

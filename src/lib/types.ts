@@ -31,6 +31,7 @@ export interface Idea {
   title: string;
   description: string;
   image_url: string;
+  images: string[];
   status: IdeaStatus;
   creator_id: string;
   modeler_id: string | null;

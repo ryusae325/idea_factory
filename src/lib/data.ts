@@ -48,6 +48,7 @@ export async function createIdea(values: {
   title: string;
   description: string;
   image_url: string;
+  images: string[];
   creator_id: string;
   creator_share: number;
   modeler_share: number;
