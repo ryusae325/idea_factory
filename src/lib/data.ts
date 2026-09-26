@@ -53,6 +53,7 @@ export async function createIdea(values: {
   modeler_share: number;
   price_physical: number;
   price_digital: number;
+  mfg_cost: number;
 }) {
   const { error } = await supabase.from('ideas').insert(values);
   if (error) throw new Error(error.message);

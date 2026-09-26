@@ -13,6 +13,7 @@ export default function CreatorTab({ profile, onCreated }: Props) {
   const [title, setTitle] = useState('');
   const [desc, setDesc] = useState('');
   const [creatorShare, setCreatorShare] = useState(50);
+  const [mfgCost, setMfgCost] = useState(0);
   const [pricePhysical, setPricePhysical] = useState(2500);
   const [priceDigital, setPriceDigital] = useState(500);
   const [file, setFile] = useState<File | null>(null);
@@ -25,6 +26,7 @@ export default function CreatorTab({ profile, onCreated }: Props) {
   } | null>(null);
 
   const modelerShare = 100 - creatorShare;
+  const minPhysicalPrice = Math.max(0, mfgCost) * 2;
 
   const checkInfringement = async () => {
     if (!title.trim()) return toast('アイデアのタイトルを入力してからチェックしてください', 'error');
@@ -56,6 +58,12 @@ export default function CreatorTab({ profile, onCreated }: Props) {
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!title.trim()) return toast('タイトルを入力してください', 'error');
+    if (pricePhysical < minPhysicalPrice) {
+      return toast(
+        `物理プリント価格は JLC3DP 見積（${mfgCost}円）の2倍以上（${minPhysicalPrice}円以上）に設定してください`,
+        'error',
+      );
+    }
     setBusy(true);
     try {
       let imageUrl = '';
@@ -71,10 +79,12 @@ export default function CreatorTab({ profile, onCreated }: Props) {
         modeler_share: modelerShare,
         price_physical: Math.max(0, pricePhysical),
         price_digital: Math.max(0, priceDigital),
+        mfg_cost: Math.max(0, mfgCost),
       });
       toast('アイデアを投稿しました！');
       setTitle('');
       setDesc('');
+      setMfgCost(0);
       setFile(null);
       onCreated();
     } catch (err) {
@@ -181,15 +191,46 @@ export default function CreatorTab({ profile, onCreated }: Props) {
               className="mt-1 w-full rounded-lg border border-stone-200 bg-stone-50 px-3 py-2 text-sm text-stone-500"
             />
           </div>
+          <div className="col-span-2">
+            <label className="block text-xs font-bold text-stone-600">
+              JLC3DP 見積原価 (円・任意)
+            </label>
+            <input
+              type="number"
+              min={0}
+              value={mfgCost || ''}
+              placeholder="例: 800（未入力なら価格チェックなし）"
+              onChange={(e) => setMfgCost(Math.max(0, Number(e.target.value) || 0))}
+              className="mt-1 w-full rounded-lg border border-stone-300 px-3 py-2 text-sm outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-100"
+            />
+            <p className="mt-1 text-[11px] text-stone-500">
+              JLC3DP で「Instant Quote」した製造＋配送の合計金額を入力してください。入力すると赤字防止のため価格が自動チェックされます。
+            </p>
+          </div>
           <div>
             <label className="block text-xs font-bold text-stone-600">プリント品 価格 (円)</label>
             <input
               type="number"
-              min={0}
+              min={minPhysicalPrice}
               value={pricePhysical}
               onChange={(e) => setPricePhysical(Number(e.target.value))}
-              className="mt-1 w-full rounded-lg border border-stone-300 px-3 py-2 text-sm outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-100"
+              className={`mt-1 w-full rounded-lg border px-3 py-2 text-sm outline-none focus:ring-2 ${
+                mfgCost > 0 && pricePhysical < minPhysicalPrice
+                  ? 'border-rose-400 bg-rose-50 focus:border-rose-500 focus:ring-rose-100'
+                  : 'border-stone-300 focus:border-orange-500 focus:ring-orange-100'
+              }`}
             />
+            {mfgCost > 0 && (
+              <p
+                className={`mt-1 text-[11px] font-semibold ${
+                  pricePhysical < minPhysicalPrice ? 'text-rose-600' : 'text-emerald-600'
+                }`}
+              >
+                {pricePhysical < minPhysicalPrice
+                  ? `⚠️ 最低価格は ${minPhysicalPrice}円（見積の2倍）です`
+                  : `✓ 最低価格 ${minPhysicalPrice}円 を満たしています`}
+              </p>
+            )}
           </div>
           <div>
             <label className="block text-xs font-bold text-stone-600">STLデータ 価格 (円)</label>

@@ -38,6 +38,7 @@ export interface Idea {
   modeler_share: number;
   price_physical: number;
   price_digital: number;
+  mfg_cost: number;
   total_sales: number;
   platform_fee: number;
   creator_reward: number;
