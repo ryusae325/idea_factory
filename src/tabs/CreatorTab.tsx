@@ -67,6 +67,9 @@ export default function CreatorTab({ profile, onCreated }: Props) {
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!title.trim()) return toast('タイトルを入力してください', 'error');
+    if (priceDigital > 0 && priceDigital < 300) {
+      return toast('STLデータ価格は300円以上に設定してください（無料の場合は0円）', 'error');
+    }
     if (pricePhysical < minPhysicalPrice) {
       return toast(
         `物理プリント価格は最低 ${minPhysicalPrice}円（サイズ階級またはJLC3DP見積×4に基づく）以上に設定してください`,
@@ -278,11 +281,12 @@ export default function CreatorTab({ profile, onCreated }: Props) {
             <label className="block text-xs font-bold text-stone-600">STLデータ 価格 (円)</label>
             <input
               type="number"
-              min={0}
+              min={300}
               value={priceDigital}
               onChange={(e) => setPriceDigital(Number(e.target.value))}
               className="mt-1 w-full rounded-lg border border-stone-300 px-3 py-2 text-sm outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-100"
             />
+            <p className="mt-1 text-[11px] text-stone-400">最低 ¥300（無料にする場合は 0）</p>
           </div>
         </div>
 
