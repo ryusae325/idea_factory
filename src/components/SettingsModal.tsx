@@ -1,15 +1,12 @@
 import { useEffect, useState } from 'react';
-import type { Profile, Role } from '../lib/types';
+import type { Profile } from '../lib/types';
 import { supabase } from '../lib/supabase';
 import { updateProfile, fetchMyOrders, fetchMyBalanceHistory, fetchMyExchangeRequests, deleteMyAccount } from '../lib/data';
 import { toast } from '../lib/toast';
 
-const ROLES: Role[] = ['プランナー', 'モデラー', '購入者'];
-
 export default function SettingsModal({ profile, onClose }: { profile: Profile; onClose: () => void }) {
   const [section, setSection] = useState<'profile' | 'account' | 'privacy'>('profile');
   const [displayName, setDisplayName] = useState(profile.display_name || '');
-  const [role, setRole] = useState<Role>(profile.role);
   const [savingProfile, setSavingProfile] = useState(false);
   const [email, setEmail] = useState('');
   const [newEmail, setNewEmail] = useState('');
@@ -25,7 +22,7 @@ export default function SettingsModal({ profile, onClose }: { profile: Profile; 
     if (!displayName.trim()) return toast('表示名を入力してください', 'error');
     setSavingProfile(true);
     try {
-      await updateProfile(profile.id, { display_name: displayName.trim(), role });
+      await updateProfile(profile.id, { display_name: displayName.trim() });
       toast('プロフィールを保存しました');
     } catch (e) {
       toast((e as Error).message, 'error');
@@ -85,7 +82,7 @@ export default function SettingsModal({ profile, onClose }: { profile: Profile; 
         fetchMyBalanceHistory(profile.id),
         fetchMyExchangeRequests(profile.id),
       ]);
-      const blob = new Blob([JSON.stringify({ exported_at: new Date().toISOString(), profile: { display_name: profile.display_name, role: profile.role }, orders, balance_history: balance, exchange_requests: exchanges }, null, 2)], {
+      const blob = new Blob([JSON.stringify({ exported_at: new Date().toISOString(), profile: { display_name: profile.display_name }, orders, balance_history: balance, exchange_requests: exchanges }, null, 2)], {
         type: 'application/json',
       });
       const url = URL.createObjectURL(blob);
@@ -162,21 +159,9 @@ export default function SettingsModal({ profile, onClose }: { profile: Profile; 
                   onChange={(e) => setDisplayName(e.target.value)}
                   className="mt-1 w-full rounded-lg border border-stone-300 px-3 py-2 text-sm outline-none focus:border-orange-500"
                 />
-              </div>
-              <div>
-                <label className="block text-xs font-bold text-stone-600">ロール</label>
-                <select
-                  value={role}
-                  onChange={(e) => setRole(e.target.value as Role)}
-                  className="mt-1 w-full rounded-lg border border-stone-300 bg-white px-3 py-2 text-sm outline-none focus:border-orange-500"
-                >
-                  {ROLES.map((r) => (
-                    <option key={r} value={r}>
-                      {r}
-                    </option>
-                  ))}
-                </select>
-                <p className="mt-1 text-[11px] text-stone-400">アイデアを投稿する場合は「プランナー」を選択してください。</p>
+                <p className="mt-1 text-[11px] text-stone-400">
+                  PlanMo では、どなたでもアイデアの投稿・モデリング・購入を自由に行えます（役割の登録は不要です）。
+                </p>
               </div>
               <button
                 onClick={saveProfile}

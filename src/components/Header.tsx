@@ -46,7 +46,6 @@ export default function Header({ profile, loggedIn }: Props) {
                   {(profile.display_name || profile.username).slice(0, 1).toUpperCase()}
                 </span>
                 <span className="hidden sm:inline">{profile.display_name || profile.username}</span>
-                <span className="text-[#b3976d]">({profile.role})</span>
               </span>
             </>
           )}

@@ -133,7 +133,7 @@ export async function fetchProfile(userId: string): Promise<Profile | null> {
 
 export async function updateProfile(
   userId: string,
-  values: { display_name: string; role: Profile['role'] },
+  values: { display_name: string },
 ) {
   const { error } = await supabase
     .from('profiles')

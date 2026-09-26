@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import type { Profile, Role } from '../lib/types';
+import type { Profile } from '../lib/types';
 import { updateProfile } from '../lib/data';
 import { toast } from '../lib/toast';
 
@@ -9,24 +9,17 @@ interface Props {
   onClose: () => void;
 }
 
-const ROLES: { value: Role; desc: string }[] = [
-  { value: 'プランナー', desc: 'アイデアを投稿してモデラーを募集する' },
-  { value: 'モデラー', desc: 'アイデアを引き受けて3Dデータ化する' },
-  { value: '購入者', desc: '完成した商品を購入する' },
-];
-
 export default function ProfileModal({ profile, onSaved, onClose }: Props) {
   const [name, setName] = useState(profile.display_name || '');
-  const [role, setRole] = useState<Profile['role']>(profile.role === '運営者' ? '購入者' : profile.role);
   const [busy, setBusy] = useState(false);
 
   const save = async () => {
     if (!name.trim()) return toast('表示名を入力してください', 'error');
     setBusy(true);
     try {
-      await updateProfile(profile.id, { display_name: name.trim(), role });
+      await updateProfile(profile.id, { display_name: name.trim() });
       toast('プロフィールを保存しました');
-      onSaved({ ...profile, display_name: name.trim(), role });
+      onSaved({ ...profile, display_name: name.trim() });
       onClose();
     } catch (e) {
       toast((e as Error).message, 'error');
@@ -38,9 +31,9 @@ export default function ProfileModal({ profile, onSaved, onClose }: Props) {
   return (
     <div className="fixed inset-0 z-50 grid place-items-center bg-stone-900/50 p-4 backdrop-blur-sm">
       <div className="w-full max-w-md rounded-2xl bg-[#fffdf8] p-6 shadow-2xl">
-        <h3 className="text-lg font-bold text-stone-900">👋 プロフィールを設定</h3>
+        <h3 className="text-lg font-bold text-stone-900">👋 ようこそ PlanMo へ</h3>
         <p className="mt-1 text-xs text-stone-500">
-          サービス内で表示する名前と、あなたの役割を選んでください。
+          サービス内で表示する名前を設定してください。アイデアの投稿・モデリング・購入は、どなたでも自由に行えます。
         </p>
 
         <label className="mt-5 block text-xs font-bold text-stone-600">表示名</label>
@@ -50,32 +43,6 @@ export default function ProfileModal({ profile, onSaved, onClose }: Props) {
           placeholder="例: あさひ製作所"
           className="mt-1 w-full rounded-lg border border-stone-300 px-3 py-2.5 text-sm outline-none transition focus:border-orange-500 focus:ring-2 focus:ring-orange-100"
         />
-
-        <label className="mt-4 block text-xs font-bold text-stone-600">役割（後で変更できます）</label>
-        <div className="mt-2 space-y-2">
-          {ROLES.map((r) => (
-            <label
-              key={r.value}
-              className={`flex cursor-pointer items-center gap-3 rounded-xl border px-3.5 py-3 transition ${
-                role === r.value
-                  ? 'border-orange-500 bg-orange-50 ring-1 ring-orange-300'
-                  : 'border-stone-200 hover:bg-stone-50'
-              }`}
-            >
-              <input
-                type="radio"
-                name="role"
-                checked={role === r.value}
-                onChange={() => setRole(r.value)}
-                className="accent-orange-600"
-              />
-              <span>
-                <span className="block text-sm font-bold text-stone-800">{r.value}</span>
-                <span className="block text-[11px] text-stone-500">{r.desc}</span>
-              </span>
-            </label>
-          ))}
-        </div>
 
         <div className="mt-6 flex gap-2">
           <button

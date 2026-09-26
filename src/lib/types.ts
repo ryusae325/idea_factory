@@ -1,10 +1,7 @@
-export type Role = 'プランナー' | 'モデラー' | '購入者' | '運営者';
-
 export interface Profile {
   id: string;
   username: string;
   display_name: string;
-  role: Role;
   balance: number;
   is_admin: boolean;
   created_at: string;
