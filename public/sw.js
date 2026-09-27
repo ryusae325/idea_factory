@@ -1,5 +1,5 @@
 /* PlanMo Service Worker */
-const CACHE_NAME = 'planmo-v2';
+const CACHE_NAME = 'planmo-v3';
 const APP_SHELL = ['/', '/index.html', '/manifest.json'];
 
 /* API・認証・ストレージ・決済関連は絶対にキャッシュしない */
@@ -33,10 +33,10 @@ self.addEventListener('fetch', (event) => {
   if (url.origin !== self.location.origin) return;
   if (BYPASS.some((re) => re.test(url.pathname))) return;
 
-  /* ページ遷移: ネットワーク優先・失敗時はキャッシュされたシェル */
+  /* ページ遷移: 必ずサーバーから最新HTMLを取得（HTTPキャッシュ回避）・失敗時はキャッシュされたシェル */
   if (req.mode === 'navigate') {
     event.respondWith(
-      fetch(req)
+      fetch(new Request(req, { cache: 'reload' }))
         .then((res) => {
           const copy = res.clone();
           caches.open(CACHE_NAME).then((c) => c.put('/', copy)).catch(() => {});

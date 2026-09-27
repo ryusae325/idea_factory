@@ -163,11 +163,6 @@ export function fulfillmentFee(tier: SizeTier): number {
   return SIZE_OPTIONS.find((o) => o.tier === tier)?.fee ?? 900;
 }
 
-export async function deleteIdea(id: number) {
-  const { error } = await supabase.from('ideas').delete().eq('id', id);
-  if (error) throw new Error(error.message);
-}
-
 /** 削除リクエスト（相手の承認が必要。モデラー未定なら即時削除） */
 export async function requestIdeaDelete(id: number): Promise<string> {
   const { data, error } = await supabase.rpc('request_idea_delete', { p_idea_id: id });
