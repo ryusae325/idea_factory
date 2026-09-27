@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import type { Idea, Profile } from './lib/types';
 import { supabase, auth } from './lib/supabase';
-import { fetchIdeas, fetchProfile, updateIdeaStatus, createCheckout, completeCheckout, GENRES, commentCount } from './lib/data';
+import { fetchIdeas, fetchProfile, updateIdeaStatus, createCheckout, completeCheckout, GENRES, commentCount, ratingStats } from './lib/data';
 import { toast } from './lib/toast';
 import Header from './components/Header';
 import ToastHost from './components/ToastHost';
@@ -137,7 +137,7 @@ export default function App() {
   const inProgress = ideas.filter((i) => i.status === '制作中');
   const onSale = ideas.filter((i) => i.status === '販売中');
 
-  type Order = 'new' | 'priceAsc' | 'priceDesc' | 'stlAsc' | 'stlDesc' | 'comments';
+  type Order = 'new' | 'priceAsc' | 'priceDesc' | 'stlAsc' | 'stlDesc' | 'comments' | 'rating';
   const [genreFilter, setGenreFilter] = useState('すべて');
   const [sortOrder, setSortOrder] = useState<Order>('new');
   const [genreFilter2, setGenreFilter2] = useState('すべて');
@@ -153,6 +153,15 @@ export default function App() {
     if (order === 'stlAsc') return byId.sort((a, b) => a.price_digital - b.price_digital);
     if (order === 'stlDesc') return byId.sort((a, b) => b.price_digital - a.price_digital);
     if (order === 'comments') return byId.sort((a, b) => commentCount(b) - commentCount(a));
+    if (order === 'rating')
+      return byId.sort((a, b) => {
+        const ra = ratingStats(a);
+        const rb = ratingStats(b);
+        const va = ra.count ? ra.avg! : -1;
+        const vb = rb.count ? rb.avg! : -1;
+        if (vb !== va) return vb - va;
+        return rb.count - ra.count;
+      });
     return byId;
   };
 
@@ -332,8 +341,8 @@ function ListHeader({
   genres: string[];
   genre: string;
   onGenre: (v: string) => void;
-  order: 'new' | 'priceAsc' | 'priceDesc' | 'stlAsc' | 'stlDesc' | 'comments';
-  onOrder: (v: 'new' | 'priceAsc' | 'priceDesc' | 'stlAsc' | 'stlDesc' | 'comments') => void;
+  order: 'new' | 'priceAsc' | 'priceDesc' | 'stlAsc' | 'stlDesc' | 'comments' | 'rating';
+  onOrder: (v: 'new' | 'priceAsc' | 'priceDesc' | 'stlAsc' | 'stlDesc' | 'comments' | 'rating') => void;
 }) {
   return (
     <div className="mb-3 flex flex-wrap items-center gap-2">
@@ -354,7 +363,7 @@ function ListHeader({
         </select>
         <select
           value={order}
-          onChange={(e) => onOrder(e.target.value as 'new' | 'priceAsc' | 'priceDesc' | 'stlAsc' | 'stlDesc' | 'comments')}
+          onChange={(e) => onOrder(e.target.value as 'new' | 'priceAsc' | 'priceDesc' | 'stlAsc' | 'stlDesc' | 'comments' | 'rating')}
           className="rounded-lg border border-stone-300 bg-white px-2.5 py-1.5 text-[11px] font-semibold text-stone-700 outline-none focus:border-orange-500"
         >
           <option value="new">↕️ 新着順</option>
@@ -363,6 +372,7 @@ function ListHeader({
           <option value="stlAsc">🧩 STLデータが安い順</option>
           <option value="stlDesc">📈 STLデータが高い順</option>
           <option value="comments">💬 コメント数順</option>
+          <option value="rating">⭐ 評価が高い順</option>
         </select>
       </div>
     </div>

@@ -1,7 +1,7 @@
 import { supabase, authFetch } from './supabase';
 import type { Comment, ExchangeRequest, Idea, Order, BalanceEntry, Profile, Announcement, GiftStock } from './types';
 
-export const IDEA_SELECT = `*, comment_count:comments(count), creator:profiles!ideas_creator_id_fkey(username,display_name), modeler:profiles!ideas_modeler_id_fkey(username,display_name)`;
+export const IDEA_SELECT = `*, comment_count:comments(count), rating_stats:idea_ratings(avg:stars.avg(),count:stars.count()), creator:profiles!ideas_creator_id_fkey(username,display_name), modeler:profiles!ideas_modeler_id_fkey(username,display_name)`;
 
 export async function fetchIdeas(): Promise<Idea[]> {
   const { data, error } = await supabase
@@ -17,6 +17,36 @@ export function commentCount(idea: Idea): number {
   const c = idea.comment_count;
   if (Array.isArray(c)) return c[0]?.count ?? 0;
   return typeof c === 'number' ? c : 0;
+}
+
+/** 評価（平均★と件数。評価なしは null/null） */
+export function ratingStats(idea: Idea): { avg: number | null; count: number } {
+  const s = idea.rating_stats;
+  const row = Array.isArray(s) ? s[0] : null;
+  return { avg: row?.avg ?? null, count: row?.count ?? 0 };
+}
+
+/** 評価を投稿・更新（1ユーザー1アイデアにつき1票・上書き可） */
+export async function rateIdea(ideaId: number, userId: string, stars: number) {
+  const { error } = await supabase
+    .from('idea_ratings')
+    .upsert(
+      { idea_id: ideaId, user_id: userId, stars, updated_at: new Date().toISOString() },
+      { onConflict: 'idea_id,user_id' },
+    );
+  if (error) throw new Error(error.message);
+}
+
+/** 自分が付けた評価（未評価は null） */
+export async function fetchMyRating(ideaId: number, userId: string): Promise<number | null> {
+  const { data, error } = await supabase
+    .from('idea_ratings')
+    .select('stars')
+    .eq('idea_id', ideaId)
+    .eq('user_id', userId)
+    .maybeSingle();
+  if (error) throw new Error(error.message);
+  return (data as { stars: number } | null)?.stars ?? null;
 }
 
 export async function fetchIdea(id: number): Promise<Idea | null> {

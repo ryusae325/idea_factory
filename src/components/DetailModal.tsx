@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import type { Comment, Idea, Profile } from '../lib/types';
 import { fmtDate, fmtYen } from '../lib/types';
-import { deleteComment, deleteIdea, fetchComments, fetchIdea, postComment, getStlDownloadUrl, setIdeaStl, uploadStl, SIZE_OPTIONS, fulfillmentFee } from '../lib/data';
+import { deleteComment, deleteIdea, fetchComments, fetchIdea, postComment, getStlDownloadUrl, setIdeaStl, uploadStl, SIZE_OPTIONS, fulfillmentFee, ratingStats, fetchMyRating, rateIdea } from '../lib/data';
 import { toast } from '../lib/toast';
 
 interface Props {
@@ -16,6 +16,7 @@ export default function DetailModal({ ideaId, profile, onClose, onChanged }: Pro
   const [comments, setComments] = useState<Comment[]>([]);
   const [text, setText] = useState('');
   const [busy, setBusy] = useState(false);
+  const [myStars, setMyStars] = useState<number | null>(null);
 
   const reload = useCallback(async () => {
     const [i, c] = await Promise.all([fetchIdea(ideaId), fetchComments(ideaId)]);
@@ -26,6 +27,14 @@ export default function DetailModal({ ideaId, profile, onClose, onChanged }: Pro
   useEffect(() => {
     reload().catch(() => toast('詳細情報の取得に失敗しました', 'error'));
   }, [reload]);
+
+  useEffect(() => {
+    if (profile) {
+      fetchMyRating(ideaId, profile.id).then(setMyStars).catch(() => {});
+    } else {
+      setMyStars(null);
+    }
+  }, [ideaId, profile]);
 
   if (!idea) {
     return (
@@ -104,6 +113,19 @@ export default function DetailModal({ ideaId, profile, onClose, onChanged }: Pro
       await deleteComment(cid);
       await reload();
       toast('コメントを削除しました');
+    } catch (e) {
+      toast((e as Error).message, 'error');
+    }
+  };
+
+  const rate = async (stars: number) => {
+    if (!profile) return toast('評価するにはログインしてください', 'error');
+    try {
+      await rateIdea(idea.id, profile.id, stars);
+      setMyStars(stars);
+      await reload();
+      onChanged();
+      toast(stars === myStars ? `★${stars} で評価しました` : `評価を ★${stars} に更新しました`);
     } catch (e) {
       toast((e as Error).message, 'error');
     }
@@ -191,6 +213,34 @@ export default function DetailModal({ ideaId, profile, onClose, onChanged }: Pro
         <p className="mt-1 whitespace-pre-wrap text-[13px] leading-relaxed text-stone-700">
           {idea.description || '詳細説明はありません。'}
         </p>
+      </div>
+
+      <div className="mt-3 rounded-xl bg-amber-50/60 p-3.5 ring-1 ring-amber-200">
+        <div className="flex flex-wrap items-center gap-2">
+          <p className="text-xs font-bold text-amber-900">⭐ このアイデアの評価</p>
+          <RatingBadge stats={ratingStats(idea)} />
+        </div>
+        {profile ? (
+          <div className="mt-2 flex items-center gap-1.5">
+            {[1, 2, 3, 4, 5].map((n) => (
+              <button
+                key={n}
+                onClick={() => rate(n)}
+                aria-label={`★${n}で評価`}
+                className={`text-xl leading-none transition hover:scale-110 ${
+                  myStars && n <= myStars ? 'text-amber-500' : 'text-stone-300 hover:text-amber-300'
+                }`}
+              >
+                ★
+              </button>
+            ))}
+            <span className="ml-1.5 text-[10px] text-stone-400">
+              {myStars ? `あなたの評価: ★${myStars}` : 'クリックで評価できます'}
+            </span>
+          </div>
+        ) : (
+          <p className="mt-1.5 text-[10px] text-stone-400">※評価するにはログインしてください。</p>
+        )}
       </div>
 
       <hr className="my-4 border-stone-200" />
@@ -282,6 +332,18 @@ export default function DetailModal({ ideaId, profile, onClose, onChanged }: Pro
         <p className="mt-3 text-xs text-stone-400">※コメントを投稿するにはログインしてください。</p>
       )}
     </Overlay>
+  );
+}
+
+function RatingBadge({ stats }: { stats: { avg: number | null; count: number } }) {
+  if (!stats.count || stats.avg == null) {
+    return <span className="text-[11px] font-semibold text-stone-400">評価はまだありません</span>;
+  }
+  return (
+    <span className="flex items-center gap-1 text-[11px] font-bold text-amber-600">
+      ★ {stats.avg.toFixed(1)}
+      <span className="font-semibold text-stone-400">（{stats.count}件）</span>
+    </span>
   );
 }
 
