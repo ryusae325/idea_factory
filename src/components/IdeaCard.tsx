@@ -100,6 +100,11 @@ export default function IdeaCard({ idea, profile, onOpen, onAction }: Props) {
         >
           {idea.status}
         </span>
+        {idea.genre && (
+          <span className="absolute right-3 top-3 rounded-full bg-white/90 px-2.5 py-1 text-[10px] font-bold text-stone-600 ring-1 ring-stone-200">
+            {idea.genre}
+          </span>
+        )}
       </div>
 
       <div className="flex flex-1 flex-col gap-2 p-4">

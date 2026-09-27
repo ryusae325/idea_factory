@@ -47,6 +47,7 @@ export async function deleteComment(commentId: number) {
 export async function createIdea(values: {
   title: string;
   description: string;
+  genre: string;
   image_url: string;
   images: string[];
   creator_id: string;
@@ -60,6 +61,19 @@ export async function createIdea(values: {
   const { error } = await supabase.from('ideas').insert(values);
   if (error) throw new Error(error.message);
 }
+
+/** アイデアのジャンル（募集中一覧の絞り込み・ソート用） */
+export const GENRES = [
+  'ガジェット',
+  '生活雑貨',
+  'キッチン',
+  'インテリア',
+  'オフィス・文具',
+  '趣味・ホビー',
+  'フィギュア',
+  'ペット用品',
+  'その他',
+] as const;
 
 /** サイズ階級の定義（最低価格＝商品代金。fee＝製造・配送費は購入者負担） */
 export const SIZE_OPTIONS = [

@@ -1,7 +1,7 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import type { Idea, Profile } from './lib/types';
 import { supabase, auth } from './lib/supabase';
-import { fetchIdeas, fetchProfile, updateIdeaStatus, createCheckout, completeCheckout } from './lib/data';
+import { fetchIdeas, fetchProfile, updateIdeaStatus, createCheckout, completeCheckout, GENRES } from './lib/data';
 import { toast } from './lib/toast';
 import Header from './components/Header';
 import ToastHost from './components/ToastHost';
@@ -137,6 +137,18 @@ export default function App() {
   const inProgress = ideas.filter((i) => i.status === '制作中');
   const onSale = ideas.filter((i) => i.status === '販売中');
 
+  const [genreFilter, setGenreFilter] = useState('すべて');
+  const [sortOrder, setSortOrder] = useState<'new' | 'priceAsc' | 'priceDesc'>('new');
+
+  const recruitingFiltered = useMemo(() => {
+    const byGenre = genreFilter === 'すべて' ? recruiting : recruiting.filter((i) => i.genre === genreFilter);
+    if (sortOrder === 'priceAsc') return [...byGenre].sort((a, b) => a.price_physical - b.price_physical);
+    if (sortOrder === 'priceDesc') return [...byGenre].sort((a, b) => b.price_physical - a.price_physical);
+    return [...byGenre].sort((a, b) => b.id - a.id);
+  }, [recruiting, genreFilter, sortOrder]);
+
+  const usedGenres = GENRES.filter((g) => recruiting.some((i) => i.genre === g));
+
   const gridProps = { profile, onOpen: setDetailId, onAction: handleAction };
 
   return (
@@ -185,8 +197,36 @@ export default function App() {
                   )}
                 </div>
                 <section className="min-w-0">
-                  <h3 className="mb-3 text-sm font-bold text-stone-800">📌 モデラー募集中一覧</h3>
-                  <IdeaGrid ideas={recruiting} {...gridProps} emptyMessage="募集中のアイデアはまだありません。" />
+                  <div className="mb-3 flex flex-wrap items-center gap-2">
+                    <h3 className="text-sm font-bold text-stone-800">📌 モデラー募集中一覧</h3>
+                    <span className="text-[11px] font-semibold text-stone-400">
+                      {recruitingFiltered.length}件
+                    </span>
+                    <div className="ml-auto flex flex-wrap items-center gap-1.5">
+                      <select
+                        value={genreFilter}
+                        onChange={(e) => setGenreFilter(e.target.value)}
+                        className="rounded-lg border border-stone-300 bg-white px-2.5 py-1.5 text-[11px] font-semibold text-stone-700 outline-none focus:border-orange-500"
+                      >
+                        <option value="すべて">📂 すべてのジャンル</option>
+                        {usedGenres.map((g) => (
+                          <option key={g} value={g}>
+                            {g}
+                          </option>
+                        ))}
+                      </select>
+                      <select
+                        value={sortOrder}
+                        onChange={(e) => setSortOrder(e.target.value as typeof sortOrder)}
+                        className="rounded-lg border border-stone-300 bg-white px-2.5 py-1.5 text-[11px] font-semibold text-stone-700 outline-none focus:border-orange-500"
+                      >
+                        <option value="new">↕️ 新着順</option>
+                        <option value="priceAsc">💰 価格が安い順</option>
+                        <option value="priceDesc">💎 価格が高い順</option>
+                      </select>
+                    </div>
+                  </div>
+                  <IdeaGrid ideas={recruitingFiltered} {...gridProps} emptyMessage="募集中のアイデアはまだありません。" />
                 </section>
               </div>
             )}

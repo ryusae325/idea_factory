@@ -27,6 +27,7 @@ export interface Idea {
   id: number;
   title: string;
   description: string;
+  genre: string;
   image_url: string;
   images: string[];
   status: IdeaStatus;

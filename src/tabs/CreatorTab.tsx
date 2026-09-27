@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import type { Profile } from '../lib/types';
-import { createIdea, uploadImage, tierMinPrice, SIZE_OPTIONS, type SizeTier } from '../lib/data';
+import { createIdea, uploadImage, tierMinPrice, SIZE_OPTIONS, GENRES, type SizeTier } from '../lib/data';
 import { authFetch } from '../lib/supabase';
 import { toast } from '../lib/toast';
 
@@ -11,6 +11,7 @@ interface Props {
 
 export default function CreatorTab({ profile, onCreated }: Props) {
   const [title, setTitle] = useState('');
+  const [genre, setGenre] = useState<string>(GENRES[0]);
   const [desc, setDesc] = useState('');
   const [creatorShare, setCreatorShare] = useState(50);
   const [sizeTier, setSizeTier] = useState<SizeTier>('S');
@@ -74,6 +75,7 @@ export default function CreatorTab({ profile, onCreated }: Props) {
       await createIdea({
         title: title.trim(),
         description: desc.trim(),
+        genre,
         image_url: images[0] ?? '',
         images,
         creator_id: profile.id,
@@ -86,6 +88,7 @@ export default function CreatorTab({ profile, onCreated }: Props) {
       });
       toast('アイデアを投稿しました！');
       setTitle('');
+      setGenre(GENRES[0]);
       setDesc('');
       setSizeTier('S');
       setFiles([]);
@@ -111,6 +114,19 @@ export default function CreatorTab({ profile, onCreated }: Props) {
           placeholder="例: 卓上ミニハンディファンスタンド"
           className="mt-1 w-full rounded-lg border border-stone-300 px-3 py-2.5 text-sm outline-none transition focus:border-orange-500 focus:ring-2 focus:ring-orange-100"
         />
+        <label className="mt-2.5 block text-xs font-bold text-stone-600">ジャンル *</label>
+        <select
+          value={genre}
+          onChange={(e) => setGenre(e.target.value)}
+          required
+          className="mt-1 w-full rounded-lg border border-stone-300 bg-white px-3 py-2.5 text-sm outline-none transition focus:border-orange-500 focus:ring-2 focus:ring-orange-100"
+        >
+          {GENRES.map((g) => (
+            <option key={g} value={g}>
+              {g}
+            </option>
+          ))}
+        </select>
         <label className="mt-2.5 block text-xs font-bold text-stone-600">詳細説明・仕様</label>
         <textarea
           value={desc}
