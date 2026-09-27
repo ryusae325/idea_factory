@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import type { Idea, Profile } from './lib/types';
 import { supabase, auth } from './lib/supabase';
-import { fetchIdeas, fetchProfile, updateIdeaStatus, createCheckout, completeCheckout, GENRES } from './lib/data';
+import { fetchIdeas, fetchProfile, updateIdeaStatus, createCheckout, completeCheckout, GENRES, commentCount } from './lib/data';
 import { toast } from './lib/toast';
 import Header from './components/Header';
 import ToastHost from './components/ToastHost';
@@ -137,22 +137,23 @@ export default function App() {
   const inProgress = ideas.filter((i) => i.status === '制作中');
   const onSale = ideas.filter((i) => i.status === '販売中');
 
+  type Order = 'new' | 'priceAsc' | 'priceDesc' | 'stlAsc' | 'stlDesc' | 'comments';
   const [genreFilter, setGenreFilter] = useState('すべて');
-  const [sortOrder, setSortOrder] = useState<'new' | 'priceAsc' | 'priceDesc'>('new');
+  const [sortOrder, setSortOrder] = useState<Order>('new');
   const [genreFilter2, setGenreFilter2] = useState('すべて');
-  const [sortOrder2, setSortOrder2] = useState<'new' | 'priceAsc' | 'priceDesc'>('new');
+  const [sortOrder2, setSortOrder2] = useState<Order>('new');
   const [genreFilter3, setGenreFilter3] = useState('すべて');
-  const [sortOrder3, setSortOrder3] = useState<'new' | 'priceAsc' | 'priceDesc'>('new');
+  const [sortOrder3, setSortOrder3] = useState<Order>('new');
 
-  const applyFilterSort = (
-    list: Idea[],
-    genre: string,
-    order: 'new' | 'priceAsc' | 'priceDesc',
-  ) => {
+  const applyFilterSort = (list: Idea[], genre: string, order: Order) => {
     const byGenre = genre === 'すべて' ? list : list.filter((i) => i.genre === genre);
-    if (order === 'priceAsc') return [...byGenre].sort((a, b) => a.price_physical - b.price_physical);
-    if (order === 'priceDesc') return [...byGenre].sort((a, b) => b.price_physical - a.price_physical);
-    return [...byGenre].sort((a, b) => b.id - a.id);
+    const byId = [...byGenre].sort((a, b) => b.id - a.id);
+    if (order === 'priceAsc') return byId.sort((a, b) => a.price_physical - b.price_physical);
+    if (order === 'priceDesc') return byId.sort((a, b) => b.price_physical - a.price_physical);
+    if (order === 'stlAsc') return byId.sort((a, b) => a.price_digital - b.price_digital);
+    if (order === 'stlDesc') return byId.sort((a, b) => b.price_digital - a.price_digital);
+    if (order === 'comments') return byId.sort((a, b) => commentCount(b) - commentCount(a));
+    return byId;
   };
 
   const recruitingFiltered = useMemo(
@@ -331,8 +332,8 @@ function ListHeader({
   genres: string[];
   genre: string;
   onGenre: (v: string) => void;
-  order: 'new' | 'priceAsc' | 'priceDesc';
-  onOrder: (v: 'new' | 'priceAsc' | 'priceDesc') => void;
+  order: 'new' | 'priceAsc' | 'priceDesc' | 'stlAsc' | 'stlDesc' | 'comments';
+  onOrder: (v: 'new' | 'priceAsc' | 'priceDesc' | 'stlAsc' | 'stlDesc' | 'comments') => void;
 }) {
   return (
     <div className="mb-3 flex flex-wrap items-center gap-2">
@@ -353,12 +354,15 @@ function ListHeader({
         </select>
         <select
           value={order}
-          onChange={(e) => onOrder(e.target.value as 'new' | 'priceAsc' | 'priceDesc')}
+          onChange={(e) => onOrder(e.target.value as 'new' | 'priceAsc' | 'priceDesc' | 'stlAsc' | 'stlDesc' | 'comments')}
           className="rounded-lg border border-stone-300 bg-white px-2.5 py-1.5 text-[11px] font-semibold text-stone-700 outline-none focus:border-orange-500"
         >
           <option value="new">↕️ 新着順</option>
-          <option value="priceAsc">💰 価格が安い順</option>
-          <option value="priceDesc">💎 価格が高い順</option>
+          <option value="priceAsc">💰 プリント品が安い順</option>
+          <option value="priceDesc">💎 プリント品が高い順</option>
+          <option value="stlAsc">🧩 STLデータが安い順</option>
+          <option value="stlDesc">📈 STLデータが高い順</option>
+          <option value="comments">💬 コメント数順</option>
         </select>
       </div>
     </div>

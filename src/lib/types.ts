@@ -45,6 +45,7 @@ export interface Idea {
   modeler_reward: number;
   stl_path: string | null;
   created_at: string;
+  comment_count?: number | { count: number }[] | null;
   creator?: ProfileLite | null;
   modeler?: ProfileLite | null;
 }

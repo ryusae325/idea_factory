@@ -1,7 +1,7 @@
 import { supabase, authFetch } from './supabase';
 import type { Comment, ExchangeRequest, Idea, Order, BalanceEntry, Profile, Announcement, GiftStock } from './types';
 
-export const IDEA_SELECT = `*, creator:profiles!ideas_creator_id_fkey(username,display_name), modeler:profiles!ideas_modeler_id_fkey(username,display_name)`;
+export const IDEA_SELECT = `*, comment_count:comments(count), creator:profiles!ideas_creator_id_fkey(username,display_name), modeler:profiles!ideas_modeler_id_fkey(username,display_name)`;
 
 export async function fetchIdeas(): Promise<Idea[]> {
   const { data, error } = await supabase
@@ -10,6 +10,13 @@ export async function fetchIdeas(): Promise<Idea[]> {
     .order('id', { ascending: false });
   if (error) throw new Error(error.message);
   return (data ?? []) as unknown as Idea[];
+}
+
+/** コメント数（PostgREST の embedded count は [{count:n}] 形式で返る） */
+export function commentCount(idea: Idea): number {
+  const c = idea.comment_count;
+  if (Array.isArray(c)) return c[0]?.count ?? 0;
+  return typeof c === 'number' ? c : 0;
 }
 
 export async function fetchIdea(id: number): Promise<Idea | null> {
