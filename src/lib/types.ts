@@ -7,7 +7,7 @@ export interface Profile {
   created_at: string;
 }
 
-export type IdeaStatus = 'アイデア募集' | '制作中' | '販売中';
+export type IdeaStatus = 'アイデア募集' | '制作中' | '提出中' | '販売中';
 
 export interface ProfileLite {
   username: string;

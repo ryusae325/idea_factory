@@ -110,11 +110,22 @@ export default function App() {
     }
   }, [refreshProfile, refreshIdeas]);
 
-  const handleAction = async (idea: Idea, action: 'accept' | 'complete' | 'buy-physical' | 'buy-digital') => {
+  const handleAction = async (
+    idea: Idea,
+    action: 'accept' | 'submit' | 'approve' | 'revision' | 'buy-physical' | 'buy-digital',
+  ) => {
     if (!loggedIn) return toast('ログインしてください', 'error');
     try {
-      if (action === 'accept' || action === 'complete') {
-        const msg = await updateIdeaStatus(idea.id, action === 'accept' ? '制作中' : '販売中');
+      if (action === 'accept' || action === 'submit' || action === 'approve' || action === 'revision') {
+        const status =
+          action === 'accept'
+            ? '制作中'
+            : action === 'submit'
+              ? '提出中'
+              : action === 'approve'
+                ? '販売中'
+                : '修正依頼';
+        const msg = await updateIdeaStatus(idea.id, status);
         toast(msg);
         await refreshIdeas();
       } else {
@@ -134,7 +145,7 @@ export default function App() {
   };
 
   const recruiting = ideas.filter((i) => i.status === 'アイデア募集');
-  const inProgress = ideas.filter((i) => i.status === '制作中');
+  const inProgress = ideas.filter((i) => i.status === '制作中' || i.status === '提出中');
   const onSale = ideas.filter((i) => i.status === '販売中');
 
   type Order = 'new' | 'priceAsc' | 'priceDesc' | 'stlAsc' | 'stlDesc' | 'comments' | 'rating';

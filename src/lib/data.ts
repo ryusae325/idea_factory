@@ -137,7 +137,10 @@ export async function deleteIdea(id: number) {
   if (error) throw new Error(error.message);
 }
 
-export async function updateIdeaStatus(id: number, status: '制作中' | '販売中'): Promise<string> {
+export async function updateIdeaStatus(
+  id: number,
+  status: '制作中' | '提出中' | '販売中' | '修正依頼',
+): Promise<string> {
   const { data, error } = await supabase.rpc('update_idea_status', {
     p_idea_id: id,
     p_new_status: status,

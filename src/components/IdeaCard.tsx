@@ -5,12 +5,16 @@ interface Props {
   idea: Idea;
   profile: Profile | null;
   onOpen: (id: number) => void;
-  onAction: (idea: Idea, action: 'accept' | 'complete' | 'buy-physical' | 'buy-digital') => void;
+  onAction: (
+    idea: Idea,
+    action: 'accept' | 'submit' | 'approve' | 'revision' | 'buy-physical' | 'buy-digital',
+  ) => void;
 }
 
 const statusBadge: Record<Idea['status'], string> = {
   アイデア募集: 'bg-amber-50 text-amber-700 ring-amber-200',
   制作中: 'bg-teal-50 text-teal-700 ring-teal-200',
+  提出中: 'bg-violet-50 text-violet-700 ring-violet-200',
   販売中: 'bg-emerald-50 text-emerald-700 ring-emerald-200',
 };
 
@@ -39,18 +43,51 @@ export default function IdeaCard({ idea, profile, onOpen, onAction }: Props) {
     }
   } else if (idea.status === '制作中') {
     action = isModeler || isAdmin ? (
-      <button
-        onClick={(e) => {
-          e.stopPropagation();
-          onAction(idea, 'complete');
-        }}
-        className="w-full rounded-lg bg-emerald-600 px-3 py-2 text-xs font-bold text-white shadow-sm shadow-emerald-500/30 transition hover:bg-emerald-700"
-      >
-        ✅ 3Dデータ完成・販売開始
-      </button>
+      idea.stl_path ? (
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            onAction(idea, 'submit');
+          }}
+          className="w-full rounded-lg bg-violet-600 px-3 py-2 text-xs font-bold text-white shadow-sm shadow-violet-500/30 transition hover:bg-violet-700"
+        >
+          📤 3Dデータをプランナーへ提出
+        </button>
+      ) : (
+        <p className="rounded-lg bg-stone-50 px-3 py-2 text-center text-[11px] font-medium text-teal-700 ring-1 ring-stone-200">
+          ✏️ モデリング中 — 詳細画面から完成STLをアップロードすると提出できます
+        </p>
+      )
     ) : (
-      <p className="rounded-lg bg-stone-50 px-3 py-2 text-center text-[11px] font-medium text-amber-600 ring-1 ring-stone-200">
+      <p className="rounded-lg bg-stone-50 px-3 py-2 text-center text-[11px] font-medium text-teal-600 ring-1 ring-stone-200">
         ✏️ {name(idea.modeler) || 'モデラー'} さんがモデリング中
+      </p>
+    );
+  } else if (idea.status === '提出中') {
+    action = isCreator || isAdmin ? (
+      <div className="flex gap-2">
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            onAction(idea, 'approve');
+          }}
+          className="flex-1 rounded-lg bg-emerald-600 px-2 py-2 text-[11px] font-bold text-white shadow-sm shadow-emerald-500/30 transition hover:bg-emerald-700"
+        >
+          ✅ 承認して販売開始
+        </button>
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            onAction(idea, 'revision');
+          }}
+          className="flex-1 rounded-lg bg-amber-500 px-2 py-2 text-[11px] font-bold text-white shadow-sm shadow-amber-500/30 transition hover:bg-amber-600"
+        >
+          ✏️ 修正を依頼
+        </button>
+      </div>
+    ) : (
+      <p className="rounded-lg bg-stone-50 px-3 py-2 text-center text-[11px] font-medium text-violet-600 ring-1 ring-stone-200">
+        🕐 プランナーが3Dデータを確認中です
       </p>
     );
   } else if (idea.status === '販売中') {

@@ -1,7 +1,7 @@
 import type { Idea, Profile } from '../lib/types';
 import IdeaCard from '../components/IdeaCard';
 
-type Action = 'accept' | 'complete' | 'buy-physical' | 'buy-digital';
+type Action = 'accept' | 'submit' | 'approve' | 'revision' | 'buy-physical' | 'buy-digital';
 
 interface Props {
   ideas: Idea[];
