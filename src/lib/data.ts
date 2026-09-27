@@ -170,7 +170,7 @@ export async function deleteIdea(id: number) {
 
 export async function updateIdeaStatus(
   id: number,
-  status: '制作中' | '提出中' | '販売中' | '修正依頼',
+  status: '制作中' | '提出中' | '販売中' | '修正依頼' | '取り下げ',
 ): Promise<string> {
   const { data, error } = await supabase.rpc('update_idea_status', {
     p_idea_id: id,

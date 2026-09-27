@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import type { Comment, Idea, Profile } from '../lib/types';
 import { fmtDate, fmtYen } from '../lib/types';
-import { deleteComment, deleteIdea, fetchComments, fetchIdea, postComment, getStlDownloadUrl, setIdeaStl, uploadStl, SIZE_OPTIONS, fulfillmentFee, ratingStats, fetchMyRating, rateIdea } from '../lib/data';
+import { deleteComment, deleteIdea, fetchComments, fetchIdea, postComment, getStlDownloadUrl, setIdeaStl, uploadStl, SIZE_OPTIONS, fulfillmentFee, ratingStats, fetchMyRating, rateIdea, updateIdeaStatus } from '../lib/data';
 import { toast } from '../lib/toast';
 
 interface Props {
@@ -108,6 +108,18 @@ export default function DetailModal({ ideaId, profile, onClose, onChanged }: Pro
     }
   };
 
+  const withdrawSale = async () => {
+    if (!confirm('販売を取り下げて、モデリング中の状態に戻しますか？\nすでに購入されている注文には影響しませんが、商品カタログからは表示されなくなります。')) return;
+    try {
+      const msg = await updateIdeaStatus(idea.id, '取り下げ');
+      toast(msg);
+      await reload();
+      onChanged();
+    } catch (e) {
+      toast((e as Error).message, 'error');
+    }
+  };
+
   const removeComment = async (cid: number) => {
     if (!confirm('このコメントを削除しますか？')) return;
     try {
@@ -137,6 +149,14 @@ export default function DetailModal({ ideaId, profile, onClose, onChanged }: Pro
       <div className="flex items-start justify-between gap-3">
         <h3 className="text-lg font-bold text-stone-900">💡 {idea.title}</h3>
         <div className="flex shrink-0 gap-2">
+          {idea.status === '販売中' && (isOwner || isAdmin) && (
+            <button
+              onClick={withdrawSale}
+              className="rounded-lg bg-amber-50 px-3 py-1.5 text-[11px] font-bold text-amber-700 ring-1 ring-amber-300 transition hover:bg-amber-100"
+            >
+              ↩️ モデリング中に戻す
+            </button>
+          )}
           {(isOwner || isAdmin) && (
             <button
               onClick={removeIdea}
