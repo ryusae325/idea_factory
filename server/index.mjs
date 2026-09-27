@@ -211,9 +211,37 @@ app.post('/api/create-checkout-session', async (req, res) => {
       return res.status(500).json({ status: 'error', message: '決済機能が設定されていません' });
     }
 
+    // Stripe Customer を取得または作成（カード保存 → 次回以降すぐに購入できる）
+    let customerId = null;
+    try {
+      const found = await stripe.customers.search({
+        query: `metadata['planmo_user_id']:'${user.id}'`,
+        limit: 1,
+      });
+      customerId = found.data[0]?.id ?? null;
+    } catch {}
+    if (!customerId) {
+      try {
+        const byEmail = user.email
+          ? await stripe.customers.list({ email: user.email, limit: 20 })
+          : { data: [] };
+        customerId = byEmail.data.find((c) => c.metadata?.planmo_user_id === user.id)?.id ?? null;
+      } catch {}
+    }
+    if (!customerId) {
+      try {
+        const cust = await stripe.customers.create({
+          email: user.email || undefined,
+          metadata: { planmo_user_id: user.id },
+        });
+        customerId = cust.id;
+      } catch {}
+    }
+
     const origin = req.headers.origin || `http://localhost:${PORT}`;
     const session = await stripe.checkout.sessions.create({
       mode: 'payment',
+      ...(customerId ? { customer: customerId, setup_future_usage: 'on_session' } : {}),
       ...(item_type === 'physical'
         ? {
             shipping_address_collection: { allowed_countries: ['JP'] },
