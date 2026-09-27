@@ -139,15 +139,36 @@ export default function App() {
 
   const [genreFilter, setGenreFilter] = useState('すべて');
   const [sortOrder, setSortOrder] = useState<'new' | 'priceAsc' | 'priceDesc'>('new');
+  const [genreFilter2, setGenreFilter2] = useState('すべて');
+  const [sortOrder2, setSortOrder2] = useState<'new' | 'priceAsc' | 'priceDesc'>('new');
+  const [genreFilter3, setGenreFilter3] = useState('すべて');
+  const [sortOrder3, setSortOrder3] = useState<'new' | 'priceAsc' | 'priceDesc'>('new');
 
-  const recruitingFiltered = useMemo(() => {
-    const byGenre = genreFilter === 'すべて' ? recruiting : recruiting.filter((i) => i.genre === genreFilter);
-    if (sortOrder === 'priceAsc') return [...byGenre].sort((a, b) => a.price_physical - b.price_physical);
-    if (sortOrder === 'priceDesc') return [...byGenre].sort((a, b) => b.price_physical - a.price_physical);
+  const applyFilterSort = (
+    list: Idea[],
+    genre: string,
+    order: 'new' | 'priceAsc' | 'priceDesc',
+  ) => {
+    const byGenre = genre === 'すべて' ? list : list.filter((i) => i.genre === genre);
+    if (order === 'priceAsc') return [...byGenre].sort((a, b) => a.price_physical - b.price_physical);
+    if (order === 'priceDesc') return [...byGenre].sort((a, b) => b.price_physical - a.price_physical);
     return [...byGenre].sort((a, b) => b.id - a.id);
-  }, [recruiting, genreFilter, sortOrder]);
+  };
 
-  const usedGenres = GENRES.filter((g) => recruiting.some((i) => i.genre === g));
+  const recruitingFiltered = useMemo(
+    () => applyFilterSort(recruiting, genreFilter, sortOrder),
+    [recruiting, genreFilter, sortOrder],
+  );
+  const inProgressFiltered = useMemo(
+    () => applyFilterSort(inProgress, genreFilter2, sortOrder2),
+    [inProgress, genreFilter2, sortOrder2],
+  );
+  const onSaleFiltered = useMemo(
+    () => applyFilterSort(onSale, genreFilter3, sortOrder3),
+    [onSale, genreFilter3, sortOrder3],
+  );
+
+  const usedGenres = (list: Idea[]) => GENRES.filter((g) => list.some((i) => i.genre === g));
 
   const gridProps = { profile, onOpen: setDetailId, onAction: handleAction };
 
@@ -197,35 +218,15 @@ export default function App() {
                   )}
                 </div>
                 <section className="min-w-0">
-                  <div className="mb-3 flex flex-wrap items-center gap-2">
-                    <h3 className="text-sm font-bold text-stone-800">📌 モデラー募集中一覧</h3>
-                    <span className="text-[11px] font-semibold text-stone-400">
-                      {recruitingFiltered.length}件
-                    </span>
-                    <div className="ml-auto flex flex-wrap items-center gap-1.5">
-                      <select
-                        value={genreFilter}
-                        onChange={(e) => setGenreFilter(e.target.value)}
-                        className="rounded-lg border border-stone-300 bg-white px-2.5 py-1.5 text-[11px] font-semibold text-stone-700 outline-none focus:border-orange-500"
-                      >
-                        <option value="すべて">📂 すべてのジャンル</option>
-                        {usedGenres.map((g) => (
-                          <option key={g} value={g}>
-                            {g}
-                          </option>
-                        ))}
-                      </select>
-                      <select
-                        value={sortOrder}
-                        onChange={(e) => setSortOrder(e.target.value as typeof sortOrder)}
-                        className="rounded-lg border border-stone-300 bg-white px-2.5 py-1.5 text-[11px] font-semibold text-stone-700 outline-none focus:border-orange-500"
-                      >
-                        <option value="new">↕️ 新着順</option>
-                        <option value="priceAsc">💰 価格が安い順</option>
-                        <option value="priceDesc">💎 価格が高い順</option>
-                      </select>
-                    </div>
-                  </div>
+                  <ListHeader
+                    title="📌 モデラー募集中一覧"
+                    count={recruitingFiltered.length}
+                    genres={usedGenres(recruiting)}
+                    genre={genreFilter}
+                    onGenre={setGenreFilter}
+                    order={sortOrder}
+                    onOrder={setSortOrder}
+                  />
                   <IdeaGrid ideas={recruitingFiltered} {...gridProps} emptyMessage="募集中のアイデアはまだありません。" />
                 </section>
               </div>
@@ -233,15 +234,31 @@ export default function App() {
 
             {tab === 'modeler' && (
               <section>
-                <h3 className="mb-3 text-sm font-bold text-stone-800">🛠️ 制作中・モデリング作業中の案件</h3>
-                <IdeaGrid ideas={inProgress} {...gridProps} emptyMessage="制作中の案件はありません。" />
+                <ListHeader
+                  title="🛠️ 制作中・モデリング作業中の案件"
+                  count={inProgressFiltered.length}
+                  genres={usedGenres(inProgress)}
+                  genre={genreFilter2}
+                  onGenre={setGenreFilter2}
+                  order={sortOrder2}
+                  onOrder={setSortOrder2}
+                />
+                <IdeaGrid ideas={inProgressFiltered} {...gridProps} emptyMessage="制作中の案件はありません。" />
               </section>
             )}
 
             {tab === 'shop' && (
               <section>
-                <h3 className="mb-3 text-sm font-bold text-stone-800">🛒 販売中の商品（プリント品・STLデータ）</h3>
-                <IdeaGrid ideas={onSale} {...gridProps} emptyMessage="販売中の商品はまだありません。" />
+                <ListHeader
+                  title="🛒 販売中の商品（プリント品・STLデータ）"
+                  count={onSaleFiltered.length}
+                  genres={usedGenres(onSale)}
+                  genre={genreFilter3}
+                  onGenre={setGenreFilter3}
+                  order={sortOrder3}
+                  onOrder={setSortOrder3}
+                />
+                <IdeaGrid ideas={onSaleFiltered} {...gridProps} emptyMessage="販売中の商品はまだありません。" />
               </section>
             )}
 
@@ -296,6 +313,54 @@ export default function App() {
       {showLegal && <LegalModal onClose={() => setShowLegal(false)} />}
 
       <ToastHost />
+    </div>
+  );
+}
+
+function ListHeader({
+  title,
+  count,
+  genres,
+  genre,
+  onGenre,
+  order,
+  onOrder,
+}: {
+  title: string;
+  count: number;
+  genres: string[];
+  genre: string;
+  onGenre: (v: string) => void;
+  order: 'new' | 'priceAsc' | 'priceDesc';
+  onOrder: (v: 'new' | 'priceAsc' | 'priceDesc') => void;
+}) {
+  return (
+    <div className="mb-3 flex flex-wrap items-center gap-2">
+      <h3 className="text-sm font-bold text-stone-800">{title}</h3>
+      <span className="text-[11px] font-semibold text-stone-400">{count}件</span>
+      <div className="ml-auto flex flex-wrap items-center gap-1.5">
+        <select
+          value={genre}
+          onChange={(e) => onGenre(e.target.value)}
+          className="rounded-lg border border-stone-300 bg-white px-2.5 py-1.5 text-[11px] font-semibold text-stone-700 outline-none focus:border-orange-500"
+        >
+          <option value="すべて">📂 すべてのジャンル</option>
+          {genres.map((g) => (
+            <option key={g} value={g}>
+              {g}
+            </option>
+          ))}
+        </select>
+        <select
+          value={order}
+          onChange={(e) => onOrder(e.target.value as 'new' | 'priceAsc' | 'priceDesc')}
+          className="rounded-lg border border-stone-300 bg-white px-2.5 py-1.5 text-[11px] font-semibold text-stone-700 outline-none focus:border-orange-500"
+        >
+          <option value="new">↕️ 新着順</option>
+          <option value="priceAsc">💰 価格が安い順</option>
+          <option value="priceDesc">💎 価格が高い順</option>
+        </select>
+      </div>
     </div>
   );
 }
