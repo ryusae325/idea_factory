@@ -74,6 +74,7 @@ export default function DetailModal({ ideaId, profile, onClose, onChanged }: Pro
       await setIdeaStl(idea.id, path);
       toast('STLファイルをアップロードしました');
       await reload();
+      onChanged();
     } catch (err) {
       toast((err as Error).message, 'error');
     }
