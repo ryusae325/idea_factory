@@ -1,7 +1,36 @@
 import { supabase, authFetch } from './supabase';
 import type { Comment, ExchangeRequest, Idea, Order, BalanceEntry, Profile, Announcement, GiftStock } from './types';
 
-export const IDEA_SELECT = `*, comment_count:comments(count), rating_stats:idea_ratings(avg:stars.avg(),count:stars.count()), creator:profiles!ideas_creator_id_fkey(username,display_name), modeler:profiles!ideas_modeler_id_fkey(username,display_name)`;
+export const IDEA_SELECT = `*, creator:profiles!ideas_creator_id_fkey(username,display_name), modeler:profiles!ideas_modeler_id_fkey(username,display_name)`;
+
+/** コメント数と評価統計をクライアント側で集計して ideas に付与する（PostgREST の埋め込み集計は無効のため） */
+async function withStats(rows: Idea[]): Promise<Idea[]> {
+  if (rows.length === 0) return rows;
+  const [commentRows, ratingRows] = await Promise.all([
+    supabase.from('comments').select('idea_id'),
+    supabase.from('idea_ratings').select('idea_id,stars'),
+  ]);
+  const commentMap = new Map<number, number>();
+  for (const r of commentRows.data ?? []) {
+    const id = (r as { idea_id: number }).idea_id;
+    commentMap.set(id, (commentMap.get(id) ?? 0) + 1);
+  }
+  const ratingMap = new Map<number, { sum: number; count: number }>();
+  for (const r of ratingRows.data ?? []) {
+    const { idea_id, stars } = r as { idea_id: number; stars: number };
+    const cur = ratingMap.get(idea_id) ?? { sum: 0, count: 0 };
+    cur.sum += stars;
+    cur.count += 1;
+    ratingMap.set(idea_id, cur);
+  }
+  return rows.map((i) => ({
+    ...i,
+    comment_count: commentMap.get(i.id) ?? 0,
+    rating_stats: ratingMap.has(i.id)
+      ? [{ avg: ratingMap.get(i.id)!.sum / ratingMap.get(i.id)!.count, count: ratingMap.get(i.id)!.count }]
+      : null,
+  }));
+}
 
 export async function fetchIdeas(): Promise<Idea[]> {
   const { data, error } = await supabase
@@ -9,10 +38,10 @@ export async function fetchIdeas(): Promise<Idea[]> {
     .select(IDEA_SELECT)
     .order('id', { ascending: false });
   if (error) throw new Error(error.message);
-  return (data ?? []) as unknown as Idea[];
+  return withStats((data ?? []) as unknown as Idea[]);
 }
 
-/** コメント数（PostgREST の embedded count は [{count:n}] 形式で返る） */
+/** コメント数 */
 export function commentCount(idea: Idea): number {
   const c = idea.comment_count;
   if (Array.isArray(c)) return c[0]?.count ?? 0;
@@ -56,7 +85,9 @@ export async function fetchIdea(id: number): Promise<Idea | null> {
     .eq('id', id)
     .maybeSingle();
   if (error) throw new Error(error.message);
-  return (data as unknown as Idea) ?? null;
+  if (!data) return null;
+  const [withSt] = await withStats([data as unknown as Idea]);
+  return withSt;
 }
 
 export async function fetchComments(ideaId: number): Promise<Comment[]> {
