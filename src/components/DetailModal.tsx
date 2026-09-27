@@ -109,9 +109,13 @@ export default function DetailModal({ ideaId, profile, onClose, onChanged }: Pro
   };
 
   const withdrawSale = async () => {
-    if (!confirm('販売を取り下げて、モデリング中の状態に戻しますか？\nすでに購入されている注文には影響しませんが、商品カタログからは表示されなくなります。')) return;
+    const comment = window.prompt(
+      'モデリング中に戻す理由を入力してください（コメント欄に投稿され、モデラーに通知されます）',
+    );
+    if (comment === null) return;
+    if (!comment.trim()) return toast('コメントを入力してください', 'error');
     try {
-      const msg = await updateIdeaStatus(idea.id, '取り下げ');
+      const msg = await updateIdeaStatus(idea.id, '取り下げ', comment.trim());
       toast(msg);
       await reload();
       onChanged();

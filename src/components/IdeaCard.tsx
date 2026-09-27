@@ -7,7 +7,7 @@ interface Props {
   onOpen: (id: number) => void;
   onAction: (
     idea: Idea,
-    action: 'accept' | 'submit' | 'approve' | 'revision' | 'buy-physical' | 'buy-digital',
+    action: 'accept' | 'submit' | 'approve' | 'revision' | 'withdraw' | 'buy-physical' | 'buy-digital',
   ) => void;
 }
 

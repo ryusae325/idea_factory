@@ -1,5 +1,5 @@
 import { supabase, authFetch } from './supabase';
-import type { Comment, ExchangeRequest, Idea, Order, BalanceEntry, Profile, Announcement, GiftStock } from './types';
+import type { Comment, ExchangeRequest, Idea, Order, BalanceEntry, Profile, Announcement, GiftStock, Notification } from './types';
 
 export const IDEA_SELECT = `*, creator:profiles!ideas_creator_id_fkey(username,display_name), modeler:profiles!ideas_modeler_id_fkey(username,display_name)`;
 
@@ -171,10 +171,12 @@ export async function deleteIdea(id: number) {
 export async function updateIdeaStatus(
   id: number,
   status: '制作中' | '提出中' | '販売中' | '修正依頼' | '取り下げ',
+  comment?: string,
 ): Promise<string> {
   const { data, error } = await supabase.rpc('update_idea_status', {
     p_idea_id: id,
     p_new_status: status,
+    p_comment: comment ?? null,
   });
   if (error) throw new Error(error.message);
   return (data as string) ?? '更新しました';
@@ -338,6 +340,18 @@ export async function fetchAnnouncements(): Promise<Announcement[]> {
     .order('id', { ascending: false });
   if (error) throw new Error(error.message);
   return (data ?? []) as unknown as Announcement[];
+}
+
+/** 自分宛の進捗通知（🔔） */
+export async function fetchMyNotifications(userId: string): Promise<Notification[]> {
+  const { data, error } = await supabase
+    .from('notifications')
+    .select('*')
+    .eq('user_id', userId)
+    .order('id', { ascending: false })
+    .limit(30);
+  if (error) throw new Error(error.message);
+  return (data ?? []) as unknown as Notification[];
 }
 
 export async function createAnnouncement(title: string, body: string) {

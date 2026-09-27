@@ -112,19 +112,29 @@ export default function App() {
 
   const handleAction = async (
     idea: Idea,
-    action: 'accept' | 'submit' | 'approve' | 'revision' | 'buy-physical' | 'buy-digital',
+    action: 'accept' | 'submit' | 'approve' | 'revision' | 'withdraw' | 'buy-physical' | 'buy-digital',
   ) => {
     if (!loggedIn) return toast('ログインしてください', 'error');
     try {
-      if (action === 'accept' || action === 'submit' || action === 'approve' || action === 'revision') {
-        const status =
-          action === 'accept'
-            ? '制作中'
-            : action === 'submit'
-              ? '提出中'
-              : action === 'approve'
-                ? '販売中'
-                : '修正依頼';
+      if (action === 'revision' || action === 'withdraw') {
+        const comment = window.prompt(
+          action === 'revision'
+            ? '修正依頼の内容を入力してください（コメント欄に投稿され、モデラーに通知されます）'
+            : 'モデリング中に戻す理由を入力してください（コメント欄に投稿され、モデラーに通知されます）',
+        );
+        if (comment === null) return;
+        if (!comment.trim()) return toast('コメントを入力してください', 'error');
+        const msg = await updateIdeaStatus(
+          idea.id,
+          action === 'revision' ? '修正依頼' : '取り下げ',
+          comment.trim(),
+        );
+        toast(msg);
+        await refreshIdeas();
+        return;
+      }
+      if (action === 'accept' || action === 'submit' || action === 'approve') {
+        const status = action === 'accept' ? '制作中' : action === 'submit' ? '提出中' : '販売中';
         const msg = await updateIdeaStatus(idea.id, status);
         toast(msg);
         await refreshIdeas();

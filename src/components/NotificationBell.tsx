@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
-import type { Announcement, Profile } from '../lib/types';
+import type { Announcement, Notification, Profile } from '../lib/types';
 import { fmtDate } from '../lib/types';
-import { fetchAnnouncements, fetchLifetimeEarnings } from '../lib/data';
+import { fetchAnnouncements, fetchLifetimeEarnings, fetchMyNotifications } from '../lib/data';
 
 const READ_KEY = 'planmo_notif_read_at';
 const TAX_ACK_KEY = 'planmo_tax_notif_ack';
@@ -10,18 +10,28 @@ const TAX_THRESHOLD = 1_000_000;
 export default function NotificationBell({ profile }: { profile: Profile }) {
   const [open, setOpen] = useState(false);
   const [items, setItems] = useState<Announcement[]>([]);
+  const [notifs, setNotifs] = useState<Notification[]>([]);
   const [taxDue, setTaxDue] = useState(false);
   const [hasNew, setHasNew] = useState(false);
 
   const evaluate = useCallback(async () => {
     try {
-      const [list, earned] = await Promise.all([fetchAnnouncements(), fetchLifetimeEarnings(profile.id)]);
+      const [list, notifList, earned] = await Promise.all([
+        fetchAnnouncements(),
+        fetchMyNotifications(profile.id),
+        fetchLifetimeEarnings(profile.id),
+      ]);
       setItems(list);
+      setNotifs(notifList);
       const due = earned >= TAX_THRESHOLD;
       setTaxDue(due);
       const readAt = localStorage.getItem(READ_KEY) ?? '';
       const acked = localStorage.getItem(TAX_ACK_KEY) === '1';
-      setHasNew(list.some((a) => a.created_at > readAt) || (due && !acked));
+      setHasNew(
+        notifList.some((n) => n.created_at > readAt) ||
+          list.some((a) => a.created_at > readAt) ||
+          (due && !acked),
+      );
     } catch {
       /* 通知の取得に失敗しても画面は動作させ続ける */
     }
@@ -79,18 +89,44 @@ export default function NotificationBell({ profile }: { profile: Profile }) {
               </div>
             )}
 
-            {items.length === 0 && !taxDue ? (
+            {notifs.length === 0 && items.length === 0 && !taxDue ? (
               <p className="px-4 py-8 text-center text-xs text-stone-400">お知らせはまだありません。</p>
             ) : (
-              <ul className="space-y-2 p-3">
-                {items.map((a) => (
-                  <li key={a.id} className="rounded-lg bg-stone-50 p-3 ring-1 ring-stone-200">
-                    <p className="text-[10px] font-semibold text-stone-400">{fmtDate(a.created_at)}</p>
-                    <p className="mt-0.5 text-xs font-bold text-stone-800">{a.title}</p>
-                    <p className="mt-1 whitespace-pre-line text-[11px] leading-relaxed text-stone-600">{a.body}</p>
-                  </li>
-                ))}
-              </ul>
+              <div className="p-3">
+                {notifs.length > 0 && (
+                  <>
+                    <p className="px-1 pb-1.5 text-[10px] font-bold uppercase tracking-wide text-stone-400">
+                      📌 進捗
+                    </p>
+                    <ul className="space-y-2">
+                      {notifs.map((n) => (
+                        <li key={n.id} className="rounded-lg bg-violet-50/70 p-3 ring-1 ring-violet-200">
+                          <p className="text-[10px] font-semibold text-violet-400">{fmtDate(n.created_at)}</p>
+                          <p className="mt-0.5 text-xs font-bold text-violet-900">{n.title}</p>
+                          <p className="mt-1 whitespace-pre-line text-[11px] leading-relaxed text-violet-800">{n.body}</p>
+                        </li>
+                      ))}
+                    </ul>
+                  </>
+                )}
+
+                {items.length > 0 && (
+                  <>
+                    <p className="px-1 pb-1.5 pt-3 text-[10px] font-bold uppercase tracking-wide text-stone-400">
+                      📢 運営からのお知らせ
+                    </p>
+                    <ul className="space-y-2">
+                      {items.map((a) => (
+                        <li key={a.id} className="rounded-lg bg-stone-50 p-3 ring-1 ring-stone-200">
+                          <p className="text-[10px] font-semibold text-stone-400">{fmtDate(a.created_at)}</p>
+                          <p className="mt-0.5 text-xs font-bold text-stone-800">{a.title}</p>
+                          <p className="mt-1 whitespace-pre-line text-[11px] leading-relaxed text-stone-600">{a.body}</p>
+                        </li>
+                      ))}
+                    </ul>
+                  </>
+                )}
+              </div>
             )}
           </div>
         </>

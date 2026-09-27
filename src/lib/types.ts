@@ -99,6 +99,14 @@ export interface Announcement {
   created_at: string;
 }
 
+export interface Notification {
+  id: number;
+  user_id: string;
+  title: string;
+  body: string;
+  created_at: string;
+}
+
 export interface GiftStock {
   id: number;
   exchange_type: string;
