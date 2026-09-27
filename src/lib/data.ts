@@ -168,6 +168,20 @@ export async function deleteIdea(id: number) {
   if (error) throw new Error(error.message);
 }
 
+/** 削除リクエスト（相手の承認が必要。モデラー未定なら即時削除） */
+export async function requestIdeaDelete(id: number): Promise<string> {
+  const { data, error } = await supabase.rpc('request_idea_delete', { p_idea_id: id });
+  if (error) throw new Error(error.message);
+  return (data as string) ?? 'リクエストしました';
+}
+
+/** 削除の承認（相手側が実行） */
+export async function confirmIdeaDelete(id: number): Promise<string> {
+  const { data, error } = await supabase.rpc('confirm_idea_delete', { p_idea_id: id });
+  if (error) throw new Error(error.message);
+  return (data as string) ?? '削除しました';
+}
+
 export async function updateIdeaStatus(
   id: number,
   status: '制作中' | '提出中' | '販売中' | '修正依頼' | '取り下げ',

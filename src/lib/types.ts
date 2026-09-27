@@ -44,6 +44,7 @@ export interface Idea {
   creator_reward: number;
   modeler_reward: number;
   stl_path: string | null;
+  delete_requested_by: string | null;
   created_at: string;
   comment_count?: number | { count: number }[] | null;
   rating_stats?: { avg: number | null; count: number }[] | null;

@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import type { Comment, Idea, Profile } from '../lib/types';
 import { fmtDate, fmtYen } from '../lib/types';
-import { deleteComment, deleteIdea, fetchComments, fetchIdea, postComment, getStlDownloadUrl, setIdeaStl, uploadStl, SIZE_OPTIONS, fulfillmentFee, ratingStats, fetchMyRating, rateIdea, updateIdeaStatus } from '../lib/data';
+import { deleteComment, fetchComments, fetchIdea, postComment, getStlDownloadUrl, setIdeaStl, uploadStl, SIZE_OPTIONS, fulfillmentFee, ratingStats, fetchMyRating, rateIdea, updateIdeaStatus, requestIdeaDelete, confirmIdeaDelete } from '../lib/data';
 import { toast } from '../lib/toast';
 
 interface Props {
@@ -99,8 +99,20 @@ export default function DetailModal({ ideaId, profile, onClose, onChanged }: Pro
   const removeIdea = async () => {
     if (!confirm('このアイデアを削除しますか？')) return;
     try {
-      await deleteIdea(idea.id);
-      toast('削除しました');
+      const msg = await requestIdeaDelete(idea.id);
+      toast(msg);
+      onClose();
+      onChanged();
+    } catch (e) {
+      toast((e as Error).message, 'error');
+    }
+  };
+
+  const approveDelete = async () => {
+    if (!confirm('削除リクエストを承認しますか？\n承認するとこのアイデアは完全に削除され、元に戻せません。')) return;
+    try {
+      const msg = await confirmIdeaDelete(idea.id);
+      toast(msg);
       onClose();
       onChanged();
     } catch (e) {
@@ -161,14 +173,36 @@ export default function DetailModal({ ideaId, profile, onClose, onChanged }: Pro
               ↩️ モデリング中に戻す
             </button>
           )}
-          {(isOwner || isAdmin) && (
+          {isAdmin && !isOwner && !isModeler && (
             <button
-              onClick={removeIdea}
+              onClick={approveDelete}
               className="rounded-lg bg-rose-50 px-3 py-1.5 text-[11px] font-bold text-rose-600 ring-1 ring-rose-200 transition hover:bg-rose-100"
             >
-              投稿削除
+              🗑 削除（運営）
             </button>
           )}
+          {(isOwner || isModeler) &&
+            (idea.delete_requested_by ? (
+              idea.delete_requested_by === profile?.id ? (
+                <span className="rounded-lg bg-stone-100 px-3 py-1.5 text-[11px] font-bold text-stone-400 ring-1 ring-stone-200">
+                  ⏳ 相手の削除承認待ち
+                </span>
+              ) : (
+                <button
+                  onClick={approveDelete}
+                  className="rounded-lg bg-rose-600 px-3 py-1.5 text-[11px] font-bold text-white shadow-sm transition hover:bg-rose-700"
+                >
+                  ✅ 削除を承認
+                </button>
+              )
+            ) : (
+              <button
+                onClick={removeIdea}
+                className="rounded-lg bg-rose-50 px-3 py-1.5 text-[11px] font-bold text-rose-600 ring-1 ring-rose-200 transition hover:bg-rose-100"
+              >
+                {isOwner && !idea.modeler_id ? '投稿削除' : '🗑 削除リクエスト'}
+              </button>
+            ))}
           <button
             onClick={onClose}
             className="rounded-lg px-2.5 py-1.5 text-sm text-stone-400 transition hover:bg-stone-100 hover:text-stone-600"
