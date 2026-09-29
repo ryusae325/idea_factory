@@ -1,0 +1,37 @@
+PlanMo API仕様（Express: server/index.mjs）
+========================================
+※ 認証はブラウザのSupabase JWTを検証。Service Roleはサーバー内でのみ使用。
+
+■ POST /api/create-checkout-session
+  指定アイデアのStripe Checkoutセッションを生成。
+  - Stripe Customer検索/作成（metadata.planmo_user_idでユーザー紐付け）
+  - customer + setup_future_usage: 'on_session' でカード保存（2回目以降すぐ購入）
+  - physical（＋配送先・電話入力）/ digital の2モード
+
+■ POST /api/complete-checkout
+  Checkout完了後の注文確定。session_idを検証し注文レコードを反映。
+
+■ GET /api/ai-status
+  AI機能（Gemini画像生成）の利用可否フラグ。現在はキー不備のため画像生成OFF、
+  権利チェックは有効。
+
+■ POST /api/check-infringement
+  Gemini APIでアイデア文の商標・著作権リスクをAIチェックし結果を返す。
+  （画像生成はこのエンドポイント群から分離、現在無効）
+
+■ GET /（その他すべて）
+  SPAの静的配信（Viteビルド成果物）。
+
+■ Stripe Webhook
+  本番化の際は /api/stripe/webhook の設定が必要（現状テスト運用では
+  complete-checkout の確認方式で動作）。
+
+■ クライアント→Supabase直接アクセス（PostgREST / RPC）
+  アイデアCRUD（削除以外）、注文履歴、残高履歴、コメント、評価、
+  お気に入り、通知、お知らせなどは supabase-js でRLS付き直接アクセス。
+  削除・ステータス遷移・購入・分配・交換はRPCでサーバー側ガード。
+
+■ Project Secrets（Verdent管理。コードには書かない）
+  STRIPE_SECRET_KEY   本番化時に sk_live_... へ差し替え
+  GEMINI_API_KEY      画像生成の再有効化に使用（現状無効）
+  SUPABASE接続情報    Verdent提供Supabaseから自動供給

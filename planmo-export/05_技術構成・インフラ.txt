@@ -1,0 +1,44 @@
+PlanMo 技術構成・インフラ
+========================================
+
+■ 全体アーキテクチャ
+  ブラウザ(React SPA)
+    → Supabase Auth（Google / メール+パスワード、@verdent/auth-js ログインモーダル）
+    → Supabase PostgreSQL（RLS付き。読み取り・RPC）
+    → Express API（/api/*。決済・AI・特権操作）
+  Express → Supabase（Service Role）/ Stripe API / Gemini API
+
+■ フロントエンド
+  Vite + React 18 + TypeScript + Tailwind CSS
+  - デザイン: 木目調・工房風の温かみのあるUI（茶系グラデ、真鍮風ボタン）
+  - 画面: 上部ヘッダー＋タブナビ（PC上部 / モバイル下部固定タブバー）
+  - 主要コンポーネント: Header / TabBar / IdeaCard / IdeaGrid / DetailModal /
+    NotificationBell / CreatorTab / ModelerTab / ShopTab / MyPageTab / EarningsTab / AdminTab
+  - PWA: manifest.json + sw.js（キャッシュv4。ページ遷移は常に最新HTML取得）
+  - トースト通知
+
+■ バックエンド
+  Node.js + Express（server/index.mjs。フルスタック配信のためSPAも同一プロセスで配信）
+
+■ データベース
+  Verdent Supabase（PostgreSQL + RLS + RPC）。マイグレーション27件適用済み
+
+■ デプロイ契約
+  Verdent Hosting フルスタック（Dockerfile: マルチステージビルド、node:slim実行）
+  .verdentc.json: { deploy: { type: "fullstack", rootDir: ".", appPort: 8080 } }
+  URL: https://idea-factory-platform-p1x27q1.verdent.app（ドメインは初回公開時確定）
+
+■ 環境変数・Secrets
+  STRIPE_SECRET_KEY   テストキー運用中 → 本番化時に sk_live_ 差し替え
+  GEMINI_API_KEY      権利チェックは動作中 / 画像生成はキー不備で現在一時無効
+  ※ すべて Verdent Project Secrets で管理。コードへの直書きなし
+
+■ 検証フロー（再公開手順）
+  npx tsc --noEmit → npm run build → validate-project.mjs
+  → publish_current_project → wait_for_deployment_status（live確認）
+
+■ スコープ外（未実装）
+  - Stripe本番キー差し替えとWebhook設定（テスト完了済み。キー入手待ち）
+  - 3Dモデル(GLB/STL)の自動生成（簡易3Dモデル自動出力は計画中）
+  - 評価を購入者限定にする拡張（現状は全ユーザーが評価可）
+  - STLデータのダウンロード課金における海賊版対策

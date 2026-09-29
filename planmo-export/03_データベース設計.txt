@@ -1,0 +1,69 @@
+PlanMo データベース設計（Supabase PostgreSQL + RLS）
+========================================
+
+■ テーブル一覧
+  profiles          id (= auth.users.id) / username / display_name / balance /
+                    is_admin / 規約同意情報 ほか
+                    ※ role列は廃止（0015）。全ユーザーが全ロールになれる
+  ideas             title / description / genre / size_tier / images(複数) / status /
+                    creator_id / modeler_id / price_physical / price_digital /
+                    planner_rate / modeler_rate / platform_fee / stl_path /
+                    delete_requested_by / delete_requested_at /
+                    status_check CHECK制約でステータス値を限定
+  orders            buyer / idea / type(physical|digital) / price / platform_fee /
+                    shipping_name / postal_code / address / phone /
+                    shipping_status / tracking_number / stripe_session_id ほか
+  balance_history   user / amount / type(売上分配・ギフト交換 等) / expires_at(180日)
+  exchange_requests user / exchange_type(Amazon|Apple|GooglePlay) / amount / status /
+                    code（発行されたギフトコード）
+  comments          idea / author / body
+  idea_ratings      idea / user / stars(1-5)。1ユーザー1アイデア1票（上書き可）
+  idea_favorites    user / idea（ほしいものリスト。複合PK）
+  gift_stock        運営が登録した未使用ギフトコードの在庫
+  announcements     運営からのお知らせ
+  notifications     user / title / body / created_at（進捗通知）
+
+■ マイグレーション履歴（supabase/migrations/、0027まで適用済み）
+  0001 init（基本テーブル＋購入・分配RPC）
+  0002 stripe_checkout（決済フロー統合）
+  0003 production_readiness
+  0004 expiry_in_exchange（残高180日期限）
+  0005 fulfillment（製造・発送管理）
+  0006 role_planner（名称を考案者→プランナーに統一）
+  0007 mfg_price_guard（原価割れ防止）
+  0008/0009 size_price_tiers / size_tier_select（サイズ階級制）
+  0010 fulfillment_fee（製造・配送費を購入者負担に分離）
+  0011 stl_min_price（STL最低¥300）
+  0012 multi_images（複数画像対応）
+  0013 announcements（お知らせ機能）
+  0014 delete_account（退会RPC）
+  0015 drop_role（ロール列廃止）
+  0016 gift_stock（ギフト在庫プール自動化）
+  0017 genre（ジャンル追加）
+  0018 ratings（評価機能）
+  0019 workflow（提出中ステータス＋ワークフローRPC）
+  0020 self_accept（自己引受の許可）
+  0021 status_check（CHECK制約再作成）
+  0022 withdraw（販売中→制作中の取り下げ）
+  0023 notify_workflow（修正依頼・取下げでコメント必須＋進捗通知）
+  0024 delete_consent（削除の相互承認）
+  0025 delete_rpc_only（直接DELETE権限剥奪。削除はRPC経由のみ）
+  0026 fix_delete_rpc（UUID比較バグ修正）
+  0027 favorites（ほしいものリスト＋my_profile_stats RPC）
+
+■ RLS ポリシー方針
+  - 全テーブル user_id ベース。自分のデータのみ操作可
+  - カタログ（販売中・募集中アイデア）は全員読み取り可
+  - アイデアの直接DELETEは権限剥奪済み。削除は
+    request_idea_delete / confirm_idea_delete RPC（SECURITY DEFINER）経由のみ
+  - idea_favorites は自分の分のみ select/insert/delete 可
+  - 購入・分配は perform_buy / record_partner_order 系RPCでサーバー側ガード
+
+■ 主要RPC
+  request_idea_delete / confirm_idea_delete   削除の相互承認
+  update_idea_status(p_idea_id, p_new_status, p_comment)  ステータス遷移ガード＋通知
+  perform_buy / record_partner_order          購入・30%手数料・分配・履歴記録
+  request_exchange                            ギフト在庫照合・即時発行 or 申請
+  delete_my_account                           退会（profiles削除で連鎖削除）
+  my_profile_stats                            評価数・平均・合計売上高（マイページ用）
+  is_admin                                    管理者判定
