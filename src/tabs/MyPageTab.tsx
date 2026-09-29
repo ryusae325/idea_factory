@@ -1,26 +1,32 @@
 import { useEffect, useState } from 'react';
-import type { BalanceEntry, Order, Profile } from '../lib/types';
+import type { BalanceEntry, Idea, Order, Profile } from '../lib/types';
 import { fmtDate, fmtYen } from '../lib/types';
-import { fetchMyBalanceHistory, fetchMyOrders } from '../lib/data';
+import { fetchMyBalanceHistory, fetchMyOrders, fetchMyStats } from '../lib/data';
 import OrdersTable from '../components/OrdersTable';
 
 interface Props {
   profile: Profile;
-  ideas: { id: number; title: string; status: string; creator_id: string; modeler_id: string | null }[];
+  ideas: Idea[];
+  favorites: Set<number>;
+  onToggleFav: (idea: Idea) => void;
+  onOpen: (id: number) => void;
 }
 
-export default function MyPageTab({ profile, ideas }: Props) {
+export default function MyPageTab({ profile, ideas, favorites, onToggleFav, onOpen }: Props) {
   const [orders, setOrders] = useState<Order[]>([]);
   const [history, setHistory] = useState<BalanceEntry[]>([]);
+  const [stats, setStats] = useState({ rating_count: 0, rating_avg: 0, total_sales: 0 });
 
   useEffect(() => {
     if (!profile) return;
     fetchMyOrders(profile.id).then(setOrders).catch(() => {});
     fetchMyBalanceHistory(profile.id).then(setHistory).catch(() => {});
+    fetchMyStats().then(setStats).catch(() => {});
   }, [profile]);
 
   const myIdeas = ideas.filter((i) => i.creator_id === profile.id);
   const myModeling = ideas.filter((i) => i.modeler_id === profile.id);
+  const favIdeas = ideas.filter((i) => favorites.has(i.id));
 
   return (
     <div className="space-y-8">
@@ -28,7 +34,57 @@ export default function MyPageTab({ profile, ideas }: Props) {
         <Stat label="投稿したアイデア" value={`${myIdeas.length}件`} icon="💡" />
         <Stat label="担当中のモデリング" value={`${myModeling.length}件`} icon="🛠️" />
         <Stat label="売上残高" value={`${fmtYen(profile.balance)}円`} icon="💰" />
+        <Stat label="受け取った評価" value={`${stats.rating_count}件`} icon="⭐" />
+        <Stat
+          label="平均評価"
+          value={stats.rating_count > 0 ? `★${stats.rating_avg}` : '—'}
+          icon="🌟"
+        />
+        <Stat label="合計売上高" value={`${fmtYen(stats.total_sales)}円`} icon="📈" />
       </div>
+
+      <section>
+        <h3 className="mb-3 text-sm font-bold text-stone-800">❤️ ほしいものリスト</h3>
+        {favIdeas.length === 0 ? (
+          <p className="rounded-xl bg-stone-50 px-4 py-5 text-center text-xs text-stone-400 ring-1 ring-stone-200">
+            商品購入タブで商品の 🤍 を押すと、ここに追加されます。
+          </p>
+        ) : (
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            {favIdeas.map((i) => (
+              <div
+                key={i.id}
+                onClick={() => onOpen(i.id)}
+                className="group flex cursor-pointer items-center gap-3 rounded-xl border border-stone-200 bg-[#fffdf8] p-3 shadow-sm transition hover:shadow-md"
+              >
+                <div className="h-14 w-14 shrink-0 overflow-hidden rounded-lg bg-stone-100">
+                  {i.images?.[0] ?? i.image_url ? (
+                    <img src={i.images?.[0] ?? i.image_url} alt={i.title} className="h-full w-full object-cover" />
+                  ) : (
+                    <div className="grid h-full w-full place-items-center text-xl text-stone-300">🧩</div>
+                  )}
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="line-clamp-1 text-[13px] font-bold text-stone-800">{i.title}</p>
+                  <p className="text-[11px] text-stone-500">
+                    {fmtYen(i.price_physical)}円＋製造・配送費／STL {fmtYen(i.price_digital)}円
+                  </p>
+                </div>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onToggleFav(i);
+                  }}
+                  title="ほしいものリストから削除"
+                  className="shrink-0 text-lg transition hover:scale-110"
+                >
+                  ❤️
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+      </section>
 
       <section>
         <h3 className="mb-3 text-sm font-bold text-stone-800">📌 自分が投稿したアイデア</h3>

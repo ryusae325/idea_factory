@@ -1,5 +1,5 @@
 /* PlanMo Service Worker */
-const CACHE_NAME = 'planmo-v3';
+const CACHE_NAME = 'planmo-v4';
 const APP_SHELL = ['/', '/index.html', '/manifest.json'];
 
 /* API・認証・ストレージ・決済関連は絶対にキャッシュしない */

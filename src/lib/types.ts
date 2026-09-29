@@ -118,6 +118,12 @@ export interface GiftStock {
   created_at: string;
 }
 
+export interface MyStats {
+  rating_count: number;
+  rating_avg: number;
+  total_sales: number;
+}
+
 export const fmtYen = (n: number) => n.toLocaleString('ja-JP');
 
 export const fmtDate = (iso: string) => (iso ? iso.slice(5, 16).replace('T', ' ') : '');

@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import type { Idea, Profile } from './lib/types';
 import { supabase, auth } from './lib/supabase';
-import { fetchIdeas, fetchProfile, updateIdeaStatus, createCheckout, completeCheckout, GENRES, commentCount, ratingStats } from './lib/data';
+import { fetchIdeas, fetchProfile, updateIdeaStatus, createCheckout, completeCheckout, GENRES, commentCount, ratingStats, fetchMyFavorites, setFavorite } from './lib/data';
 import { toast } from './lib/toast';
 import Header from './components/Header';
 import ToastHost from './components/ToastHost';
@@ -31,6 +31,7 @@ export default function App() {
   const [needsProfile, setNeedsProfile] = useState(false);
   const [showLegal, setShowLegal] = useState(false);
   const [ideas, setIdeas] = useState<Idea[]>([]);
+  const [favorites, setFavorites] = useState<Set<number>>(new Set());
   const [tab, setTab] = useState<TabId>('creator');
   const [detailId, setDetailId] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
@@ -65,6 +66,36 @@ export default function App() {
     }
   }, []);
 
+  const refreshFavorites = useCallback(async () => {
+    try {
+      setFavorites(new Set(await fetchMyFavorites()));
+    } catch {
+      setFavorites(new Set());
+    }
+  }, []);
+
+  const handleToggleFav = useCallback(
+    async (idea: Idea) => {
+      if (!profile) {
+        toast('ログインしてください', 'error');
+        return;
+      }
+      const isFav = favorites.has(idea.id);
+      const next = new Set(favorites);
+      if (isFav) next.delete(idea.id);
+      else next.add(idea.id);
+      setFavorites(next);
+      try {
+        await setFavorite(idea.id, !isFav);
+        if (!isFav) toast('ほしいものリストに追加しました');
+      } catch (e) {
+        setFavorites(favorites);
+        toast((e as Error).message, 'error');
+      }
+    },
+    [favorites, profile],
+  );
+
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
       setLoggedIn(!!data.session);
@@ -85,7 +116,8 @@ export default function App() {
 
   useEffect(() => {
     refreshIdeas();
-  }, [refreshIdeas, loggedIn]);
+    refreshFavorites();
+  }, [refreshIdeas, refreshFavorites, loggedIn]);
 
   // Stripe Checkout からの戻り処理
   useEffect(() => {
@@ -289,13 +321,26 @@ export default function App() {
                   order={sortOrder3}
                   onOrder={setSortOrder3}
                 />
-                <IdeaGrid ideas={onSaleFiltered} {...gridProps} emptyMessage="販売中の商品はまだありません。" />
+                <IdeaGrid
+                  ideas={onSaleFiltered}
+                  {...gridProps}
+                  showFav
+                  favSet={favorites}
+                  onToggleFav={handleToggleFav}
+                  emptyMessage="販売中の商品はまだありません。"
+                />
               </section>
             )}
 
             {tab === 'mypage' &&
               (loggedIn && profile ? (
-                <MyPageTab profile={profile} ideas={ideas} />
+                <MyPageTab
+                  profile={profile}
+                  ideas={ideas}
+                  favorites={favorites}
+                  onToggleFav={handleToggleFav}
+                  onOpen={setDetailId}
+                />
               ) : (
                 <LoginPrompt />
               ))}

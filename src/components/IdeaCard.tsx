@@ -9,6 +9,9 @@ interface Props {
     idea: Idea,
     action: 'accept' | 'submit' | 'approve' | 'revision' | 'withdraw' | 'buy-physical' | 'buy-digital',
   ) => void;
+  showFav?: boolean;
+  fav?: boolean;
+  onToggleFav?: (idea: Idea) => void;
 }
 
 const statusBadge: Record<Idea['status'], string> = {
@@ -18,7 +21,7 @@ const statusBadge: Record<Idea['status'], string> = {
   販売中: 'bg-emerald-50 text-emerald-700 ring-emerald-200',
 };
 
-export default function IdeaCard({ idea, profile, onOpen, onAction }: Props) {
+export default function IdeaCard({ idea, profile, onOpen, onAction, showFav, fav, onToggleFav }: Props) {
   const name = (p?: { username: string; display_name: string } | null) =>
     p?.display_name || p?.username || '';
 
@@ -138,9 +141,25 @@ export default function IdeaCard({ idea, profile, onOpen, onAction }: Props) {
           {idea.status}
         </span>
         {idea.genre && (
-          <span className="absolute right-3 top-3 rounded-full bg-white/90 px-2.5 py-1 text-[10px] font-bold text-stone-600 ring-1 ring-stone-200">
+          <span
+            className={`absolute top-3 rounded-full bg-white/90 px-2.5 py-1 text-[10px] font-bold text-stone-600 ring-1 ring-stone-200 ${
+              showFav ? 'right-12' : 'right-3'
+            }`}
+          >
             {idea.genre}
           </span>
+        )}
+        {showFav && (
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              onToggleFav?.(idea);
+            }}
+            title={fav ? 'ほしいものリストから削除' : 'ほしいものリストに追加'}
+            className="absolute right-3 top-3 grid h-7 w-7 place-items-center rounded-full bg-white/90 text-sm shadow-sm ring-1 ring-stone-200 transition hover:scale-110"
+          >
+            {fav ? '❤️' : '🤍'}
+          </button>
         )}
       </div>
 

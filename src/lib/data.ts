@@ -1,5 +1,5 @@
 import { supabase, authFetch } from './supabase';
-import type { Comment, ExchangeRequest, Idea, Order, BalanceEntry, Profile, Announcement, GiftStock, Notification } from './types';
+import type { Comment, ExchangeRequest, Idea, Order, BalanceEntry, Profile, Announcement, GiftStock, Notification, MyStats } from './types';
 
 export const IDEA_SELECT = `*, creator:profiles!ideas_creator_id_fkey(username,display_name), modeler:profiles!ideas_modeler_id_fkey(username,display_name)`;
 
@@ -389,6 +389,33 @@ export async function deleteMyAccount(): Promise<string> {
   const { data, error } = await supabase.rpc('delete_my_account');
   if (error) throw new Error(error.message);
   return (data as string) ?? '退会処理が完了しました';
+}
+
+// ---------- マイページ統計 ＆ ほしいものリスト ----------
+
+/** 受け取った評価の件数・平均 ＋ 自分の商品の合計売上高 */
+export async function fetchMyStats(): Promise<MyStats> {
+  const { data, error } = await supabase.rpc('my_profile_stats');
+  if (error) throw new Error(error.message);
+  return (data ?? { rating_count: 0, rating_avg: 0, total_sales: 0 }) as MyStats;
+}
+
+/** 自分がハートを付けた商品のID一覧 */
+export async function fetchMyFavorites(): Promise<number[]> {
+  const { data, error } = await supabase.from('idea_favorites').select('idea_id');
+  if (error) throw new Error(error.message);
+  return (data ?? []).map((r) => (r as { idea_id: number }).idea_id);
+}
+
+/** ハートの付け外し */
+export async function setFavorite(ideaId: number, fav: boolean) {
+  if (fav) {
+    const { error } = await supabase.from('idea_favorites').insert({ idea_id: ideaId });
+    if (error) throw new Error(error.message);
+  } else {
+    const { error } = await supabase.from('idea_favorites').delete().eq('idea_id', ideaId);
+    if (error) throw new Error(error.message);
+  }
 }
 
 // ---------- ギフトコード在庫（交換の自動発行） ----------
