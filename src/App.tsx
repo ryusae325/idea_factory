@@ -236,7 +236,7 @@ export default function App() {
   const gridProps = { profile, onOpen: setDetailId, onAction: handleAction };
 
   return (
-    <div className="min-h-screen pb-16">
+    <div className="min-h-screen pb-20 sm:pb-16">
       <Header profile={profile} loggedIn={loggedIn} />
 
       <main className="mx-auto max-w-6xl px-4 pt-5">
@@ -244,7 +244,8 @@ export default function App() {
           <p className="py-24 text-center text-sm text-stone-500">読み込み中…</p>
         ) : (
           <>
-            <nav className="wood-panel mb-5 flex gap-1.5 overflow-x-auto rounded-2xl border border-[#312217] p-1.5 shadow-md shadow-[#4a3524]/40">
+            {/* PC: 上部タブ */}
+            <nav className="wood-panel mb-5 hidden gap-1.5 rounded-2xl border border-[#312217] p-1.5 shadow-md shadow-[#4a3524]/40 sm:flex">
               {TABS.filter((t) => t.id !== 'admin' || profile?.is_admin).map((t) => (
                 <button
                   key={t.id}
@@ -261,6 +262,38 @@ export default function App() {
                   {t.label}
                 </button>
               ))}
+            </nav>
+
+            {/* モバイル: 下部タブバー（全タブを常に一目で表示） */}
+            <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-[#312217] bg-[#241809]/95 pb-[env(safe-area-inset-bottom)] backdrop-blur sm:hidden">
+              <div className="flex">
+                {TABS.filter((t) => t.id !== 'admin' || profile?.is_admin).map((t) => (
+                  <button
+                    key={t.id}
+                    onClick={() => setTab(t.id)}
+                    className={`flex flex-1 flex-col items-center gap-0.5 px-0.5 py-2 transition ${
+                      tab === t.id
+                        ? t.id === 'admin'
+                          ? 'text-amber-400'
+                          : 'text-amber-300'
+                        : 'text-[#9a8563]'
+                    }`}
+                  >
+                    <span
+                      className={`grid h-7 w-9 place-items-center rounded-lg text-base leading-none ${
+                        tab === t.id
+                          ? t.id === 'admin'
+                            ? 'bg-gradient-to-b from-amber-500 to-amber-600 shadow-md shadow-amber-900/50'
+                            : 'brass-btn'
+                          : ''
+                      }`}
+                    >
+                      {t.icon}
+                    </span>
+                    <span className="text-[9px] font-bold leading-tight">{t.label}</span>
+                  </button>
+                ))}
+              </div>
             </nav>
 
             {tab === 'creator' && (
