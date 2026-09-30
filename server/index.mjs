@@ -241,7 +241,7 @@ app.post('/api/create-checkout-session', async (req, res) => {
     const origin = req.headers.origin || `http://localhost:${PORT}`;
     const session = await stripe.checkout.sessions.create({
       mode: 'payment',
-      ...(customerId ? { customer: customerId, payment_intent_data: { setup_future_usage: 'on_session' } } : {}),
+      ...(customerId ? { customer: customerId, setup_future_usage: 'on_session' } : {}),
       ...(item_type === 'physical'
         ? {
             shipping_address_collection: { allowed_countries: ['JP'] },
