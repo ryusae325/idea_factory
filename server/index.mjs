@@ -68,14 +68,6 @@ function securityHeaders(_req, res, next) {
 }
 app.use(securityHeaders);
 
-// ---------- HTTPS redirect in production ----------
-app.use((req, res, next) => {
-  if (IS_PROD && req.headers['x-forwarded-proto'] === 'http') {
-    return res.redirect(301, `https://${req.headers.host}${req.url}`);
-  }
-  next();
-});
-
 // ---------- CORS ----------
 app.use((req, res, next) => {
   const origin = req.headers.origin;
