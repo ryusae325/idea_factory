@@ -55,10 +55,10 @@ function securityHeaders(_req, res, next) {
     'Content-Security-Policy',
     "default-src 'self'; " +
       "script-src 'self' 'unsafe-inline' 'unsafe-eval'; " +
-      "style-src 'self' 'unsafe-inline'; " +
+      "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; " +
       "img-src 'self' data: blob: https:; " +
-      "font-src 'self'; " +
-      "connect-src 'self' https://*.stripe.com https://*.googleapis.com https://*.supabase.co; " +
+      "font-src 'self' https://fonts.gstatic.com; " +
+      "connect-src 'self' https://*.stripe.com https://*.googleapis.com https://*.supabase.co https://*.verdent.ai; " +
       "frame-src 'self' https://accounts.google.com https://*.stripe.com; " +
       "frame-ancestors 'none'; " +
       "base-uri 'self'; " +
