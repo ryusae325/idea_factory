@@ -58,10 +58,11 @@ function securityHeaders(_req, res, next) {
       "style-src 'self' 'unsafe-inline'; " +
       "img-src 'self' data: blob: https:; " +
       "font-src 'self'; " +
-      "connect-src 'self' https://*.stripe.com https://*.googleapis.com; " +
+      "connect-src 'self' https://*.stripe.com https://*.googleapis.com https://*.supabase.co; " +
+      "frame-src 'self' https://accounts.google.com https://*.stripe.com; " +
       "frame-ancestors 'none'; " +
       "base-uri 'self'; " +
-      "form-action 'self';",
+      "form-action 'self' https://accounts.google.com;",
   );
   res.setHeader('Permissions-Policy', 'geolocation=(), microphone=(), camera=()');
   next();
@@ -135,9 +136,22 @@ if (SUPABASE_URL && SUPABASE_ANON_KEY) {
     express.raw({ type: () => true, limit: '25mb' }),
     async (req, res) => {
       try {
-        // 転送するヘッダーを最小限に制限
+        // 転送するヘッダーを制限しつつ、Supabase Auth/REST/Storage に必要なものは確保
         const headers = {};
-        const allowedReqHeaders = ['content-type', 'accept', 'prefer', 'x-client-info', 'range'];
+        const allowedReqHeaders = [
+          'content-type',
+          'content-length',
+          'accept',
+          'accept-language',
+          'accept-encoding',
+          'prefer',
+          'x-client-info',
+          'x-supabase-api-version',
+          'x-request-id',
+          'range',
+          'origin',
+          'referer',
+        ];
         for (const k of allowedReqHeaders) {
           const v = req.headers[k];
           if (v) headers[k] = Array.isArray(v) ? v.join(', ') : v;
