@@ -628,38 +628,33 @@ app.post('/api/report-idea', rateLimitMiddleware(RATE_LIMIT_STRICT), async (req,
   if (!isNonEmptyString(reason, 2000)) {
     return res.status(400).json(clientError('通報内容を入力してください（2000文字以内）'));
   }
-  if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
+  if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
     return res.status(503).json(clientError('通報受付は現在利用できません'));
   }
 
   try {
-    const normalizedIdeaId = Number(idea_id);
-    const ideaRes = await fetch(
-      `${SUPABASE_URL}/rest/v1/ideas?id=eq.${normalizedIdeaId}&select=id,title`,
-      { headers: serviceRoleHeaders(), signal: AbortSignal.timeout(10000) },
-    );
-    if (!ideaRes.ok) throw new Error(`Idea lookup failed: ${ideaRes.status}`);
-    const ideas = await ideaRes.json();
-    if (!ideas?.[0]) return res.status(404).json(clientError('対象の商品が見つかりません'));
-
-    const reporter = await getAuthUser(req);
-    const reportRes = await fetch(`${SUPABASE_URL}/rest/v1/idea_reports`, {
+    const jwt = String(req.headers.authorization || '').replace(/^Bearer /i, '');
+    const reporter = jwt ? await getAuthUser(req) : null;
+    const token = reporter ? jwt : SUPABASE_ANON_KEY;
+    const reportRes = await fetch(`${SUPABASE_URL}/rest/v1/rpc/submit_idea_report`, {
       method: 'POST',
-      headers: serviceRoleHeaders({ 'Content-Type': 'application/json', Prefer: 'return=representation' }),
-      body: JSON.stringify({
-        idea_id: normalizedIdeaId,
-        idea_title: ideas[0].title,
-        reporter_id: reporter?.id ?? null,
-        reason: String(reason).trim(),
-      }),
+      headers: {
+        apikey: SUPABASE_ANON_KEY,
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ p_idea_id: Number(idea_id), p_reason: String(reason).trim() }),
       signal: AbortSignal.timeout(10000),
     });
     if (!reportRes.ok) {
-      console.error('Report persistence failed:', reportRes.status, await reportRes.text());
+      const details = await reportRes.text();
+      console.error('Report RPC failed:', reportRes.status, details.slice(0, 500));
+      if (reportRes.status === 404) return res.status(404).json(clientError('対象の商品が見つかりません'));
+      if (reportRes.status === 400) return res.status(400).json(clientError('通報内容を確認してください'));
       return res.status(502).json(serverError());
     }
-    const reports = await reportRes.json();
-    console.info('[REPORT] accepted', JSON.stringify({ report_id: reports?.[0]?.id, idea_id: normalizedIdeaId }));
+    const reportId = await reportRes.json();
+    console.info('[REPORT] accepted', JSON.stringify({ report_id: reportId, idea_id: Number(idea_id), reporter_id: reporter?.id ?? null }));
     return res.json({ status: 'ok', message: '通報を受理しました' });
   } catch (e) {
     console.error('report-idea error:', e);
