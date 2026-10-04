@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512" role="img" aria-labelledby="title desc">
+  <title id="title">PlanMo 共創アイコン案</title>
+  <desc id="desc">二つの色のつながりが中央の立体キューブに集まり、プランナーとモデラーの共創を表すアイコン</desc>
+  <defs>
+    <linearGradient id="tile" x1="70" y1="55" x2="435" y2="460" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#3478F6"/>
+      <stop offset="1" stop-color="#1747BD"/>
+    </linearGradient>
+    <linearGradient id="leftFace" x1="185" y1="240" x2="256" y2="365" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#FFFFFF"/>
+      <stop offset="1" stop-color="#DDEAFF"/>
+    </linearGradient>
+  </defs>
+  <rect x="0" y="0" width="512" height="512" rx="116" fill="url(#tile)"/>
+  <path d="M117 245C132 159 177 112 245 163" fill="none" stroke="#FBBF24" stroke-width="13" stroke-linecap="round"/>
+  <path d="M395 245C380 159 335 112 267 163" fill="none" stroke="#B8F2FA" stroke-width="13" stroke-linecap="round"/>
+  <circle cx="117" cy="245" r="12" fill="#FBBF24" stroke="#FFFFFF" stroke-width="5"/>
+  <circle cx="395" cy="245" r="12" fill="#B8F2FA" stroke="#FFFFFF" stroke-width="5"/>
+  <path d="M256 165 343 215 256 265 169 215Z" fill="#FFFFFF"/>
+  <path d="M169 215 256 265 256 365 169 315Z" fill="url(#leftFace)"/>
+  <path d="M343 215 256 265 256 365 343 315Z" fill="#C7DBFF"/>
+  <path d="M169 215 256 265 343 215M256 265V365" fill="none" stroke="#8EAEF0" stroke-width="6" stroke-linejoin="round"/>
+  <path d="M246 151 256 132 266 151" fill="none" stroke="#FFFFFF" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

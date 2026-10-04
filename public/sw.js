@@ -1,6 +1,6 @@
 /* PlanMo Service Worker */
-const CACHE_NAME = 'planmo-v4';
-const APP_SHELL = ['/', '/index.html', '/manifest.json'];
+const CACHE_NAME = 'planmo-v5';
+const APP_SHELL = ['/', '/index.html', '/manifest.json', '/icon.svg', '/icons/icon-192.png', '/icons/icon-512.png'];
 
 /* API・認証・ストレージ・決済関連は絶対にキャッシュしない */
 const BYPASS = [/\/api\//, /\/auth\//, /\/rest\//, /\/storage\//, /\/realtime\//, /\/pg/];

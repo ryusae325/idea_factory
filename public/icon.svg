@@ -1,6 +1,23 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
-  <rect width="64" height="64" rx="14" fill="#0f2a4a"/>
-  <path d="M32 12a14 14 0 0 0-8 25.5V44a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-6.5A14 14 0 0 0 32 12z" fill="#fbbf24"/>
-  <rect x="27" y="48" width="10" height="4" rx="2" fill="#fbbf24"/>
-  <circle cx="32" cy="26" r="4.5" fill="#0f2a4a" opacity="0.25"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-labelledby="title desc">
+  <title id="title">PlanMo</title>
+  <desc id="desc">Two collaborators connect to a central three-dimensional cube.</desc>
+  <defs>
+    <linearGradient id="background" x1="66" y1="52" x2="446" y2="460" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#3B82F6"/>
+      <stop offset="1" stop-color="#1747BD"/>
+    </linearGradient>
+    <linearGradient id="leftFace" x1="160" y1="210" x2="256" y2="382" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#FFFFFF"/>
+      <stop offset="1" stop-color="#E6F0FF"/>
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" rx="116" fill="url(#background)"/>
+  <path d="M91 254H153" stroke="#FBBF24" stroke-width="22" stroke-linecap="round"/>
+  <path d="M421 254H359" stroke="#A5EFF8" stroke-width="22" stroke-linecap="round"/>
+  <circle cx="82" cy="254" r="31" fill="#FBBF24" stroke="#FFFFFF" stroke-width="11"/>
+  <circle cx="430" cy="254" r="31" fill="#A5EFF8" stroke="#FFFFFF" stroke-width="11"/>
+  <path d="M256 136 358 195 256 254 154 195Z" fill="#FFFFFF"/>
+  <path d="M154 195 256 254 256 376 154 317Z" fill="url(#leftFace)"/>
+  <path d="M358 195 256 254 256 376 358 317Z" fill="#C9DCFF"/>
+  <path d="M154 195 256 254 358 195M256 254V376" fill="none" stroke="#91B1F0" stroke-width="8" stroke-linejoin="round"/>
 </svg>

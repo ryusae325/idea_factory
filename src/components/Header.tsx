@@ -16,9 +16,11 @@ export default function Header({ profile, loggedIn }: Props) {
     <header className="wood-panel sticky top-0 z-40 border-b border-[#0c2240] shadow-lg shadow-[#1e3a5f]/50">
       <div className="mx-auto flex max-w-6xl items-center justify-between gap-2 px-3 py-2.5 sm:gap-3 sm:px-4 sm:py-3">
         <div className="flex min-w-0 items-center gap-2 sm:gap-2.5">
-          <div className="brass-btn grid h-9 w-9 shrink-0 place-items-center rounded-xl text-base sm:h-10 sm:w-10 sm:text-lg">
-            💡
-          </div>
+          <img
+            src="/icon.svg"
+            alt=""
+            className="h-9 w-9 shrink-0 rounded-xl sm:h-10 sm:w-10"
+          />
           <div className="min-w-0">
             <h1 className="text-sm font-bold leading-tight text-white sm:text-base">PlanMo</h1>
             <p className="hidden text-[11px] leading-tight text-[#64748b] sm:block">プランナー × 3Dモデラー 共創プラットフォーム</p>
