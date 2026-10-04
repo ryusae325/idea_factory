@@ -20,8 +20,10 @@ document.addEventListener('pointerdown', (e) => {
   ink.style.width = ink.style.height = `${size}px`;
   ink.style.left = `${e.clientX - rect.left - size / 2}px`;
   ink.style.top = `${e.clientY - rect.top - size / 2}px`;
-  if (getComputedStyle(target).position === 'static') target.style.position = 'relative';
-  target.classList.add('ink-host');
+  const pos = getComputedStyle(target).position;
+  // ink（absolute span）の基準にできるのは static/relative のみ。absolute/fixed は自身が基準になるためクラス不要
+  if (pos === 'static') target.style.position = 'relative';
+  if (pos === 'static' || pos === 'relative') target.classList.add('ink-host');
   target.appendChild(ink);
   ink.addEventListener('animationend', () => ink.remove());
 });
