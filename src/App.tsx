@@ -149,7 +149,7 @@ export default function App() {
 
   const handleAction = async (
     idea: Idea,
-    action: 'accept' | 'submit' | 'approve' | 'revision' | 'withdraw' | 'buy-physical' | 'buy-digital',
+    action: 'submit' | 'approve' | 'revision' | 'withdraw' | 'buy-physical' | 'buy-digital',
   ) => {
     if (!loggedIn) return toast('ログインしてください', 'error');
     try {
@@ -170,8 +170,8 @@ export default function App() {
         await refreshIdeas();
         return;
       }
-      if (action === 'accept' || action === 'submit' || action === 'approve') {
-        const status = action === 'accept' ? '制作中' : action === 'submit' ? '提出中' : '販売中';
+      if (action === 'submit' || action === 'approve') {
+        const status = action === 'submit' ? '提出中' : '販売中';
         const msg = await updateIdeaStatus(idea.id, status);
         toast(msg);
         await refreshIdeas();

@@ -121,6 +121,25 @@ export interface Notification {
   created_at: string;
 }
 
+export interface IdeaApplication {
+  id: number;
+  idea_id: number;
+  modeler_id: string;
+  message: string;
+  status: '応募中' | '選定済' | '見送り';
+  created_at: string;
+  modeler?: ProfileLite | null;
+}
+
+export interface IdeaMessage {
+  id: number;
+  idea_id: number;
+  sender_id: string;
+  body: string;
+  created_at: string;
+  sender?: ProfileLite | null;
+}
+
 export interface GiftStock {
   id: number;
   exchange_type: string;

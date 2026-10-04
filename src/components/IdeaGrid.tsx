@@ -2,7 +2,7 @@ import type { ReactNode } from 'react';
 import type { Idea, Profile } from '../lib/types';
 import IdeaCard from '../components/IdeaCard';
 
-type Action = 'accept' | 'submit' | 'approve' | 'revision' | 'withdraw' | 'buy-physical' | 'buy-digital';
+type Action = 'submit' | 'approve' | 'revision' | 'withdraw' | 'buy-physical' | 'buy-digital';
 
 interface Props {
   ideas: Idea[];

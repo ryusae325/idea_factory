@@ -1,7 +1,8 @@
-import { useCallback, useEffect, useState } from 'react';
-import type { Comment, Idea, Profile } from '../lib/types';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import type { Comment, Idea, IdeaApplication, IdeaMessage, Profile } from '../lib/types';
 import { fmtDate, fmtYen } from '../lib/types';
-import { deleteComment, fetchComments, fetchIdea, postComment, getStlDownloadUrl, setIdeaStl, uploadStl, SIZE_OPTIONS, fulfillmentFee, ratingStats, fetchMyRating, rateIdea, updateIdeaStatus, requestIdeaDelete, confirmIdeaDelete, reportIdea } from '../lib/data';
+import { supabase } from '../lib/supabase';
+import { deleteComment, fetchComments, fetchIdea, postComment, getStlDownloadUrl, setIdeaStl, uploadStl, SIZE_OPTIONS, fulfillmentFee, ratingStats, fetchMyRating, rateIdea, updateIdeaStatus, requestIdeaDelete, confirmIdeaDelete, reportIdea, fetchApplications, applyForIdea, withdrawApplication, assignModeler, fetchIdeaMessages, sendIdeaMessage } from '../lib/data';
 import { toast } from '../lib/toast';
 
 interface Props {
@@ -17,6 +18,13 @@ export default function DetailModal({ ideaId, profile, onClose, onChanged }: Pro
   const [text, setText] = useState('');
   const [busy, setBusy] = useState(false);
   const [myStars, setMyStars] = useState<number | null>(null);
+  const [applications, setApplications] = useState<IdeaApplication[]>([]);
+  const [applyMsg, setApplyMsg] = useState('');
+  const [applyBusy, setApplyBusy] = useState(false);
+  const [chatMessages, setChatMessages] = useState<IdeaMessage[]>([]);
+  const [chatText, setChatText] = useState('');
+  const [chatBusy, setChatBusy] = useState(false);
+  const chatBottomRef = useRef<HTMLDivElement | null>(null);
 
   const reload = useCallback(async () => {
     const [i, c] = await Promise.all([fetchIdea(ideaId), fetchComments(ideaId)]);
@@ -24,9 +32,58 @@ export default function DetailModal({ ideaId, profile, onClose, onChanged }: Pro
     setComments(c);
   }, [ideaId]);
 
+  const reloadApplications = useCallback(async () => {
+    try {
+      setApplications(await fetchApplications(ideaId));
+    } catch {
+      setApplications([]);
+    }
+  }, [ideaId]);
+
+  const reloadChat = useCallback(async () => {
+    try {
+      setChatMessages(await fetchIdeaMessages(ideaId));
+    } catch {
+      /* チャットは関係者のみ取得可能。権限がなければ何も表示しない */
+      setChatMessages([]);
+    }
+  }, [ideaId]);
+
   useEffect(() => {
     reload().catch(() => toast('詳細情報の取得に失敗しました', 'error'));
   }, [reload]);
+
+  useEffect(() => {
+    reloadApplications();
+  }, [reloadApplications]);
+
+  const canChat = !!(idea?.modeler_id && profile && (profile.id === idea.creator_id || profile.id === idea.modeler_id || profile.is_admin));
+
+  useEffect(() => {
+    if (!canChat) {
+      setChatMessages([]);
+      return;
+    }
+    reloadChat();
+    // Realtime で即時反映（出版が有効な環境）。失敗時は下記ポーリングで代替。
+    const channel = supabase
+      .channel(`idea_messages_${ideaId}`)
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'idea_messages', filter: `idea_id=eq.${ideaId}` },
+        () => reloadChat(),
+      )
+      .subscribe();
+    const timer = window.setInterval(reloadChat, 5000);
+    return () => {
+      supabase.removeChannel(channel);
+      window.clearInterval(timer);
+    };
+  }, [canChat, ideaId, reloadChat]);
+
+  useEffect(() => {
+    chatBottomRef.current?.scrollIntoView({ block: 'end' });
+  }, [chatMessages.length, canChat]);
 
   useEffect(() => {
     if (profile) {
@@ -160,6 +217,66 @@ export default function DetailModal({ ideaId, profile, onClose, onChanged }: Pro
     }
   };
 
+  const myApplication = profile ? applications.find((a) => a.modeler_id === profile.id) ?? null : null;
+
+  const handleApply = async () => {
+    if (!profile) return toast('立候補するにはログインしてください', 'error');
+    if (applyMsg.length > 1000) return toast('応募メッセージは1000文字以内で入力してください', 'error');
+    setApplyBusy(true);
+    try {
+      const msg = await applyForIdea(idea.id, applyMsg);
+      toast(msg);
+      setApplyMsg('');
+      await reloadApplications();
+    } catch (e) {
+      toast((e as Error).message, 'error');
+    } finally {
+      setApplyBusy(false);
+    }
+  };
+
+  const handleWithdraw = async () => {
+    if (!confirm('立候補を取り下げますか？')) return;
+    setApplyBusy(true);
+    try {
+      const msg = await withdrawApplication(idea.id);
+      toast(msg);
+      await reloadApplications();
+    } catch (e) {
+      toast((e as Error).message, 'error');
+    } finally {
+      setApplyBusy(false);
+    }
+  };
+
+  const handleAssign = async (a: IdeaApplication) => {
+    const n = a.modeler?.display_name || a.modeler?.username || 'このモデラー';
+    if (!confirm(`${n} さんを指名してモデリングを開始しますか？\n指名後は他の応募者への連絡（不選出通知）が送られます。`)) return;
+    try {
+      const msg = await assignModeler(idea.id, a.modeler_id);
+      toast(msg);
+      await Promise.all([reload(), reloadApplications()]);
+      onChanged();
+    } catch (e) {
+      toast((e as Error).message, 'error');
+    }
+  };
+
+  const handleSendChat = async () => {
+    if (!chatText.trim()) return toast('メッセージを入力してください', 'error');
+    if (chatText.trim().length > 2000) return toast('メッセージは2000文字以内で入力してください', 'error');
+    setChatBusy(true);
+    try {
+      await sendIdeaMessage(idea.id, chatText);
+      setChatText('');
+      await reloadChat();
+    } catch (e) {
+      toast((e as Error).message, 'error');
+    } finally {
+      setChatBusy(false);
+    }
+  };
+
   return (
     <Overlay onClose={onClose}>
       <div className="flex items-start justify-between gap-3">
@@ -274,6 +391,93 @@ export default function DetailModal({ ideaId, profile, onClose, onChanged }: Pro
         </p>
       </div>
 
+      {idea.status === 'アイデア募集' && (
+        <div className="mt-3 rounded-xl bg-sky-50/70 p-3.5 ring-1 ring-sky-200">
+          <p className="text-xs font-bold text-sky-900">🙋 モデラー立候補（指名制）</p>
+          {isOwner || isAdmin ? (
+            <div className="mt-2">
+              <p className="text-[11px] font-semibold text-sky-800">
+                応募者 {applications.filter((a) => a.status === '応募中').length}件
+              </p>
+              {applications.length === 0 ? (
+                <p className="mt-1.5 rounded-lg bg-white px-3 py-2 text-[11px] text-stone-500 ring-1 ring-stone-200">
+                  まだ立候補はありません。応募が届くと🔔でお知らせします。
+                </p>
+              ) : (
+                <ul className="mt-2 space-y-2">
+                  {applications.map((a) => (
+                    <li key={a.id} className="rounded-lg bg-white p-3 ring-1 ring-stone-200">
+                      <div className="flex flex-wrap items-center justify-between gap-2">
+                        <span className="text-xs font-bold text-stone-800">
+                          {a.modeler?.display_name || a.modeler?.username || 'ユーザー'}
+                        </span>
+                        <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${
+                          a.status === '応募中' ? 'bg-amber-100 text-amber-800' : a.status === '選定済' ? 'bg-emerald-100 text-emerald-700' : 'bg-stone-100 text-stone-500'
+                        }`}>
+                          {a.status}
+                        </span>
+                      </div>
+                      {a.message && (
+                        <p className="mt-1 whitespace-pre-wrap text-[11px] leading-relaxed text-stone-700">{a.message}</p>
+                      )}
+                      <p className="mt-1 text-[10px] text-stone-400">応募日時: {fmtDate(a.created_at)}</p>
+                      {a.status === '応募中' && (
+                        <button
+                          onClick={() => handleAssign(a)}
+                          className="mt-2 w-full rounded-lg bg-orange-600 px-3 py-2 text-[11px] font-bold text-white shadow-sm transition hover:bg-orange-700"
+                        >
+                          🔨 この人に指名する
+                        </button>
+                      )}
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          ) : profile ? (
+            myApplication ? (
+              <div className="mt-2">
+                <p className="text-[11px] font-bold text-sky-800">🙋 立候補済み（{myApplication.status}）</p>
+                {myApplication.message && (
+                  <p className="mt-1 whitespace-pre-wrap rounded-lg bg-white p-2.5 text-[11px] text-stone-700 ring-1 ring-stone-200">
+                    {myApplication.message}
+                  </p>
+                )}
+                {myApplication.status === '応募中' && (
+                  <button
+                    onClick={handleWithdraw}
+                    disabled={applyBusy}
+                    className="mt-2 rounded-lg bg-white px-3 py-1.5 text-[10px] font-semibold text-stone-600 ring-1 ring-stone-300 transition hover:bg-stone-100 disabled:opacity-50"
+                  >
+                    立候補を取り下げる
+                  </button>
+                )}
+              </div>
+            ) : (
+              <div className="mt-2">
+                <textarea
+                  value={applyMsg}
+                  onChange={(e) => setApplyMsg(e.target.value)}
+                  rows={2}
+                  maxLength={1000}
+                  placeholder="応募メッセージ（任意）— 担当経験やアピールを書けば選ばれやすくなります"
+                  className="w-full rounded-lg border border-sky-200 bg-white px-3 py-2 text-xs outline-none focus:border-sky-400"
+                />
+                <button
+                  onClick={handleApply}
+                  disabled={applyBusy}
+                  className="mt-1.5 w-full rounded-lg bg-orange-600 px-3 py-2 text-xs font-bold text-white shadow-sm shadow-orange-500/30 transition hover:bg-orange-700 disabled:opacity-50"
+                >
+                  {applyBusy ? '送信中…' : '🙋 このアイデアに立候補する'}
+                </button>
+              </div>
+            )
+          ) : (
+            <p className="mt-1.5 text-[11px] text-stone-500">※立候補するにはログインしてください。</p>
+          )}
+        </div>
+      )}
+
       <div className="mt-3 rounded-xl bg-amber-50/60 p-3.5 ring-1 ring-amber-200">
         <div className="flex flex-wrap items-center gap-2">
           <p className="text-xs font-bold text-amber-900">⭐ このアイデアの評価</p>
@@ -336,6 +540,60 @@ export default function DetailModal({ ideaId, profile, onClose, onChanged }: Pro
           <p className="mt-1 text-[10px] text-stone-400">
             ※アップロードしたSTLは、STLデータを購入したユーザーのみダウンロードできます。
           </p>
+        </div>
+      )}
+
+      {canChat && (
+        <div className="mt-4">
+          <h4 className="text-sm font-bold text-stone-800">🛠️ 案件チャット（プランナー・モデラー専用）</h4>
+          <p className="mt-0.5 text-[10px] text-stone-400">
+            進捗報告や修正依頼を1対1でやり取りできます。内容は他のユーザーには表示されません。
+          </p>
+          <div className="mt-2 max-h-56 space-y-2 overflow-y-auto rounded-xl bg-stone-50 p-3 ring-1 ring-stone-200">
+            {chatMessages.length === 0 ? (
+              <p className="py-2 text-center text-xs text-stone-400">
+                まだメッセージはありません。最初のメッセージを送りましょう。
+              </p>
+            ) : (
+              chatMessages.map((m) => {
+                const mine = m.sender_id === profile?.id;
+                return (
+                  <div key={m.id} className={`flex ${mine ? 'justify-end' : 'justify-start'}`}>
+                    <div className={`max-w-[80%] rounded-2xl px-3 py-2 text-[12px] leading-relaxed ${
+                      mine ? 'bg-orange-600 text-white' : 'bg-white text-stone-800 ring-1 ring-stone-200'
+                    }`}>
+                      {!mine && (
+                        <p className="text-[10px] font-bold text-stone-500">
+                          {m.sender?.display_name || m.sender?.username || 'ユーザー'}
+                        </p>
+                      )}
+                      <p className="whitespace-pre-wrap break-words">{m.body}</p>
+                      <p className={`mt-0.5 text-right text-[9px] ${mine ? 'text-orange-100' : 'text-stone-400'}`}>
+                        {fmtDate(m.created_at)}
+                      </p>
+                    </div>
+                  </div>
+                );
+              })
+            )}
+            <div ref={chatBottomRef} />
+          </div>
+          <div className="mt-2 flex gap-2">
+            <input
+              value={chatText}
+              onChange={(e) => setChatText(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && handleSendChat()}
+              placeholder="メッセージを入力…（進捗報告・修正依頼など）"
+              className="flex-1 rounded-lg border border-stone-300 px-3 py-2 text-sm outline-none transition focus:border-orange-500 focus:ring-2 focus:ring-orange-100"
+            />
+            <button
+              onClick={handleSendChat}
+              disabled={chatBusy}
+              className="rounded-lg bg-orange-600 px-4 py-2 text-xs font-bold text-white transition hover:bg-orange-700 disabled:opacity-50"
+            >
+              送信
+            </button>
+          </div>
         </div>
       )}
 

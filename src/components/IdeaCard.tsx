@@ -9,7 +9,7 @@ interface Props {
   onOpen: (id: number) => void;
   onAction: (
     idea: Idea,
-    action: 'accept' | 'submit' | 'approve' | 'revision' | 'withdraw' | 'buy-physical' | 'buy-digital',
+    action: 'submit' | 'approve' | 'revision' | 'withdraw' | 'buy-physical' | 'buy-digital',
   ) => void;
   showFav?: boolean;
   fav?: boolean;
@@ -34,15 +34,19 @@ export default function IdeaCard({ idea, profile, onOpen, onAction, showFav, fav
   let action: React.ReactNode = null;
   if (idea.status === 'アイデア募集') {
     if (profile) {
-      action = (
+      action = isCreator ? (
+        <p className="rounded-lg bg-sky-50 px-3 py-2 text-center text-[11px] font-medium text-sky-700 ring-1 ring-sky-200">
+          🙋 立候補を待っています — 詳細画面で応募者を確認して指名
+        </p>
+      ) : (
         <button
           onClick={(e) => {
             e.stopPropagation();
-            onAction(idea, 'accept');
+            onOpen(idea.id);
           }}
           className="w-full rounded-lg bg-orange-600 px-3 py-2.5 text-xs font-bold text-white shadow-sm shadow-orange-500/30 transition hover:bg-orange-700"
         >
-          {isCreator ? '🛠️ 自分でモデリングを引き受ける' : '🛠️ モデリングを引き受ける'}
+          🙋 立候補する（詳細から応募）
         </button>
       );
     }

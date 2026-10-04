@@ -1,6 +1,6 @@
 import { supabase, authFetch } from './supabase';
 import { toast } from './toast';
-import type { Comment, ExchangeRequest, Idea, IdeaReport, Order, BalanceEntry, Profile, Announcement, GiftStock, Notification, MyStats } from './types';
+import type { Comment, ExchangeRequest, Idea, IdeaApplication, IdeaMessage, IdeaReport, Order, BalanceEntry, Profile, Announcement, GiftStock, Notification, MyStats } from './types';
 
 export const IDEA_SELECT = `*, creator:profiles!ideas_creator_id_fkey(username,display_name), modeler:profiles!ideas_modeler_id_fkey(username,display_name)`;
 
@@ -181,7 +181,7 @@ export async function confirmIdeaDelete(id: number): Promise<string> {
 
 export async function updateIdeaStatus(
   id: number,
-  status: '制作中' | '提出中' | '販売中' | '修正依頼' | '取り下げ',
+  status: '提出中' | '販売中' | '修正依頼' | '取り下げ',
   comment?: string,
 ): Promise<string> {
   const { data, error } = await supabase.rpc('update_idea_status', {
@@ -191,6 +191,69 @@ export async function updateIdeaStatus(
   });
   if (error) throw new Error(error.message);
   return (data as string) ?? '更新しました';
+}
+
+// ---------- 立候補・指名制 ----------
+
+/** モデラーが募集中アイデアに立候補する */
+export async function applyForIdea(ideaId: number, message: string): Promise<string> {
+  const { data, error } = await supabase.rpc('apply_for_idea', {
+    p_idea_id: ideaId,
+    p_message: message.trim(),
+  });
+  if (error) throw new Error(error.message);
+  return (data as string) ?? '立候補しました';
+}
+
+/** 自分の立候補を取り下げる */
+export async function withdrawApplication(ideaId: number): Promise<string> {
+  const { data, error } = await supabase.rpc('withdraw_application', { p_idea_id: ideaId });
+  if (error) throw new Error(error.message);
+  return (data as string) ?? '取り下げました';
+}
+
+/** 案件の立候補一覧（プランナーは全件、モデラーは自分の応募のみ RLS で取得） */
+export async function fetchApplications(ideaId: number): Promise<IdeaApplication[]> {
+  const { data, error } = await supabase
+    .from('idea_applications')
+    .select('*, modeler:profiles!idea_applications_modeler_id_fkey(username,display_name)')
+    .eq('idea_id', ideaId)
+    .order('id', { ascending: true });
+  if (error) throw new Error(error.message);
+  return (data ?? []) as unknown as IdeaApplication[];
+}
+
+/** プランナーが立候補者の中から1人を指名して制作開始 */
+export async function assignModeler(ideaId: number, modelerId: string): Promise<string> {
+  const { data, error } = await supabase.rpc('assign_modeler', {
+    p_idea_id: ideaId,
+    p_modeler_id: modelerId,
+  });
+  if (error) throw new Error(error.message);
+  return (data as string) ?? '指名しました';
+}
+
+// ---------- 案件別チャット ----------
+
+/** 案件チャットのメッセージ一覧（関係者のみ RLS で取得可） */
+export async function fetchIdeaMessages(ideaId: number): Promise<IdeaMessage[]> {
+  const { data, error } = await supabase
+    .from('idea_messages')
+    .select('*, sender:profiles!idea_messages_sender_id_fkey(username,display_name)')
+    .eq('idea_id', ideaId)
+    .order('id', { ascending: true })
+    .limit(200);
+  if (error) throw new Error(error.message);
+  return (data ?? []) as unknown as IdeaMessage[];
+}
+
+/** 案件チャットへメッセージ送信 */
+export async function sendIdeaMessage(ideaId: number, body: string): Promise<void> {
+  const { error } = await supabase.rpc('send_idea_message', {
+    p_idea_id: ideaId,
+    p_body: body.trim(),
+  });
+  if (error) throw new Error(error.message);
 }
 
 export async function createCheckout(
