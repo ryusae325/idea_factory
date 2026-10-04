@@ -17,8 +17,9 @@ interface Props {
 export default function IdeaGrid({ ideas, profile, onOpen, onAction, emptyMessage, showFav, favSet, onToggleFav }: Props) {
   if (ideas.length === 0) {
     return (
-      <div className="grid place-items-center rounded-2xl border border-dashed border-stone-300 bg-white/60 py-16 text-sm text-stone-400">
-        {emptyMessage}
+      <div className="grid place-items-center gap-1 rounded-2xl bg-white py-16 text-center shadow-sm ring-1 ring-stone-200/70">
+        <span className="text-3xl opacity-40">🗂️</span>
+        <p className="text-sm text-stone-400">{emptyMessage}</p>
       </div>
     );
   }

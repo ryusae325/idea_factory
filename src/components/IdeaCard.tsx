@@ -15,10 +15,10 @@ interface Props {
 }
 
 const statusBadge: Record<Idea['status'], string> = {
-  アイデア募集: 'bg-amber-50 text-amber-700 ring-amber-200',
-  制作中: 'bg-teal-50 text-teal-700 ring-teal-200',
-  提出中: 'bg-violet-50 text-violet-700 ring-violet-200',
-  販売中: 'bg-emerald-50 text-emerald-700 ring-emerald-200',
+  アイデア募集: 'bg-amber-100/80 text-amber-800',
+  制作中: 'bg-sky-100 text-sky-700',
+  提出中: 'bg-violet-100 text-violet-700',
+  販売中: 'bg-emerald-100 text-emerald-700',
 };
 
 export default function IdeaCard({ idea, profile, onOpen, onAction, showFav, fav, onToggleFav }: Props) {
@@ -123,9 +123,9 @@ export default function IdeaCard({ idea, profile, onOpen, onAction, showFav, fav
   return (
     <div
       onClick={() => onOpen(idea.id)}
-      className="tap-card group flex flex-col overflow-hidden rounded-2xl border border-stone-200 bg-white shadow-sm transition hover:-translate-y-0.5 hover:shadow-lg hover:shadow-slate-900/10"
+      className="tap-card group flex flex-col overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-stone-200/70 transition hover:shadow-md hover:shadow-slate-900/10"
     >
-      <div className="relative h-40 overflow-hidden bg-gradient-to-br from-stone-100 to-stone-200">
+      <div className="relative h-40 overflow-hidden bg-stone-100">
         {idea.images?.[0] ?? idea.image_url ? (
           <img
             src={idea.images?.[0] ?? idea.image_url}
@@ -136,13 +136,13 @@ export default function IdeaCard({ idea, profile, onOpen, onAction, showFav, fav
           <div className="grid h-full w-full place-items-center text-4xl text-stone-300">🧩</div>
         )}
         <span
-          className={`absolute left-3 top-3 rounded-full px-2.5 py-1 text-[10px] font-bold ring-1 ${statusBadge[idea.status]}`}
+          className={`absolute left-3 top-3 rounded-full px-2.5 py-1 text-[10px] font-bold backdrop-blur ${statusBadge[idea.status]}`}
         >
           {idea.status}
         </span>
         {idea.genre && (
           <span
-            className={`absolute top-3 rounded-full bg-white/90 px-2.5 py-1 text-[10px] font-bold text-stone-600 ring-1 ring-stone-200 ${
+            className={`absolute top-3 rounded-full bg-white/90 px-2.5 py-1 text-[10px] font-semibold text-stone-600 backdrop-blur ${
               showFav ? 'right-12' : 'right-3'
             }`}
           >
@@ -163,25 +163,28 @@ export default function IdeaCard({ idea, profile, onOpen, onAction, showFav, fav
         )}
       </div>
 
-      <div className="flex flex-1 flex-col gap-2 p-4">
-        <h3 className="line-clamp-1 text-sm font-bold text-stone-900">{idea.title}</h3>
-        <p className="text-[11px] leading-relaxed text-stone-500">
-          プランナー: {name(idea.creator) || '不明'} ／ モデラー:{' '}
-          {name(idea.modeler) || (idea.status === 'アイデア募集' ? '募集中' : '—')}
-        </p>
-        <p className="text-[11px] text-stone-400">
-          分配 プランナー {idea.creator_share}% / モデラー {idea.modeler_share}%
-        </p>
-        <div className="mt-auto flex items-baseline gap-2 pt-1">
-          <span className="text-sm font-bold text-orange-600">{fmtYen(idea.price_physical)}円</span>
-          <span className="text-[11px] text-stone-400">
-            プリント品<span className="block">＋製造・配送費</span>
-          </span>
-          <span className="ml-auto text-xs font-bold text-stone-700">
-            STL {fmtYen(idea.price_digital)}円
-          </span>
+      <div className="flex flex-1 flex-col gap-2.5 p-4">
+        <div>
+          <h3 className="line-clamp-1 text-[15px] font-bold leading-snug text-stone-900">{idea.title}</h3>
+          <p className="mt-1 line-clamp-1 text-[11px] text-stone-400">
+            {name(idea.creator) || '不明'}
+            {idea.modeler ? ` × ${name(idea.modeler)}` : idea.status === 'アイデア募集' ? ' × モデラー募集中' : ''}
+          </p>
         </div>
-        {action && <div className="pt-1">{action}</div>}
+
+        <div className="mt-auto grid grid-cols-2 gap-2 rounded-xl bg-stone-50 p-2.5">
+          <div>
+            <p className="text-[10px] font-semibold text-stone-400">プリント品</p>
+            <p className="text-sm font-bold text-[#0f2a4a]">{fmtYen(idea.price_physical)}円</p>
+            <p className="text-[9px] text-stone-400">＋製造・配送費</p>
+          </div>
+          <div className="border-l border-stone-200 pl-2.5">
+            <p className="text-[10px] font-semibold text-stone-400">STLデータ</p>
+            <p className="text-sm font-bold text-[#0f2a4a]">{fmtYen(idea.price_digital)}円</p>
+            <p className="text-[9px] text-stone-400">分配 {idea.creator_share}%／{idea.modeler_share}%</p>
+          </div>
+        </div>
+        {action && <div className="pt-0.5">{action}</div>}
       </div>
     </div>
   );

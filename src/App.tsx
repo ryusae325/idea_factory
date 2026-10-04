@@ -417,11 +417,11 @@ export default function App() {
           </>
         )}
 
-        <footer className="stitch mt-16 rounded-xl bg-white/60 px-4 pt-6 pb-2 text-center text-xs text-stone-500 backdrop-blur-sm">
-          <p>🪵 © PlanMo — プランナーと3Dモデラーをつなぐ共創プラットフォーム</p>
+        <footer className="mt-16 pb-2 text-center text-xs text-stone-400">
+          <p>© PlanMo — プランナーと3Dモデラーをつなぐ共創プラットフォーム</p>
           <button
             onClick={() => setShowLegal(true)}
-            className="mt-2 font-semibold text-orange-600 transition hover:text-orange-800 hover:underline"
+            className="mt-2 font-semibold text-stone-500 underline decoration-stone-300 underline-offset-2 transition hover:text-orange-600"
           >
             利用規約・プライバシーポリシー・特商法表記
           </button>
