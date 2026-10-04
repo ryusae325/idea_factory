@@ -454,7 +454,7 @@ export default function App() {
                 <LoginPrompt />
               ))}
 
-            {tab === 'admin' && profile?.is_admin && <AdminTab onChanged={refreshIdeas} />}
+            {tab === 'admin' && profile?.is_admin && <AdminTab onChanged={refreshIdeas} onOpenIdea={setDetailId} />}
           </>
         )}
 

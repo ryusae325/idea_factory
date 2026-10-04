@@ -1,14 +1,16 @@
 import { useCallback, useEffect, useState } from 'react';
-import type { Announcement, ExchangeRequest, GiftStock, Order } from '../lib/types';
+import type { Announcement, ExchangeRequest, GiftStock, IdeaReport, Order } from '../lib/types';
 import { fmtDate, fmtYen } from '../lib/types';
-import { fetchAllExchangeRequests, fetchAllOrders, processExchange, updateShipping, recordPartnerOrder, getStlDownloadUrl, fetchAnnouncements, createAnnouncement, deactivateAnnouncement, fetchGiftStock, addGiftCodes, deleteGiftCode } from '../lib/data';
+import { fetchAllExchangeRequests, fetchAllOrders, processExchange, updateShipping, recordPartnerOrder, getStlDownloadUrl, fetchAnnouncements, createAnnouncement, deactivateAnnouncement, fetchGiftStock, addGiftCodes, deleteGiftCode, fetchIdeaReports, updateIdeaReport } from '../lib/data';
 import { toast } from '../lib/toast';
 
-type Section = 'exchange' | 'fulfillment' | 'orders' | 'giftstock' | 'announcements';
+type Section = 'exchange' | 'fulfillment' | 'orders' | 'giftstock' | 'announcements' | 'reports';
 
-export default function AdminTab({ onChanged }: { onChanged: () => void }) {
+export default function AdminTab({ onChanged, onOpenIdea }: { onChanged: () => void; onOpenIdea: (id: number) => void }) {
   const [requests, setRequests] = useState<ExchangeRequest[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
+  const [reports, setReports] = useState<IdeaReport[]>([]);
+  const [reportBusyId, setReportBusyId] = useState<number | null>(null);
   const [tracking, setTracking] = useState<Record<number, string>>({});
   const [codes, setCodes] = useState<Record<number, string>>({});
   const [partners, setPartners] = useState<Record<number, string>>({});
@@ -24,13 +26,18 @@ export default function AdminTab({ onChanged }: { onChanged: () => void }) {
   const [stockCodes, setStockCodes] = useState('');
   const [stockBusy, setStockBusy] = useState(false);
 
+  const loadReports = useCallback(async () => {
+    setReports(await fetchIdeaReports());
+  }, []);
+
   const reload = useCallback(async () => {
     const [r, o, a, s] = await Promise.all([fetchAllExchangeRequests(), fetchAllOrders(), fetchAnnouncements(), fetchGiftStock()]);
     setRequests(r);
     setOrders(o);
     setAnnList(a);
     setStock(s);
-  }, []);
+    await loadReports();
+  }, [loadReports]);
 
   useEffect(() => {
     reload().catch((e) => toast((e as Error).message, 'error'));
@@ -150,10 +157,26 @@ export default function AdminTab({ onChanged }: { onChanged: () => void }) {
     }
   };
 
+  const handleReportAction = async (report: IdeaReport, action: 'confirm' | 'hide' | 'publish' | 'delete') => {
+    if (action === 'delete' && !window.confirm('この通報を問題なしとして削除します。よろしいですか？')) return;
+    setReportBusyId(report.id);
+    try {
+      await updateIdeaReport(report.id, action);
+      toast(action === 'confirm' ? '通報を確認済みにしました' : action === 'hide' ? '商品を非公開にし、通報を対処済みにしました' : action === 'publish' ? '商品を再公開しました' : '通報を削除しました');
+      if (action === 'hide' || action === 'publish') onChanged();
+      await loadReports();
+    } catch (e) {
+      toast((e as Error).message, 'error');
+    } finally {
+      setReportBusyId(null);
+    }
+  };
+
   const physicalOrders = orders.filter((o) => o.item_type === 'physical');
   const pendingPhysical = physicalOrders.filter((o) => o.partner_status !== '発注済');
   const toShip = physicalOrders.filter((o) => o.shipping_status !== '発送済み');
   const pendingRequests = requests.filter((r) => r.status === '未処理');
+  const pendingReports = reports.filter((r) => r.status === '未対応');
   const visiblePhysical = showAll ? physicalOrders : pendingPhysical;
 
   const kpis: { key: Section; label: string; value: string; icon: string; accent: string }[] = [
@@ -161,12 +184,14 @@ export default function AdminTab({ onChanged }: { onChanged: () => void }) {
     { key: 'fulfillment', label: '未発注の物理注文', value: `${pendingPhysical.length}件`, icon: '🏭', accent: 'text-orange-600' },
     { key: 'fulfillment', label: '発送待ち', value: `${toShip.length}件`, icon: '📦', accent: 'text-stone-700' },
     { key: 'orders', label: '総注文数', value: `${orders.length}件`, icon: '🧾', accent: 'text-emerald-600' },
+    { key: 'reports', label: '未対応の通報', value: `${pendingReports.length}件`, icon: '📢', accent: 'text-rose-600' },
   ];
 
   const tabs: { key: Section; label: string; badge: number }[] = [
     { key: 'exchange', label: '🎁 交換申請', badge: pendingRequests.length },
     { key: 'fulfillment', label: '🏭 製造・発送', badge: pendingPhysical.length },
     { key: 'orders', label: '📦 注文一覧', badge: 0 },
+    { key: 'reports', label: '📢 通報・権利侵害', badge: pendingReports.length },
     { key: 'giftstock', label: '🎫 ギフト在庫', badge: 0 },
     { key: 'announcements', label: '📢 お知らせ', badge: 0 },
   ];
@@ -199,7 +224,7 @@ export default function AdminTab({ onChanged }: { onChanged: () => void }) {
         </p>
       </div>
 
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-5">
         {kpis.map((k, i) => (
           <button
             key={i}
@@ -454,6 +479,92 @@ export default function AdminTab({ onChanged }: { onChanged: () => void }) {
           )}
         </section>
       )}
+      {section === 'reports' && (
+        <section className="space-y-3">
+          <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl bg-white p-4 ring-1 ring-rose-200">
+            <div>
+              <h4 className="text-sm font-bold text-stone-800">📢 通報・権利侵害の情報提供</h4>
+              <p className="mt-1 text-[11px] text-stone-500">ユーザーから届いた類似品・権利侵害の情報を確認し、必要な対応を行います。</p>
+            </div>
+            <span className="rounded-full bg-rose-50 px-3 py-1 text-xs font-bold text-rose-700 ring-1 ring-rose-200">
+              未対応 {pendingReports.length}件
+            </span>
+          </div>
+          {reports.length === 0 ? (
+            <Empty text="通報はありません。" />
+          ) : (
+            <div className="space-y-3">
+              {reports.map((report) => (
+                <article key={report.id} className="rounded-xl bg-white p-4 ring-1 ring-stone-200 sm:p-5">
+                  <div className="flex flex-wrap items-start justify-between gap-2">
+                    <div className="min-w-0">
+                      <p className="text-[10px] font-semibold text-stone-400">通報 #{report.id} ・ {fmtDate(report.created_at)}</p>
+                      {report.idea_id ? (
+                        <button
+                          onClick={() => onOpenIdea(report.idea_id!)}
+                          className="mt-1 text-left text-sm font-bold text-[#0f2a4a] underline decoration-slate-300 underline-offset-2 hover:text-blue-700"
+                        >
+                          {report.idea?.title || report.idea_title}（商品を開く）
+                        </button>
+                      ) : (
+                        <p className="mt-1 text-sm font-bold text-stone-600">{report.idea_title}（対象商品は削除済み）</p>
+                      )}
+                      <p className="mt-1 text-[10px] text-stone-500">
+                        通報者: {report.reporter?.display_name || report.reporter?.username || '匿名'}
+                      </p>
+                    </div>
+                    <span className={`shrink-0 rounded-full px-2.5 py-1 text-[10px] font-bold ${
+                      report.status === '未対応' ? 'bg-amber-50 text-amber-700' : report.status === '確認済み' ? 'bg-blue-50 text-blue-700' : 'bg-emerald-50 text-emerald-700'
+                    }`}>
+                      {report.status}
+                    </span>
+                  </div>
+                  <div className="mt-3 whitespace-pre-wrap break-words rounded-lg bg-rose-50/50 p-3 text-xs leading-relaxed text-stone-700 ring-1 ring-rose-100">
+                    {report.reason}
+                  </div>
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    {report.status === '未対応' && (
+                      <button
+                        onClick={() => handleReportAction(report, 'confirm')}
+                        disabled={reportBusyId === report.id}
+                        className="rounded-lg bg-blue-50 px-3 py-2 text-[11px] font-bold text-blue-700 ring-1 ring-blue-200 transition hover:bg-blue-100 disabled:opacity-50"
+                      >
+                        ✓ 確認済みにする
+                      </button>
+                    )}
+                    {report.idea_id && !report.idea?.is_hidden && (
+                      <button
+                        onClick={() => handleReportAction(report, 'hide')}
+                        disabled={reportBusyId === report.id}
+                        className="rounded-lg bg-rose-50 px-3 py-2 text-[11px] font-bold text-rose-700 ring-1 ring-rose-200 transition hover:bg-rose-100 disabled:opacity-50"
+                      >
+                        商品を一時非公開にする
+                      </button>
+                    )}
+                    {report.idea_id && report.idea?.is_hidden && (
+                      <button
+                        onClick={() => handleReportAction(report, 'publish')}
+                        disabled={reportBusyId === report.id}
+                        className="rounded-lg bg-emerald-50 px-3 py-2 text-[11px] font-bold text-emerald-700 ring-1 ring-emerald-200 transition hover:bg-emerald-100 disabled:opacity-50"
+                      >
+                        商品を再公開する
+                      </button>
+                    )}
+                    <button
+                      onClick={() => handleReportAction(report, 'delete')}
+                      disabled={reportBusyId === report.id}
+                      className="rounded-lg bg-stone-50 px-3 py-2 text-[11px] font-semibold text-stone-600 ring-1 ring-stone-200 transition hover:bg-stone-100 disabled:opacity-50"
+                    >
+                      通報を削除（問題なし）
+                    </button>
+                  </div>
+                </article>
+              ))}
+            </div>
+          )}
+        </section>
+      )}
+
       {section === 'giftstock' && (
         <section className="space-y-4">
           <div className="rounded-xl bg-white p-5 ring-1 ring-stone-200">

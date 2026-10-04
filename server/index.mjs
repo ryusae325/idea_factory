@@ -332,6 +332,44 @@ function isNonEmptyString(value, maxLen = 5000) {
   return s.length > 0 && s.length <= maxLen;
 }
 
+async function requireAdmin(req, res) {
+  const user = await getAuthUser(req);
+  if (!user) {
+    res.status(401).json(clientError('ログインが必要です'));
+    return null;
+  }
+  if (!SUPABASE_SERVICE_ROLE_KEY) {
+    res.status(503).json(clientError('管理機能は現在利用できません'));
+    return null;
+  }
+
+  const profileRes = await fetch(
+    `${SUPABASE_URL}/rest/v1/profiles?id=eq.${encodeURIComponent(user.id)}&select=is_admin`,
+    {
+      headers: {
+        apikey: SUPABASE_SERVICE_ROLE_KEY,
+        Authorization: `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
+      },
+      signal: AbortSignal.timeout(10000),
+    },
+  );
+  if (!profileRes.ok) throw new Error(`Admin authorization lookup failed: ${profileRes.status}`);
+  const profiles = await profileRes.json();
+  if (!profiles?.[0]?.is_admin) {
+    res.status(403).json(clientError('管理者権限が必要です'));
+    return null;
+  }
+  return user;
+}
+
+function serviceRoleHeaders(extra = {}) {
+  return {
+    apikey: SUPABASE_SERVICE_ROLE_KEY,
+    Authorization: `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
+    ...extra,
+  };
+}
+
 // ---------- Stripe Checkout ----------
 // 製造・配送費（購入者負担・サイズ階級別固定額）
 const FULFILLMENT_FEES = { S: 900, M: 1600, L: 2900, XL: 5500 };
@@ -581,7 +619,7 @@ app.post(
   },
 );
 
-// ---------- 権利侵害・類似品の通報受付 ----------
+// ---------- 権利侵害・類似品の通報受付と運営管理 ----------
 app.post('/api/report-idea', rateLimitMiddleware(RATE_LIMIT_STRICT), async (req, res) => {
   const { idea_id, reason } = req.body || {};
   if (!isPositiveInteger(idea_id)) {
@@ -590,18 +628,102 @@ app.post('/api/report-idea', rateLimitMiddleware(RATE_LIMIT_STRICT), async (req,
   if (!isNonEmptyString(reason, 2000)) {
     return res.status(400).json(clientError('通報内容を入力してください（2000文字以内）'));
   }
+  if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
+    return res.status(503).json(clientError('通報受付は現在利用できません'));
+  }
 
-  const user = await getAuthUser(req);
-  console.warn(
-    '[REPORT]',
-    new Date().toISOString(),
-    JSON.stringify({
-      idea_id: Number(idea_id),
-      reporter: user ? { id: user.id, email: user.email } : 'anonymous',
-      reason: String(reason).trim().slice(0, 2000),
-    }),
-  );
-  return res.json({ status: 'ok', message: '通報を受理しました' });
+  try {
+    const normalizedIdeaId = Number(idea_id);
+    const ideaRes = await fetch(
+      `${SUPABASE_URL}/rest/v1/ideas?id=eq.${normalizedIdeaId}&select=id,title`,
+      { headers: serviceRoleHeaders(), signal: AbortSignal.timeout(10000) },
+    );
+    if (!ideaRes.ok) throw new Error(`Idea lookup failed: ${ideaRes.status}`);
+    const ideas = await ideaRes.json();
+    if (!ideas?.[0]) return res.status(404).json(clientError('対象の商品が見つかりません'));
+
+    const reporter = await getAuthUser(req);
+    const reportRes = await fetch(`${SUPABASE_URL}/rest/v1/idea_reports`, {
+      method: 'POST',
+      headers: serviceRoleHeaders({ 'Content-Type': 'application/json', Prefer: 'return=representation' }),
+      body: JSON.stringify({
+        idea_id: normalizedIdeaId,
+        idea_title: ideas[0].title,
+        reporter_id: reporter?.id ?? null,
+        reason: String(reason).trim(),
+      }),
+      signal: AbortSignal.timeout(10000),
+    });
+    if (!reportRes.ok) {
+      console.error('Report persistence failed:', reportRes.status, await reportRes.text());
+      return res.status(502).json(serverError());
+    }
+    const reports = await reportRes.json();
+    console.info('[REPORT] accepted', JSON.stringify({ report_id: reports?.[0]?.id, idea_id: normalizedIdeaId }));
+    return res.json({ status: 'ok', message: '通報を受理しました' });
+  } catch (e) {
+    console.error('report-idea error:', e);
+    return res.status(502).json(serverError());
+  }
+});
+
+app.get('/api/reports', rateLimitMiddleware(RATE_LIMIT_DEFAULT), async (req, res) => {
+  try {
+    if (!(await requireAdmin(req, res))) return;
+    const reportsRes = await fetch(
+      `${SUPABASE_URL}/rest/v1/idea_reports?select=id,idea_id,idea_title,reason,status,created_at,updated_at,reporter:profiles!idea_reports_reporter_id_fkey(username,display_name),idea:ideas!idea_reports_idea_id_fkey(id,title,status,is_hidden)&order=created_at.desc`,
+      { headers: serviceRoleHeaders(), signal: AbortSignal.timeout(15000) },
+    );
+    if (!reportsRes.ok) {
+      console.error('Report list failed:', reportsRes.status, await reportsRes.text());
+      return res.status(502).json(serverError());
+    }
+    return res.json({ status: 'ok', reports: await reportsRes.json() });
+  } catch (e) {
+    console.error('reports list error:', e);
+    return res.status(500).json(serverError());
+  }
+});
+
+app.post('/api/reports/:report_id/status', rateLimitMiddleware(RATE_LIMIT_STRICT), async (req, res) => {
+  const { report_id } = req.params;
+  const { status, hide_idea = false, show_idea = false, delete: deleteReport = false } = req.body || {};
+  if (!isPositiveInteger(report_id)) {
+    return res.status(400).json(clientError('通報IDが不正です'));
+  }
+  if (typeof hide_idea !== 'boolean' || typeof show_idea !== 'boolean' || typeof deleteReport !== 'boolean') {
+    return res.status(400).json(clientError('操作内容が不正です'));
+  }
+  if (hide_idea && show_idea) {
+    return res.status(400).json(clientError('公開状態の指定が不正です'));
+  }
+  if (!deleteReport && !['未対応', '確認済み', '対処済み'].includes(status)) {
+    return res.status(400).json(clientError('通報ステータスが不正です'));
+  }
+
+  try {
+    if (!(await requireAdmin(req, res))) return;
+    const rpcRes = await fetch(`${SUPABASE_URL}/rest/v1/rpc/manage_idea_report`, {
+      method: 'POST',
+      headers: serviceRoleHeaders({ 'Content-Type': 'application/json' }),
+      body: JSON.stringify({
+        p_report_id: Number(report_id),
+        p_status: deleteReport ? null : status,
+        p_hide_idea: hide_idea,
+        p_show_idea: show_idea,
+        p_delete: deleteReport,
+      }),
+      signal: AbortSignal.timeout(15000),
+    });
+    if (!rpcRes.ok) {
+      console.error('Report action failed:', rpcRes.status, await rpcRes.text());
+      return res.status(400).json(clientError('通報の更新に失敗しました'));
+    }
+    return res.json({ status: 'ok', message: deleteReport ? '通報を削除しました' : '通報を更新しました' });
+  } catch (e) {
+    console.error('report status error:', e);
+    return res.status(500).json(serverError());
+  }
 });
 
 // ---------- AI image generation (Gemini) ----------

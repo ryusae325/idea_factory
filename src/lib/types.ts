@@ -31,6 +31,7 @@ export interface Idea {
   image_url: string;
   images: string[];
   status: IdeaStatus;
+  is_hidden: boolean;
   creator_id: string;
   modeler_id: string | null;
   creator_share: number;
@@ -50,6 +51,18 @@ export interface Idea {
   rating_stats?: { avg: number | null; count: number }[] | null;
   creator?: ProfileLite | null;
   modeler?: ProfileLite | null;
+}
+
+export interface IdeaReport {
+  id: number;
+  idea_id: number | null;
+  idea_title: string;
+  reason: string;
+  status: '未対応' | '確認済み' | '対処済み';
+  created_at: string;
+  updated_at: string;
+  reporter: ProfileLite | null;
+  idea: { id: number; title: string; status: IdeaStatus; is_hidden: boolean } | null;
 }
 
 export interface Order {
