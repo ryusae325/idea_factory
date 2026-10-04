@@ -240,30 +240,36 @@ export async function reportIdea(ideaId: number, title: string): Promise<void> {
 }
 
 export async function fetchIdeaReports(): Promise<IdeaReport[]> {
-  const res = await authFetch('/api/reports');
-  const data = await res.json().catch(() => ({}));
-  if (!res.ok) throw new Error(data.message || '通報一覧を取得できませんでした');
-  return (data.reports ?? []) as IdeaReport[];
+  const { data, error } = await supabase
+    .from('idea_reports')
+    .select('id,idea_id,idea_title,reason,status,created_at,updated_at,reporter_id')
+    .order('created_at', { ascending: false });
+  if (error) throw new Error(error.message);
+
+  const reports = data ?? [];
+  const ideaIds = [...new Set(reports.map((report) => report.idea_id).filter((id): id is number => id !== null))];
+  const { data: ideas, error: ideasError } = ideaIds.length
+    ? await supabase.from('ideas').select('id,title,status,is_hidden').in('id', ideaIds)
+    : { data: [], error: null };
+  if (ideasError) throw new Error(ideasError.message);
+  const ideasById = new Map((ideas ?? []).map((idea) => [idea.id, idea]));
+
+  return reports.map((report) => ({
+    ...report,
+    reporter: null,
+    idea: report.idea_id ? ideasById.get(report.idea_id) ?? null : null,
+  })) as unknown as IdeaReport[];
 }
 
 export async function updateIdeaReport(
   reportId: number,
   action: 'confirm' | 'hide' | 'publish' | 'delete',
 ): Promise<void> {
-  const payload = action === 'delete'
-    ? { delete: true }
-    : action === 'hide'
-      ? { status: '対処済み', hide_idea: true }
-      : action === 'publish'
-        ? { status: '対処済み', show_idea: true }
-        : { status: '確認済み' };
-  const res = await authFetch(`/api/reports/${reportId}/status`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(payload),
+  const { error } = await supabase.rpc('manage_idea_report_admin', {
+    p_report_id: reportId,
+    p_action: action,
   });
-  const data = await res.json().catch(() => ({}));
-  if (!res.ok) throw new Error(data.message || '通報を更新できませんでした');
+  if (error) throw new Error(error.message);
 }
 
 export async function fetchProfile(userId: string): Promise<Profile | null> {
