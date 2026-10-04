@@ -102,7 +102,7 @@ export default function CreatorTab({ profile, onCreated }: Props) {
 
   return (
     <div className="grid gap-3">
-      <form onSubmit={submit} className="rounded-2xl border border-stone-200 bg-[#fffdf8] p-5 shadow-sm">
+      <form onSubmit={submit} className="rounded-2xl border border-stone-200 bg-[#0f1e2d] p-5 shadow-sm">
         <h3 className="text-base font-bold text-stone-900">➕ 新しいアイデアを投稿</h3>
 
         <p className="mt-3 text-[11px] font-bold tracking-wide text-orange-600">1. 基本情報</p>
@@ -288,13 +288,13 @@ export default function CreatorTab({ profile, onCreated }: Props) {
         <button
           type="submit"
           disabled={busy}
-          className="brass-btn mt-5 w-full rounded-xl py-3 text-sm font-bold text-[#3a2715] shadow-md transition hover:brightness-110 disabled:opacity-50"
+          className="brass-btn mt-5 w-full rounded-xl py-3 text-sm font-bold text-[#05222e] shadow-md transition hover:brightness-110 disabled:opacity-50"
         >
           {busy ? '投稿中…' : 'アイデアを投稿する'}
         </button>
       </form>
 
-      <details className="group rounded-xl border border-stone-200 bg-[#fffdf8] open:shadow-sm">
+      <details className="group rounded-xl border border-stone-200 bg-[#0f1e2d] open:shadow-sm">
         <summary className="flex cursor-pointer list-none items-center justify-between px-4 py-2.5 text-[12px] font-bold text-stone-600 transition hover:text-stone-900">
           <span>💡 アイデア投稿の流れ</span>
           <span className="text-[10px] font-medium text-stone-400 group-open:hidden">開く ▾</span>

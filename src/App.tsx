@@ -245,7 +245,7 @@ export default function App() {
         ) : (
           <>
             {/* PC: 上部タブ */}
-            <nav className="wood-panel mb-5 hidden gap-1.5 rounded-2xl border border-[#312217] p-1.5 shadow-md shadow-[#4a3524]/40 sm:flex">
+            <nav className="wood-panel mb-5 hidden gap-1.5 rounded-2xl border border-[#22384c] p-1.5 shadow-md shadow-[#010509]/40 sm:flex">
               {TABS.filter((t) => t.id !== 'admin' || profile?.is_admin).map((t) => (
                 <button
                   key={t.id}
@@ -253,9 +253,9 @@ export default function App() {
                   className={`flex-1 whitespace-nowrap rounded-xl px-3.5 py-2.5 text-xs font-bold transition ${
                     tab === t.id
                       ? t.id === 'admin'
-                        ? 'bg-gradient-to-b from-amber-500 to-amber-600 text-white shadow-md shadow-amber-900/50'
-                        : 'brass-btn text-[#3a2715]'
-                      : 'text-[#cbb48d] hover:bg-white/10 hover:text-[#f0e2c4]'
+                        ? 'bg-gradient-to-b from-amber-500 to-amber-600 text-white shadow-md shadow-amber-500/25'
+                        : 'brass-btn text-[#05222e]'
+                      : 'text-[#8fa9bd] hover:bg-white/10 hover:text-[#dcecf7]'
                   }`}
                 >
                   <span className="mr-1">{t.icon}</span>
@@ -265,7 +265,7 @@ export default function App() {
             </nav>
 
             {/* モバイル: 下部タブバー（全タブを常に一目で表示） */}
-            <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-[#312217] bg-[#241809]/95 pb-[env(safe-area-inset-bottom)] backdrop-blur sm:hidden">
+            <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-[#22384c] bg-[#050b12]/95 pb-[env(safe-area-inset-bottom)] backdrop-blur sm:hidden">
               <div className="flex">
                 {TABS.filter((t) => t.id !== 'admin' || profile?.is_admin).map((t) => (
                   <button
@@ -276,14 +276,14 @@ export default function App() {
                         ? t.id === 'admin'
                           ? 'text-amber-400'
                           : 'text-amber-300'
-                        : 'text-[#9a8563]'
+                        : 'text-[#6b8aa2]'
                     }`}
                   >
                     <span
                       className={`grid h-7 w-9 place-items-center rounded-lg text-base leading-none ${
                         tab === t.id
                           ? t.id === 'admin'
-                            ? 'bg-gradient-to-b from-amber-500 to-amber-600 shadow-md shadow-amber-900/50'
+                            ? 'bg-gradient-to-b from-amber-500 to-amber-600 shadow-md shadow-amber-500/25'
                             : 'brass-btn'
                           : ''
                       }`}
@@ -392,7 +392,7 @@ export default function App() {
           </>
         )}
 
-        <footer className="stitch mt-16 rounded-xl bg-[#fff9ec]/70 px-4 pt-6 pb-2 text-center text-xs text-stone-500 backdrop-blur-sm">
+        <footer className="stitch mt-16 rounded-xl bg-[#0d1a26]/70 px-4 pt-6 pb-2 text-center text-xs text-stone-500 backdrop-blur-sm">
           <p>🪵 © PlanMo — プランナーと3Dモデラーをつなぐ共創プラットフォーム</p>
           <button
             onClick={() => setShowLegal(true)}
@@ -480,7 +480,7 @@ function ListHeader({
 
 function LoginPrompt() {
   return (
-    <div className="grid place-items-center rounded-2xl border border-dashed border-stone-300 bg-[#fffdf8]/60 py-20 text-center">
+    <div className="grid place-items-center rounded-2xl border border-dashed border-stone-300 bg-[#0f1e2d]/60 py-20 text-center">
       <p className="text-sm font-semibold text-stone-600">このページを利用するにはログインしてください</p>
       <button
         onClick={() => auth.openSignInModal()}

@@ -204,7 +204,7 @@ export default function AdminTab({ onChanged }: { onChanged: () => void }) {
           <button
             key={i}
             onClick={() => setSection(k.key)}
-            className={`rounded-xl bg-[#fffdf8] p-4 text-left ring-1 ring-stone-200 transition hover:shadow-md ${
+            className={`rounded-xl bg-[#0f1e2d] p-4 text-left ring-1 ring-stone-200 transition hover:shadow-md ${
               section === k.key ? 'ring-2 ring-orange-400' : ''
             }`}
           >
@@ -223,8 +223,8 @@ export default function AdminTab({ onChanged }: { onChanged: () => void }) {
             onClick={() => setSection(t.key)}
             className={`flex items-center gap-1.5 rounded-xl px-4 py-2 text-xs font-bold transition ${
               section === t.key
-                ? 'bg-stone-800 text-white shadow-md'
-                : 'bg-[#fffdf8] text-stone-600 ring-1 ring-stone-200 hover:bg-stone-100'
+                ? 'bg-[#0b1c29] text-[#d8eef8] ring-1 ring-[#2c455c] shadow-md'
+                : 'bg-[#0f1e2d] text-stone-600 ring-1 ring-stone-200 hover:bg-stone-100'
             }`}
           >
             {t.label}
@@ -260,7 +260,7 @@ export default function AdminTab({ onChanged }: { onChanged: () => void }) {
                 </thead>
                 <tbody>
                   {requests.map((r) => (
-                    <tr key={r.id} className="border-t border-stone-100 bg-[#fffdf8]">
+                    <tr key={r.id} className="border-t border-stone-100 bg-[#0f1e2d]">
                       <td className="px-4 py-2.5 text-stone-400">#{r.id}</td>
                       <td className="px-4 py-2.5 font-medium text-stone-800">
                         {r.requester?.display_name || r.requester?.username || '—'}
@@ -325,7 +325,7 @@ export default function AdminTab({ onChanged }: { onChanged: () => void }) {
           ) : (
             <div className="space-y-4">
               {visiblePhysical.map((o) => (
-                <div key={o.id} className="rounded-xl bg-[#fffdf8] p-5 ring-1 ring-stone-200">
+                <div key={o.id} className="rounded-xl bg-[#0f1e2d] p-5 ring-1 ring-stone-200">
                   <div className="flex flex-wrap items-center justify-between gap-2">
                     <p className="text-sm font-bold text-stone-800">
                       #{o.id} {o.idea?.title ?? `#${o.idea_id}`}
@@ -404,7 +404,7 @@ export default function AdminTab({ onChanged }: { onChanged: () => void }) {
                     />
                     <button
                       onClick={() => ship(o.id)}
-                      className="rounded-lg bg-stone-800 px-3 py-1.5 text-[11px] font-bold text-white hover:bg-stone-900"
+                      className="rounded-lg bg-[#0b1c29] px-3 py-1.5 text-[11px] font-bold text-[#d8eef8] ring-1 ring-[#2c455c] hover:bg-[#12293a]"
                     >
                       📦 発送済みにする
                     </button>
@@ -435,7 +435,7 @@ export default function AdminTab({ onChanged }: { onChanged: () => void }) {
                 </thead>
                 <tbody>
                   {orders.map((o) => (
-                    <tr key={o.id} className="border-t border-stone-100 bg-[#fffdf8]">
+                    <tr key={o.id} className="border-t border-stone-100 bg-[#0f1e2d]">
                       <td className="px-4 py-2.5 text-stone-400">#{o.id}</td>
                       <td className="px-4 py-2.5 font-medium text-stone-800">
                         {o.buyer?.display_name || o.buyer?.username || '—'}
@@ -456,7 +456,7 @@ export default function AdminTab({ onChanged }: { onChanged: () => void }) {
       )}
       {section === 'giftstock' && (
         <section className="space-y-4">
-          <div className="rounded-xl bg-[#fffdf8] p-5 ring-1 ring-stone-200">
+          <div className="rounded-xl bg-[#0f1e2d] p-5 ring-1 ring-stone-200">
             <p className="text-sm font-bold text-stone-800">🎫 ギフトコードの在庫登録</p>
             <p className="mt-1 text-[11px] leading-relaxed text-stone-500">
               事前に購入したギフトコードをここに登録しておくと、ユーザーが<b>同じ種類・同じ金額</b>で交換申請した際に自動発行されます（在庫がない場合は手動処理の「未処理」になります）。
@@ -507,7 +507,7 @@ export default function AdminTab({ onChanged }: { onChanged: () => void }) {
           ) : (
             <div className="space-y-2">
               {stockGroups.map(([key, g]) => (
-                <details key={key} className="group rounded-xl bg-[#fffdf8] ring-1 ring-stone-200">
+                <details key={key} className="group rounded-xl bg-[#0f1e2d] ring-1 ring-stone-200">
                   <summary className="flex cursor-pointer list-none items-center justify-between px-4 py-3">
                     <span className="text-xs font-bold text-stone-800">
                       {g.type}（{fmtYen(g.amount)}円分）
@@ -544,7 +544,7 @@ export default function AdminTab({ onChanged }: { onChanged: () => void }) {
 
       {section === 'announcements' && (
         <section className="space-y-4">
-          <div className="rounded-xl bg-[#fffdf8] p-5 ring-1 ring-stone-200">
+          <div className="rounded-xl bg-[#0f1e2d] p-5 ring-1 ring-stone-200">
             <p className="text-sm font-bold text-stone-800">📢 運営からのお知らせを投稿</p>
             <p className="mt-1 text-[11px] text-stone-500">
               投稿した内容は全ユーザーの 🔔 通知パネルに表示されます（更新情報・メンテナンス告知などにご利用ください）。
@@ -578,7 +578,7 @@ export default function AdminTab({ onChanged }: { onChanged: () => void }) {
           ) : (
             <div className="space-y-2">
               {annList.map((a) => (
-                <div key={a.id} className="flex items-start justify-between gap-3 rounded-xl bg-[#fffdf8] p-4 ring-1 ring-stone-200">
+                <div key={a.id} className="flex items-start justify-between gap-3 rounded-xl bg-[#0f1e2d] p-4 ring-1 ring-stone-200">
                   <div className="min-w-0">
                     <p className="text-[10px] font-semibold text-stone-400">{fmtDate(a.created_at)}</p>
                     <p className="text-xs font-bold text-stone-800">{a.title}</p>

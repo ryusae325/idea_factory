@@ -55,7 +55,7 @@ export default function MyPageTab({ profile, ideas, favorites, onToggleFav, onOp
               <div
                 key={i.id}
                 onClick={() => onOpen(i.id)}
-                className="group flex cursor-pointer items-center gap-3 rounded-xl border border-stone-200 bg-[#fffdf8] p-3 shadow-sm transition hover:shadow-md"
+                className="group flex cursor-pointer items-center gap-3 rounded-xl border border-stone-200 bg-[#0f1e2d] p-3 shadow-sm transition hover:shadow-md"
               >
                 <div className="h-14 w-14 shrink-0 overflow-hidden rounded-lg bg-stone-100">
                   {i.images?.[0] ?? i.image_url ? (
@@ -118,7 +118,7 @@ export default function MyPageTab({ profile, ideas, favorites, onToggleFav, onOp
               </thead>
               <tbody>
                 {history.map((h) => (
-                  <tr key={h.id} className="border-t border-stone-100 bg-[#fffdf8]">
+                  <tr key={h.id} className="border-t border-stone-100 bg-[#0f1e2d]">
                     <td className="px-4 py-2.5 text-stone-500">{fmtDate(h.created_at)}</td>
                     <td className="px-4 py-2.5 text-stone-700">{h.type}</td>
                     <td className={`px-4 py-2.5 font-bold ${h.amount >= 0 ? 'text-emerald-600' : 'text-rose-500'}`}>
@@ -141,7 +141,7 @@ export default function MyPageTab({ profile, ideas, favorites, onToggleFav, onOp
 
 function Stat({ label, value, icon }: { label: string; value: string; icon: string }) {
   return (
-    <div className="flex items-center gap-3.5 rounded-2xl border border-stone-200 bg-[#fffdf8] p-4 shadow-sm">
+    <div className="flex items-center gap-3.5 rounded-2xl border border-stone-200 bg-[#0f1e2d] p-4 shadow-sm">
       <span className="grid h-11 w-11 place-items-center rounded-xl bg-orange-50 text-xl">{icon}</span>
       <div>
         <p className="text-[11px] font-semibold text-stone-500">{label}</p>
@@ -158,7 +158,7 @@ function MiniList({ items, empty }: { items: { title: string; status: string }[]
   return (
     <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
       {items.map((it, idx) => (
-        <div key={idx} className="flex items-center justify-between rounded-xl border border-stone-200 bg-[#fffdf8] px-4 py-3 shadow-sm">
+        <div key={idx} className="flex items-center justify-between rounded-xl border border-stone-200 bg-[#0f1e2d] px-4 py-3 shadow-sm">
           <span className="line-clamp-1 text-[13px] font-semibold text-stone-800">{it.title}</span>
           <span className="ml-2 shrink-0 rounded-full bg-stone-100 px-2 py-0.5 text-[10px] font-bold text-stone-600">
             {it.status}

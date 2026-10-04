@@ -418,11 +418,11 @@ function Row({ label, value, accent }: { label: string; value: string; accent?: 
 function Overlay({ children, onClose }: { children: React.ReactNode; onClose: () => void }) {
   return (
     <div
-      className="fixed inset-0 z-50 grid place-items-center bg-stone-900/50 p-4 backdrop-blur-sm"
+      className="fixed inset-0 z-50 grid place-items-center bg-[#020609]/70 p-4 backdrop-blur-sm"
       onClick={onClose}
     >
       <div
-        className="max-h-[88vh] w-full max-w-lg overflow-y-auto rounded-2xl bg-[#fffdf8] p-5 shadow-2xl"
+        className="max-h-[88vh] w-full max-w-lg overflow-y-auto rounded-2xl bg-[#0f1e2d] p-5 shadow-2xl"
         onClick={(e) => e.stopPropagation()}
       >
         {children}

@@ -1,10 +1,87 @@
 @import "tailwindcss";
 
+/* ============================================================
+   PlanMo Lab Theme — 未来的な研究ラボ / 工作実験室
+   深夜の実験室を想起させるダークスチール × シアンの発光
+   ============================================================ */
+
 @theme {
   --font-sans:
-    "Zen Maru Gothic", ui-sans-serif, system-ui, -apple-system, "Hiragino Kaku Gothic ProN",
+    "Zen Kaku Gothic New", ui-sans-serif, system-ui, -apple-system, "Hiragino Kaku Gothic ProN",
     "Noto Sans JP", Meiryo, sans-serif;
-  --font-display: "Kaisei Decol", "Zen Maru Gothic", ui-serif, serif;
+  --font-display: "Orbitron", "Zen Kaku Gothic New", ui-sans-serif, sans-serif;
+  --font-tech: "Share Tech Mono", "Zen Kaku Gothic New", ui-monospace, monospace;
+
+  /* --- stone → スチール（明度反転：淡色=深いパネル / 濃色=明るい文字） --- */
+  --color-stone-50: #0d1a26;
+  --color-stone-100: #11212f;
+  --color-stone-200: #162a3a;
+  --color-stone-300: #22394c;
+  --color-stone-400: #5f7d94;
+  --color-stone-500: #7c9ab1;
+  --color-stone-600: #9cb6c9;
+  --color-stone-700: #bcd2e1;
+  --color-stone-800: #d6e8f3;
+  --color-stone-900: #edf6fc;
+
+  /* --- orange → リアクター・シアン（プライマリアクセント） --- */
+  --color-orange-50: #0a1d28;
+  --color-orange-100: #0d2836;
+  --color-orange-200: #123648;
+  --color-orange-400: #22d3ee;
+  --color-orange-500: #06b6d4;
+  --color-orange-600: #0891b2;
+  --color-orange-700: #0d6e8a;
+  --color-orange-800: #0d4f63;
+  --color-orange-900: #0b3d4d;
+
+  /* --- amber → ゴールド計器色（ダーク上で発光するよう調整） --- */
+  --color-amber-50: #251b07;
+  --color-amber-100: #32260c;
+  --color-amber-200: #483711;
+  --color-amber-300: #fcd34d;
+  --color-amber-400: #fbbf24;
+  --color-amber-500: #f59e0b;
+  --color-amber-600: #fbbf24;
+  --color-amber-700: #fcd34d;
+  --color-amber-800: #eac964;
+  --color-amber-900: #fde68a;
+
+  /* --- emerald / teal / rose / red / violet → ダーク上で視認できる明度へ --- */
+  --color-emerald-50: #07211b;
+  --color-emerald-100: #0a2d24;
+  --color-emerald-200: #104134;
+  --color-emerald-500: #10b981;
+  --color-emerald-600: #34d399;
+  --color-emerald-700: #6ee7b7;
+  --color-emerald-800: #0a2d24;
+
+  --color-teal-50: #08252a;
+  --color-teal-200: #104049;
+  --color-teal-600: #2dd4bf;
+  --color-teal-700: #5eead4;
+
+  --color-rose-50: #2a0f19;
+  --color-rose-100: #371323;
+  --color-rose-200: #4d1a30;
+  --color-rose-500: #f43f5e;
+  --color-rose-600: #fb7185;
+  --color-rose-700: #fda4af;
+
+  --color-red-50: #2a1210;
+  --color-red-200: #5a2a22;
+  --color-red-500: #ef4444;
+  --color-red-600: #f87171;
+  --color-red-700: #fca5a5;
+
+  --color-violet-50: #181030;
+  --color-violet-200: #2a1c50;
+  --color-violet-400: #a78bfa;
+  --color-violet-500: #8b5cf6;
+  --color-violet-600: #a78bfa;
+  --color-violet-700: #c4b5fd;
+  --color-violet-800: #2a1c50;
+  --color-violet-900: #181030;
 }
 
 @keyframes toastIn {
@@ -20,52 +97,142 @@
 
 html {
   -webkit-tap-highlight-color: transparent;
+  color-scheme: dark;
 }
 
-/* 工房風の木目板背景（縦筋＋節＋板の明暗） */
+/* 実験室の夜景：青写真グリッド + 上部のシアングロー + 深い闇 */
 body {
   font-family: var(--font-sans);
-  color: #44403c;
-  background-color: #f2e8d6;
+  color: #c7dbe9;
+  background-color: #060d15;
   background-image:
-    radial-gradient(ellipse 240px 30px at 76% 10%, rgba(150, 110, 65, 0.13), transparent 70%),
-    radial-gradient(ellipse 280px 34px at 10% 44%, rgba(150, 110, 65, 0.1), transparent 70%),
-    radial-gradient(ellipse 260px 30px at 52% 80%, rgba(140, 100, 55, 0.12), transparent 70%),
-    repeating-linear-gradient(90deg, rgba(166, 124, 74, 0.14) 0px, rgba(166, 124, 74, 0.14) 2px, transparent 2px, transparent 11px),
-    repeating-linear-gradient(90deg, rgba(150, 110, 60, 0.08) 0px, rgba(150, 110, 60, 0.08) 1px, transparent 1px, transparent 19px),
-    repeating-linear-gradient(90deg, rgba(112, 80, 42, 0.05) 0px, rgba(112, 80, 42, 0.05) 3px, transparent 3px, transparent 37px),
-    linear-gradient(180deg, #f7efde 0%, #eee0c4 60%, #e5d2ae 100%);
+    radial-gradient(ellipse 70% 45% at 50% -8%, rgba(34, 211, 238, 0.09), transparent 62%),
+    radial-gradient(ellipse 45% 32% at 88% 108%, rgba(14, 116, 144, 0.12), transparent 62%),
+    radial-gradient(ellipse 32% 26% at 6% 92%, rgba(14, 165, 201, 0.07), transparent 62%),
+    linear-gradient(rgba(56, 189, 232, 0.045) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(56, 189, 232, 0.045) 1px, transparent 1px);
+  background-size: auto, auto, auto, 44px 44px, 44px 44px;
   background-attachment: fixed;
+  min-height: 100vh;
 }
 
-/* 濃色の木パネル（ヘッダー・ナビ・工房の看板部分） */
+/* スクリーンガラス（端のわずかな暗角。操作は阻害しない） */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  pointer-events: none;
+  background: radial-gradient(ellipse 125% 95% at 50% 30%, transparent 62%, rgba(2, 6, 12, 0.42) 100%);
+}
+
+/* 濃色パネル（ヘッダー・ナビ）— 計器パネル風の金属+発光ライン */
 .wood-panel {
-  background-color: #4a3524;
+  background-color: #0a1622;
   background-image:
-    repeating-linear-gradient(90deg, rgba(255, 244, 220, 0.05) 0px, rgba(255, 244, 220, 0.05) 1px, transparent 1px, transparent 9px),
-    repeating-linear-gradient(90deg, rgba(0, 0, 0, 0.07) 0px, rgba(0, 0, 0, 0.07) 2px, transparent 2px, transparent 17px),
-    repeating-linear-gradient(90deg, rgba(0, 0, 0, 0.04) 0px, rgba(0, 0, 0, 0.04) 4px, transparent 4px, transparent 43px),
-    radial-gradient(ellipse 340px 44px at 80% 0%, rgba(255, 236, 200, 0.09), transparent 70%),
-    linear-gradient(180deg, #5c422c 0%, #44301f 100%);
+    linear-gradient(180deg, rgba(56, 189, 232, 0.1), transparent 55%),
+    repeating-linear-gradient(90deg, rgba(148, 197, 224, 0.05) 0px, rgba(148, 197, 224, 0.05) 1px, transparent 1px, transparent 12px);
+  box-shadow: 0 1px 0 rgba(56, 189, 232, 0.25), 0 8px 24px rgba(1, 5, 9, 0.55);
 }
 
-/* 木札風の見出しフォント */
 h1, h2, h3 {
   font-family: var(--font-display);
-  letter-spacing: 0.03em;
+  letter-spacing: 0.05em;
 }
 
-/* ステッチ風の点線枠（革工作風の縁飾り） */
+/* 技術計器ラベル（数値・ID などに使用可能な等幅） */
+.font-tech {
+  font-family: var(--font-tech);
+  letter-spacing: 0.08em;
+}
+
+/* 設計図風の破線枠 */
 .stitch {
-  border: 1.5px dashed rgba(122, 85, 50, 0.4);
+  border: 1.5px dashed rgba(56, 189, 232, 0.35);
 }
 
-/* 真鍮（黄銅）風ボタン */
+/* リアクターボタン（発光シアン + ダーク文字） */
 .brass-btn {
-  background-image: linear-gradient(180deg, #d9a05b 0%, #b97f42 100%);
+  background-image: linear-gradient(180deg, #29d8f5 0%, #0891b2 100%);
   box-shadow:
-    0 2px 6px rgba(110, 70, 25, 0.4),
-    inset 0 1px 0 rgba(255, 240, 210, 0.55);
+    0 0 14px rgba(34, 211, 238, 0.4),
+    inset 0 1px 0 rgba(255, 255, 255, 0.4);
+}
+.brass-btn:hover {
+  filter: brightness(1.12);
+}
+
+/* ---------- タップ/クリック インタラクション ---------- */
+
+/* すべての操作要素に軽い反応を付与 */
+button:not(:disabled),
+a,
+[role="button"],
+select,
+.tap-card {
+  transition: transform 0.12s ease, box-shadow 0.18s ease, filter 0.18s ease;
+}
+
+button:not(:disabled):active,
+a:active,
+[role="button"]:active,
+select:active {
+  transform: scale(0.955);
+}
+
+.tap-card {
+  cursor: pointer;
+}
+.tap-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 30px rgba(1, 5, 9, 0.6), 0 0 0 1px rgba(56, 189, 232, 0.18);
+}
+.tap-card:active {
+  transform: scale(0.977);
+  box-shadow: 0 0 0 2px rgba(56, 189, 232, 0.35), 0 0 24px rgba(34, 211, 238, 0.25);
+}
+
+/* ポインタ位置から広がるインク（リップル） */
+.ink-host {
+  position: relative !important;
+  overflow: hidden;
+}
+.ink {
+  position: absolute;
+  border-radius: 9999px;
+  pointer-events: none;
+  transform: scale(0);
+  opacity: 0.5;
+  background: radial-gradient(circle, color-mix(in oklab, currentColor 50%, transparent) 0%, transparent 70%);
+  animation: inkSpread 0.55s ease-out forwards;
+}
+@keyframes inkSpread {
+  to {
+    transform: scale(2.6);
+    opacity: 0;
+  }
+}
+
+/* モーダルのポップイン */
+.fixed.z-50 > div,
+.fixed.z-40 > div {
+  animation: modalPop 0.22s cubic-bezier(0.2, 0.9, 0.3, 1.18);
+}
+@keyframes modalPop {
+  from {
+    transform: scale(0.94) translateY(12px);
+    opacity: 0;
+  }
+}
+
+/* 選択色とフォーカスリング */
+::selection {
+  background: rgba(34, 211, 238, 0.35);
+  color: #f0fbff;
+}
+:focus-visible {
+  outline: 2px solid rgba(34, 211, 238, 0.7);
+  outline-offset: 2px;
 }
 
 ::-webkit-scrollbar {
@@ -73,8 +240,11 @@ h1, h2, h3 {
   height: 8px;
 }
 ::-webkit-scrollbar-thumb {
-  background: #c9ac82;
+  background: #1d3547;
   border-radius: 8px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #2a4d66;
 }
 ::-webkit-scrollbar-track {
   background: transparent;

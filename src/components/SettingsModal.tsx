@@ -120,8 +120,8 @@ export default function SettingsModal({ profile, onClose }: { profile: Profile; 
   ] as const;
 
   return (
-    <div className="fixed inset-0 z-50 grid place-items-center bg-stone-900/50 p-4 backdrop-blur-sm">
-      <div className="max-h-[88vh] w-full max-w-xl overflow-hidden rounded-2xl bg-[#fffdf8] shadow-2xl">
+    <div className="fixed inset-0 z-50 grid place-items-center bg-[#020609]/70 p-4 backdrop-blur-sm">
+      <div className="max-h-[88vh] w-full max-w-xl overflow-hidden rounded-2xl bg-[#0f1e2d] shadow-2xl">
         <div className="flex items-center justify-between border-b border-stone-200 px-5 py-4">
           <h3 className="text-base font-bold text-stone-900">⚙️ 設定</h3>
           <button
@@ -227,7 +227,7 @@ export default function SettingsModal({ profile, onClose }: { profile: Profile; 
                 <button
                   onClick={signOutAll}
                   disabled={busy}
-                  className="mt-2 rounded-lg bg-stone-800 px-4 py-2 text-xs font-bold text-white transition hover:bg-stone-900 disabled:opacity-50"
+                  className="mt-2 rounded-lg bg-[#0b1c29] px-4 py-2 text-xs font-bold text-[#d8eef8] ring-1 ring-[#2c455c] transition hover:bg-[#12293a] disabled:opacity-50"
                 >
                   全デバイスからログアウト
                 </button>
@@ -245,7 +245,7 @@ export default function SettingsModal({ profile, onClose }: { profile: Profile; 
                 <button
                   onClick={exportData}
                   disabled={busy}
-                  className="mt-2 rounded-lg bg-stone-800 px-4 py-2 text-xs font-bold text-white transition hover:bg-stone-900 disabled:opacity-50"
+                  className="mt-2 rounded-lg bg-[#0b1c29] px-4 py-2 text-xs font-bold text-[#d8eef8] ring-1 ring-[#2c455c] transition hover:bg-[#12293a] disabled:opacity-50"
                 >
                   データを書き出す
                 </button>

@@ -55,7 +55,7 @@ export default function SalesTab({ profile, onBalanceChanged }: Props) {
       </div>
 
       <div className="grid gap-6 lg:grid-cols-2">
-        <div className="rounded-2xl border border-stone-200 bg-[#fffdf8] p-5 shadow-sm">
+        <div className="rounded-2xl border border-stone-200 bg-[#0f1e2d] p-5 shadow-sm">
           <h3 className="text-sm font-bold text-stone-900">🎁 デジタルギフト交換申請</h3>
 
           <label className="mt-4 block text-xs font-bold text-stone-600">交換先</label>
@@ -113,7 +113,7 @@ export default function SalesTab({ profile, onBalanceChanged }: Props) {
           </button>
         </div>
 
-        <div className="rounded-2xl border border-stone-200 bg-[#fffdf8] p-5 shadow-sm">
+        <div className="rounded-2xl border border-stone-200 bg-[#0f1e2d] p-5 shadow-sm">
           <h3 className="text-sm font-bold text-stone-900">📜 交換申請履歴</h3>
           {history.length === 0 ? (
             <p className="mt-4 rounded-xl bg-stone-50 px-4 py-6 text-center text-xs text-stone-400 ring-1 ring-stone-200">

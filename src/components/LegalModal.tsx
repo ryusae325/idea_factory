@@ -17,8 +17,8 @@ export default function LegalModal({ onClose }: { onClose: () => void }) {
   const [tab, setTab] = useState<LegalTab>('terms');
 
   return (
-    <div className="fixed inset-0 z-50 grid place-items-center bg-stone-900/50 p-4 backdrop-blur-sm">
-      <div className="max-h-[88vh] w-full max-w-2xl overflow-hidden rounded-2xl bg-[#fffdf8] shadow-2xl">
+    <div className="fixed inset-0 z-50 grid place-items-center bg-[#020609]/70 p-4 backdrop-blur-sm">
+      <div className="max-h-[88vh] w-full max-w-2xl overflow-hidden rounded-2xl bg-[#0f1e2d] shadow-2xl">
         <div className="flex items-center justify-between border-b border-stone-200 px-5 py-4">
           <h3 className="text-base font-bold text-stone-900">📜 法務・規約</h3>
           <button

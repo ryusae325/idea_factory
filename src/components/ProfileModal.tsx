@@ -29,8 +29,8 @@ export default function ProfileModal({ profile, onSaved, onClose }: Props) {
   };
 
   return (
-    <div className="fixed inset-0 z-50 grid place-items-center bg-stone-900/50 p-4 backdrop-blur-sm">
-      <div className="w-full max-w-md rounded-2xl bg-[#fffdf8] p-6 shadow-2xl">
+    <div className="fixed inset-0 z-50 grid place-items-center bg-[#020609]/70 p-4 backdrop-blur-sm">
+      <div className="w-full max-w-md rounded-2xl bg-[#0f1e2d] p-6 shadow-2xl">
         <h3 className="text-lg font-bold text-stone-900">👋 ようこそ PlanMo へ</h3>
         <p className="mt-1 text-xs text-stone-500">
           サービス内で表示する名前を設定してください。アイデアの投稿・モデリング・購入は、どなたでも自由に行えます。
