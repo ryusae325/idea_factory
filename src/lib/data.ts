@@ -1,4 +1,5 @@
 import { supabase, authFetch } from './supabase';
+import { toast } from './toast';
 import type { Comment, ExchangeRequest, Idea, Order, BalanceEntry, Profile, Announcement, GiftStock, Notification, MyStats } from './types';
 
 export const IDEA_SELECT = `*, creator:profiles!ideas_creator_id_fkey(username,display_name), modeler:profiles!ideas_modeler_id_fkey(username,display_name)`;
@@ -215,6 +216,26 @@ export async function completeCheckout(sessionId: string): Promise<string> {
   const data = await res.json();
   if (!res.ok) throw new Error(data.message || '決済の確定処理に失敗しました');
   return data.message as string;
+}
+
+/** 権利侵害・類似品の通報（カード/詳細モーダル共通） */
+export async function reportIdea(ideaId: number, title: string): Promise<void> {
+  const reason = window.prompt(
+    `📢 通報：${title}\n\n類似している既製品の名前、キャラクター名、参考URLなどを入力してください。`,
+  );
+  if (reason === null) return;
+  if (!reason.trim()) {
+    toast('通報内容を入力してください', 'error');
+    return;
+  }
+  const res = await authFetch('/api/report-idea', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ idea_id: ideaId, reason: reason.trim() }),
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.message || '通報の送信に失敗しました');
+  toast('📢 通報を受け付けました。運営にて内容を確認いたします。');
 }
 
 export async function fetchProfile(userId: string): Promise<Profile | null> {

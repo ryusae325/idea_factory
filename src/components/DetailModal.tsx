@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import type { Comment, Idea, Profile } from '../lib/types';
 import { fmtDate, fmtYen } from '../lib/types';
-import { deleteComment, fetchComments, fetchIdea, postComment, getStlDownloadUrl, setIdeaStl, uploadStl, SIZE_OPTIONS, fulfillmentFee, ratingStats, fetchMyRating, rateIdea, updateIdeaStatus, requestIdeaDelete, confirmIdeaDelete } from '../lib/data';
+import { deleteComment, fetchComments, fetchIdea, postComment, getStlDownloadUrl, setIdeaStl, uploadStl, SIZE_OPTIONS, fulfillmentFee, ratingStats, fetchMyRating, rateIdea, updateIdeaStatus, requestIdeaDelete, confirmIdeaDelete, reportIdea } from '../lib/data';
 import { toast } from '../lib/toast';
 
 interface Props {
@@ -390,6 +390,15 @@ export default function DetailModal({ ideaId, profile, onClose, onChanged }: Pro
       ) : (
         <p className="mt-3 text-xs text-stone-400">※コメントを投稿するにはログインしてください。</p>
       )}
+
+      <div className="mt-5 border-t border-stone-200 pt-3 text-right">
+        <button
+          onClick={() => idea && reportIdea(idea.id, idea.title).catch((err: Error) => toast(err.message, 'error'))}
+          className="rounded-full border border-rose-200 bg-rose-50/60 px-4 py-1.5 text-[11px] font-semibold text-rose-600 transition hover:bg-rose-100"
+        >
+          📢 これ観たことある（通報）
+        </button>
+      </div>
     </Overlay>
   );
 }

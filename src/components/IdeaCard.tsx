@@ -1,5 +1,7 @@
 import type { Idea, Profile } from '../lib/types';
 import { fmtYen } from '../lib/types';
+import { reportIdea } from '../lib/data';
+import { toast } from '../lib/toast';
 
 interface Props {
   idea: Idea;
@@ -185,6 +187,15 @@ export default function IdeaCard({ idea, profile, onOpen, onAction, showFav, fav
           </div>
         </div>
         {action && <div className="pt-0.5">{action}</div>}
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            reportIdea(idea.id, idea.title).catch((err: Error) => toast(err.message, 'error'));
+          }}
+          className="mt-0.5 w-full rounded-lg border border-rose-200 bg-rose-50/60 px-3 py-1.5 text-[10px] font-semibold text-rose-600 transition hover:bg-rose-100"
+        >
+          📢 これ観たことある（通報）
+        </button>
       </div>
     </div>
   );

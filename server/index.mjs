@@ -581,6 +581,29 @@ app.post(
   },
 );
 
+// ---------- 権利侵害・類似品の通報受付 ----------
+app.post('/api/report-idea', rateLimitMiddleware(RATE_LIMIT_STRICT), async (req, res) => {
+  const { idea_id, reason } = req.body || {};
+  if (!isPositiveInteger(idea_id)) {
+    return res.status(400).json(clientError('アイデアIDが不正です'));
+  }
+  if (!isNonEmptyString(reason, 2000)) {
+    return res.status(400).json(clientError('通報内容を入力してください（2000文字以内）'));
+  }
+
+  const user = await getAuthUser(req);
+  console.warn(
+    '[REPORT]',
+    new Date().toISOString(),
+    JSON.stringify({
+      idea_id: Number(idea_id),
+      reporter: user ? { id: user.id, email: user.email } : 'anonymous',
+      reason: String(reason).trim().slice(0, 2000),
+    }),
+  );
+  return res.json({ status: 'ok', message: '通報を受理しました' });
+});
+
 // ---------- AI image generation (Gemini) ----------
 app.post(
   '/api/generate-ai-image',
