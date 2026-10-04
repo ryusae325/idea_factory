@@ -666,14 +666,35 @@ app.get('/api/reports', rateLimitMiddleware(RATE_LIMIT_DEFAULT), async (req, res
   try {
     if (!(await requireAdmin(req, res))) return;
     const reportsRes = await fetch(
-      `${SUPABASE_URL}/rest/v1/idea_reports?select=id,idea_id,idea_title,reason,status,created_at,updated_at,reporter:profiles!idea_reports_reporter_id_fkey(username,display_name),idea:ideas!idea_reports_idea_id_fkey(id,title,status,is_hidden)&order=created_at.desc`,
+      `${SUPABASE_URL}/rest/v1/idea_reports?select=id,idea_id,idea_title,reason,status,created_at,updated_at,reporter_id&order=created_at.desc`,
       { headers: serviceRoleHeaders(), signal: AbortSignal.timeout(15000) },
     );
     if (!reportsRes.ok) {
-      console.error('Report list failed:', reportsRes.status, await reportsRes.text());
+      console.error('Report list failed:', reportsRes.status, (await reportsRes.text()).slice(0, 500));
       return res.status(502).json(serverError());
     }
-    return res.json({ status: 'ok', reports: await reportsRes.json() });
+    const reports = await reportsRes.json();
+    const ideaIds = [...new Set(reports.map((report) => report.idea_id).filter(Boolean))];
+    const ideasById = new Map();
+    if (ideaIds.length) {
+      const ideasRes = await fetch(
+        `${SUPABASE_URL}/rest/v1/ideas?id=in.(${ideaIds.join(',')})&select=id,title,status,is_hidden`,
+        { headers: serviceRoleHeaders(), signal: AbortSignal.timeout(10000) },
+      );
+      if (!ideasRes.ok) {
+        console.error('Reported ideas lookup failed:', ideasRes.status, (await ideasRes.text()).slice(0, 500));
+        return res.status(502).json(serverError());
+      }
+      for (const idea of await ideasRes.json()) ideasById.set(idea.id, idea);
+    }
+    return res.json({
+      status: 'ok',
+      reports: reports.map((report) => ({
+        ...report,
+        idea: report.idea_id ? ideasById.get(report.idea_id) ?? null : null,
+        reporter: null,
+      })),
+    });
   } catch (e) {
     console.error('reports list error:', e);
     return res.status(500).json(serverError());

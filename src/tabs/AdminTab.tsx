@@ -10,6 +10,8 @@ export default function AdminTab({ onChanged, onOpenIdea }: { onChanged: () => v
   const [requests, setRequests] = useState<ExchangeRequest[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
   const [reports, setReports] = useState<IdeaReport[]>([]);
+  const [reportsLoaded, setReportsLoaded] = useState(false);
+  const [reportsError, setReportsError] = useState('');
   const [reportBusyId, setReportBusyId] = useState<number | null>(null);
   const [tracking, setTracking] = useState<Record<number, string>>({});
   const [codes, setCodes] = useState<Record<number, string>>({});
@@ -27,7 +29,15 @@ export default function AdminTab({ onChanged, onOpenIdea }: { onChanged: () => v
   const [stockBusy, setStockBusy] = useState(false);
 
   const loadReports = useCallback(async () => {
-    setReports(await fetchIdeaReports());
+    setReportsError('');
+    try {
+      setReports(await fetchIdeaReports());
+    } catch (error) {
+      setReportsError((error as Error).message || '通報一覧を取得できませんでした');
+      throw error;
+    } finally {
+      setReportsLoaded(true);
+    }
   }, []);
 
   const reload = useCallback(async () => {
@@ -36,12 +46,20 @@ export default function AdminTab({ onChanged, onOpenIdea }: { onChanged: () => v
     setOrders(o);
     setAnnList(a);
     setStock(s);
-    await loadReports();
-  }, [loadReports]);
+  }, []);
 
   useEffect(() => {
     reload().catch((e) => toast((e as Error).message, 'error'));
   }, [reload]);
+
+  useEffect(() => {
+    loadReports().catch((e) => toast((e as Error).message, 'error'));
+  }, [loadReports]);
+
+  const selectSection = (nextSection: Section) => {
+    setSection(nextSection);
+    if (nextSection === 'reports') loadReports().catch((e) => toast((e as Error).message, 'error'));
+  };
 
   const process = async (id: number) => {
     try {
@@ -213,7 +231,7 @@ export default function AdminTab({ onChanged, onOpenIdea }: { onChanged: () => v
         <div className="flex flex-wrap items-center justify-between gap-2">
           <h3 className="text-sm font-bold text-amber-900">⚙️ 運営管理ダッシュボード</h3>
           <button
-            onClick={() => reload().catch((e) => toast((e as Error).message, 'error'))}
+            onClick={() => Promise.all([reload(), loadReports()]).catch((e) => toast((e as Error).message, 'error'))}
             className="rounded-lg bg-white px-3 py-1.5 text-[11px] font-bold text-amber-800 ring-1 ring-amber-300 transition hover:bg-amber-100"
           >
             🔄 更新
@@ -228,7 +246,7 @@ export default function AdminTab({ onChanged, onOpenIdea }: { onChanged: () => v
         {kpis.map((k, i) => (
           <button
             key={i}
-            onClick={() => setSection(k.key)}
+            onClick={() => selectSection(k.key)}
             className={`rounded-xl bg-white p-4 text-left ring-1 ring-stone-200 transition hover:shadow-md ${
               section === k.key ? 'ring-2 ring-orange-400' : ''
             }`}
@@ -245,7 +263,7 @@ export default function AdminTab({ onChanged, onOpenIdea }: { onChanged: () => v
         {tabs.map((t) => (
           <button
             key={t.key}
-            onClick={() => setSection(t.key)}
+            onClick={() => selectSection(t.key)}
             className={`flex items-center gap-1.5 rounded-xl px-4 py-2 text-xs font-bold transition ${
               section === t.key
                 ? 'bg-[#0f2a4a] text-white ring-1 ring-[#1e3a5f] shadow-md'
@@ -486,11 +504,26 @@ export default function AdminTab({ onChanged, onOpenIdea }: { onChanged: () => v
               <h4 className="text-sm font-bold text-stone-800">📢 通報・権利侵害の情報提供</h4>
               <p className="mt-1 text-[11px] text-stone-500">ユーザーから届いた類似品・権利侵害の情報を確認し、必要な対応を行います。</p>
             </div>
-            <span className="rounded-full bg-rose-50 px-3 py-1 text-xs font-bold text-rose-700 ring-1 ring-rose-200">
-              未対応 {pendingReports.length}件
-            </span>
+            <div className="flex items-center gap-2">
+              <span className="rounded-full bg-rose-50 px-3 py-1 text-xs font-bold text-rose-700 ring-1 ring-rose-200">
+                未対応 {pendingReports.length}件
+              </span>
+              <button
+                onClick={() => loadReports().catch((e) => toast((e as Error).message, 'error'))}
+                className="rounded-lg bg-white px-3 py-1.5 text-[11px] font-bold text-stone-600 ring-1 ring-stone-200 transition hover:bg-stone-50"
+              >
+                更新
+              </button>
+            </div>
           </div>
-          {reports.length === 0 ? (
+          {reportsError && (
+            <div className="rounded-xl bg-rose-50 p-3 text-xs text-rose-700 ring-1 ring-rose-200">
+              通報を読み込めませんでした: {reportsError}
+            </div>
+          )}
+          {!reportsLoaded ? (
+            <Empty text="通報一覧を読み込み中です…" />
+          ) : reports.length === 0 ? (
             <Empty text="通報はありません。" />
           ) : (
             <div className="space-y-3">
