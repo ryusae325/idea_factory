@@ -359,7 +359,11 @@ export default function App() {
                     emptyMessage="募集中のアイデアはまだありません。"
                     emptyAction={
                       <button
-                        onClick={() => (loggedIn ? setTab('creator') : auth.openSignInModal())}
+                        onClick={() => {
+                          if (!loggedIn) return auth.openSignInModal();
+                          document.getElementById('new-idea-form')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                          window.setTimeout(() => document.getElementById('new-idea-title')?.focus({ preventScroll: true }), 600);
+                        }}
                         className="brass-btn rounded-full px-6 py-2.5 text-sm font-bold"
                       >
                         最初のアイデアを投稿してみよう
@@ -518,7 +522,7 @@ export default function App() {
         <button
           onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
           aria-label="ページ上部へ"
-          className="scroll-fab fixed bottom-[calc(5rem+env(safe-area-inset-bottom))] right-4 z-40 grid h-11 w-11 place-items-center rounded-full bg-white text-lg text-[#0f2a4a] sm:bottom-6"
+          className="scroll-fab fixed bottom-[calc(6.5rem+env(safe-area-inset-bottom))] right-4 z-40 grid h-11 w-11 place-items-center rounded-full bg-white text-lg text-[#0f2a4a] sm:bottom-24"
         >
           ↑
         </button>
@@ -530,12 +534,27 @@ export default function App() {
 }
 
 function Hero({ loggedIn, onPost, onShop }: { loggedIn: boolean; onPost: () => void; onShop: () => void }) {
-  const [open, setOpen] = useState(true);
+  const [open, setOpen] = useState(false);
   const steps = [
     { icon: '💡', title: 'アイデアを投稿', body: 'プランナーが商品のアイデアを投稿し、モデラーを募集します' },
     { icon: '🛠️', title: 'モデラーが制作', body: 'マッチしたモデラーが3Dデータを制作・提案します' },
     { icon: '🛒', title: '販売・収益分配', body: 'プリント品/STLデータとして販売し、売上を公正に分配します' },
   ];
+  if (!open) {
+    return (
+      <section className="mb-5 overflow-hidden rounded-2xl bg-gradient-to-br from-[#0f2a4a] via-[#163a5f] to-[#0f2a4a] text-white shadow-md shadow-slate-900/10 sm:mb-6">
+        <button
+          onClick={() => setOpen(true)}
+          aria-expanded={false}
+          aria-label="PlanMoの案内を開く"
+          className="flex w-full items-center justify-between gap-2 whitespace-nowrap px-4 py-3 text-left transition hover:bg-white/5 sm:px-10 sm:py-3.5"
+        >
+          <span className="text-xs font-bold sm:text-sm">💡 PlanMoとは？（クリックで開く ∨）</span>
+          <span className="shrink-0 text-slate-300" aria-hidden="true">∨</span>
+        </button>
+      </section>
+    );
+  }
   return (
     <section className="relative mb-5 overflow-hidden rounded-2xl bg-gradient-to-br from-[#0f2a4a] via-[#163a5f] to-[#0f2a4a] px-4 py-5 text-white shadow-md shadow-slate-900/10 sm:mb-6 sm:px-10 sm:py-10">
       <div className="mx-auto max-w-4xl">

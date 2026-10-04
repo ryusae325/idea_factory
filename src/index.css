@@ -159,6 +159,13 @@ header.wood-panel {
   display: none;
 }
 
+/* ---------- 「Edit with Verdent」バッジとの重なり防止 ---------- */
+@media (max-width: 768px) {
+  footer {
+    padding-bottom: 80px;
+  }
+}
+
 /* ---------- モバイル: モーダルをボトムシート化 ---------- */
 @media (max-width: 640px) {
   .fixed.z-50 {

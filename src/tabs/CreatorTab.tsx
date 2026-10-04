@@ -102,12 +102,13 @@ export default function CreatorTab({ profile, onCreated }: Props) {
 
   return (
     <div className="grid gap-3">
-      <form onSubmit={submit} className="rounded-2xl border border-stone-200 bg-white p-5 shadow-sm">
+      <form id="new-idea-form" onSubmit={submit} className="rounded-2xl border border-stone-200 bg-white p-5 shadow-sm">
         <h3 className="text-base font-bold text-stone-900">➕ 新しいアイデアを投稿</h3>
 
         <p className="mt-3 text-[11px] font-bold tracking-wide text-orange-600">1. 基本情報</p>
         <label className="mt-1.5 block text-xs font-bold text-stone-600">タイトル *</label>
         <input
+          id="new-idea-title"
           value={title}
           onChange={(e) => setTitle(e.target.value)}
           required
