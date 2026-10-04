@@ -8,6 +8,7 @@ import ToastHost from './components/ToastHost';
 import DetailModal from './components/DetailModal';
 import ProfileModal from './components/ProfileModal';
 import LegalModal from './components/LegalModal';
+import { AboutModal, FaqModal, ContactModal, SafetyModal } from './components/InfoModals';
 import IdeaGrid from './components/IdeaGrid';
 import CreatorTab from './tabs/CreatorTab';
 import MyPageTab from './tabs/MyPageTab';
@@ -30,6 +31,10 @@ export default function App() {
   const [loggedIn, setLoggedIn] = useState(false);
   const [needsProfile, setNeedsProfile] = useState(false);
   const [showLegal, setShowLegal] = useState(false);
+  const [showAbout, setShowAbout] = useState(false);
+  const [showFaq, setShowFaq] = useState(false);
+  const [showContact, setShowContact] = useState(false);
+  const [showSafety, setShowSafety] = useState(false);
   const [ideas, setIdeas] = useState<Idea[]>([]);
   const [favorites, setFavorites] = useState<Set<number>>(new Set());
   const [tab, setTab] = useState<TabId>('creator');
@@ -256,6 +261,12 @@ export default function App() {
       <Header profile={profile} loggedIn={loggedIn} />
 
       <main className="mx-auto max-w-6xl px-4 pt-5">
+        <Hero
+          loggedIn={loggedIn}
+          onPost={() => setTab('creator')}
+          onShop={() => setTab('shop')}
+        />
+
         {loading ? (
           <SkeletonGrid />
         ) : (
@@ -342,7 +353,20 @@ export default function App() {
                     onQuery={setQuery1}
                     onRefresh={refreshIdeas}
                   />
-                  <IdeaGrid ideas={recruitingFiltered} {...gridProps} emptyMessage="募集中のアイデアはまだありません。" />
+                  <IdeaGrid
+                    ideas={recruitingFiltered}
+                    {...gridProps}
+                    emptyMessage="募集中のアイデアはまだありません。"
+                    emptyAction={
+                      <button
+                        onClick={() => (loggedIn ? setTab('creator') : auth.openSignInModal())}
+                        className="brass-btn rounded-full px-6 py-2.5 text-sm font-bold"
+                      >
+                        最初のアイデアを投稿してみよう
+                      </button>
+                    }
+                    demo={<DemoGrid items={DEMO_RECRUITING} />}
+                  />
                 </section>
               </div>
             )}
@@ -361,7 +385,19 @@ export default function App() {
                   onQuery={setQuery2}
                   onRefresh={refreshIdeas}
                 />
-                <IdeaGrid ideas={inProgressFiltered} {...gridProps} emptyMessage="制作中の案件はありません。" />
+                <IdeaGrid
+                  ideas={inProgressFiltered}
+                  {...gridProps}
+                  emptyMessage="制作中の案件はありません。"
+                  emptyAction={
+                    <button
+                      onClick={() => setTab('shop')}
+                      className="rounded-full border border-blue-200 bg-blue-50 px-6 py-2.5 text-sm font-bold text-blue-700 transition hover:bg-blue-100"
+                    >
+                      販売中の商品を見る
+                    </button>
+                  }
+                />
               </section>
             )}
 
@@ -386,6 +422,7 @@ export default function App() {
                   favSet={favorites}
                   onToggleFav={handleToggleFav}
                   emptyMessage="販売中の商品はまだありません。"
+                  demo={<DemoGrid items={DEMO_SHOP} />}
                 />
               </section>
             )}
@@ -417,14 +454,41 @@ export default function App() {
           </>
         )}
 
-        <footer className="mt-16 pb-2 text-center text-xs text-stone-400">
-          <p>© PlanMo — プランナーと3Dモデラーをつなぐ共創プラットフォーム</p>
-          <button
-            onClick={() => setShowLegal(true)}
-            className="mt-2 font-semibold text-stone-500 underline decoration-stone-300 underline-offset-2 transition hover:text-orange-600"
-          >
-            利用規約・プライバシーポリシー・特商法表記
-          </button>
+        <footer className="mt-16">
+          <div className="rounded-2xl bg-[#0f2a4a] px-6 py-10 text-slate-300 shadow-md shadow-slate-900/10 sm:px-10">
+            <div className="mx-auto grid max-w-5xl gap-8 sm:grid-cols-2 lg:grid-cols-4">
+              <div>
+                <p className="flex items-center gap-2 text-lg font-extrabold text-white">
+                  <span className="grid h-8 w-8 place-items-center rounded-lg bg-amber-400 text-base">💡</span>
+                  PlanMo
+                </p>
+                <p className="mt-3 text-xs leading-relaxed text-slate-400">
+                  アイデアと3D技術が出会う共創プラットフォーム。プランナーとモデラーをつなぎ、企画から販売までを公正な収益分配で支えます。
+                </p>
+              </div>
+              <FooterCol
+                title="運営"
+                links={[
+                  { label: '運営情報・理念', onClick: () => setShowAbout(true) },
+                  { label: '安心・安全への取り組み', onClick: () => setShowSafety(true) },
+                ]}
+              />
+              <FooterCol
+                title="サポート"
+                links={[
+                  { label: 'よくある質問（FAQ）', onClick: () => setShowFaq(true) },
+                  { label: 'お問い合わせ', onClick: () => setShowContact(true) },
+                ]}
+              />
+              <FooterCol
+                title="法務"
+                links={[{ label: '利用規約・プライバシーポリシー・特商法表記', onClick: () => setShowLegal(true) }]}
+              />
+            </div>
+            <p className="mt-10 border-t border-white/10 pt-6 text-center text-[11px] text-slate-500">
+              © {new Date().getFullYear()} PlanMo — プランナーと3Dモデラーをつなぐ共創プラットフォーム
+            </p>
+          </div>
         </footer>
       </main>
 
@@ -445,6 +509,10 @@ export default function App() {
       )}
 
       {showLegal && <LegalModal onClose={() => setShowLegal(false)} />}
+      {showAbout && <AboutModal onClose={() => setShowAbout(false)} />}
+      {showFaq && <FaqModal onClose={() => setShowFaq(false)} />}
+      {showContact && <ContactModal onClose={() => setShowContact(false)} />}
+      {showSafety && <SafetyModal onClose={() => setShowSafety(false)} />}
 
       {showTop && (
         <button
@@ -460,6 +528,170 @@ export default function App() {
     </div>
   );
 }
+
+function Hero({ loggedIn, onPost, onShop }: { loggedIn: boolean; onPost: () => void; onShop: () => void }) {
+  const steps = [
+    { icon: '💡', title: 'アイデアを投稿', body: 'プランナーが商品のアイデアを投稿し、モデラーを募集します' },
+    { icon: '🛠️', title: 'モデラーが制作', body: 'マッチしたモデラーが3Dデータを制作・提案します' },
+    { icon: '🛒', title: '販売・収益分配', body: 'プリント品/STLデータとして販売し、売上を公正に分配します' },
+  ];
+  return (
+    <section className="mb-6 overflow-hidden rounded-2xl bg-gradient-to-br from-[#0f2a4a] via-[#163a5f] to-[#0f2a4a] px-6 py-8 text-white shadow-md shadow-slate-900/10 sm:px-10 sm:py-10">
+      <div className="mx-auto max-w-4xl">
+        <p className="text-[11px] font-bold tracking-[0.2em] text-amber-300">PLANMO — CO-CREATION PLATFORM</p>
+        <h2 className="mt-2 text-xl font-extrabold leading-snug sm:text-2xl">
+          アイデアと3D技術が出会う
+          <br className="sm:hidden" />
+          共創プラットフォーム
+        </h2>
+        <p className="mt-2 text-xs leading-relaxed text-slate-300 sm:text-sm">
+          思いつきを、売れる3D商品に。PlanMo なら、モデリングの技術がなくても大丈夫。
+        </p>
+        <div className="mt-5 grid gap-2.5 sm:grid-cols-3">
+          {steps.map((s, i) => (
+            <div key={s.title} className="rounded-xl bg-white/10 px-4 py-3.5 backdrop-blur-sm">
+              <p className="text-lg">{s.icon}</p>
+              <p className="mt-0.5 text-xs font-bold">
+                <span className="mr-1.5 text-amber-300">{i + 1}</span>
+                {s.title}
+              </p>
+              <p className="mt-1 text-[10px] leading-relaxed text-slate-300">{s.body}</p>
+            </div>
+          ))}
+        </div>
+        <div className="mt-5 flex flex-wrap gap-2.5">
+          <button
+            onClick={onPost}
+            className="brass-btn rounded-full px-6 py-2.5 text-sm font-bold"
+          >
+            {loggedIn ? 'アイデアを投稿する' : '始める（無料登録）'}
+          </button>
+          <button
+            onClick={onShop}
+            className="rounded-full border border-white/25 bg-white/10 px-6 py-2.5 text-sm font-bold text-white transition hover:bg-white/20"
+          >
+            商品を見る
+          </button>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function FooterCol({ title, links }: { title: string; links: { label: string; onClick: () => void }[] }) {
+  return (
+    <div>
+      <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400">{title}</h4>
+      <ul className="mt-3 space-y-2.5">
+        {links.map((l) => (
+          <li key={l.label}>
+            <button
+              onClick={l.onClick}
+              className="text-xs text-slate-300 transition hover:text-white hover:underline"
+            >
+              {l.label}
+            </button>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+function DemoCard({ d }: { d: { icon: string; title: string; creator: string; status: string; badge: string; price1: string; price2: string; note: string } }) {
+  return (
+    <div className="relative overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-slate-200/70">
+      <span className="absolute right-3 top-3 z-10 rounded-full bg-slate-900/70 px-2.5 py-1 text-[10px] font-bold text-white">
+        サンプル
+      </span>
+      <div className="grid h-40 place-items-center bg-gradient-to-br from-slate-100 to-slate-200 text-5xl">{d.icon}</div>
+      <div className="space-y-2.5 p-4">
+        <div>
+          <h3 className="line-clamp-1 text-[15px] font-bold text-slate-900">{d.title}</h3>
+          <p className="mt-0.5 text-[11px] text-slate-400">{d.creator}</p>
+        </div>
+        <span className={`inline-block rounded-full px-2.5 py-1 text-[10px] font-bold ${d.badge}`}>{d.status}</span>
+        <div className="grid grid-cols-2 gap-2 rounded-xl bg-slate-50 p-2.5">
+          <div>
+            <p className="text-[10px] font-semibold text-slate-400">プリント品</p>
+            <p className="text-sm font-bold text-[#0f2a4a]">{d.price1}</p>
+          </div>
+          <div className="border-l border-slate-200 pl-2.5">
+            <p className="text-[10px] font-semibold text-slate-400">STLデータ</p>
+            <p className="text-sm font-bold text-[#0f2a4a]">{d.price2}</p>
+          </div>
+        </div>
+        <p className="text-[10px] text-slate-400">{d.note}</p>
+      </div>
+    </div>
+  );
+}
+
+function DemoGrid({ items }: { items: { icon: string; title: string; creator: string; status: string; badge: string; price1: string; price2: string; note: string }[] }) {
+  return (
+    <>
+      {items.map((d, i) => (
+        <DemoCard key={i} d={d} />
+      ))}
+    </>
+  );
+}
+
+const DEMO_RECRUITING = [
+  {
+    icon: '🏠',
+    title: 'コンパクトに畳める屋外用プランタースタンド',
+    creator: 'ぽんず × モデラー募集中',
+    status: 'アイデア募集',
+    badge: 'bg-amber-100 text-amber-800',
+    price1: '2,980円',
+    price2: '980円',
+    note: 'ベランダガーデニング向け。折りたたみ式で収納サイズ 20cm。',
+  },
+  {
+    icon: '🎧',
+    title: 'ケーブルを巻き取れるデスク用ヘッドホンスタンド',
+    creator: 'みなと × モデラー募集中',
+    status: 'アイデア募集',
+    badge: 'bg-amber-100 text-amber-800',
+    price1: '3,400円',
+    price2: '1,200円',
+    note: '底部にケーブルガイド付き。デスク回りをすっきり。',
+  },
+  {
+    icon: '🚲',
+    title: 'サドル下に取り付けられる自転車用サイドバッグフック',
+    creator: 'ゆうき × モデラー募集中',
+    status: 'アイデア募集',
+    badge: 'bg-amber-100 text-amber-800',
+    price1: '1,980円',
+    price2: '680円',
+    note: 'ツール缶や軽量バッグをワンタッチで脱着できます。',
+  },
+];
+
+const DEMO_SHOP = [
+  {
+    icon: '🐈',
+    title: '壁に付けられる猫用ステップ（3段セット）',
+    creator: 'ねこまんま × モデル: kenji',
+    status: '販売中',
+    badge: 'bg-emerald-100 text-emerald-700',
+    price1: '4,980円',
+    price2: '1,980円',
+    note: '耐荷重テスト済み。両面テープ or ネジ留め対応。',
+  },
+  {
+    icon: '🖊️',
+    title: '回転する多機能ペンスタンド「スピンオーガナイザー」',
+    creator: 'しおん × モデル: モデル太郎',
+    status: '販売中',
+    badge: 'bg-emerald-100 text-emerald-700',
+    price1: '2,480円',
+    price2: '880円',
+    note: 'ペン12本＋スマホスタンド付き。',
+  },
+];
 
 function ListHeader({
   title,

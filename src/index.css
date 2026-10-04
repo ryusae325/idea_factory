@@ -180,16 +180,12 @@ header.wood-panel {
   }
 }
 
-/* 明るいオフィスの基調：白みのあるグレー + 上部の淡いブルーの空気感 */
+/* 明るく清潔感のあるフラット背景（SaaS/EC風） */
 body {
   font-family: var(--font-sans);
   color: #334155;
-  background-color: #f4f7fa;
-  background-image:
-    radial-gradient(ellipse 65% 42% at 50% -10%, rgba(37, 99, 235, 0.06), transparent 60%),
-    linear-gradient(rgba(15, 42, 74, 0.02) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(15, 42, 74, 0.02) 1px, transparent 1px);
-  background-size: auto, 40px 40px, 40px 40px;
+  background-color: #f8fafc;
+  background-image: radial-gradient(ellipse 70% 40% at 50% -12%, rgba(37, 99, 235, 0.05), transparent 60%);
   background-attachment: fixed;
   min-height: 100vh;
 }
