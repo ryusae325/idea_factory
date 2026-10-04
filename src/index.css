@@ -1,87 +1,85 @@
 @import "tailwindcss";
 
 /* ============================================================
-   PlanMo Lab Theme — 未来的な研究ラボ / 工作実験室
-   深夜の実験室を想起させるダークスチール × シアンの発光
+   PlanMo Corporate Theme — 明るく公式感のあるデザイン
+   ネイビー × ブルー × ホワイト。信頼感と清潔感を基調とする
    ============================================================ */
 
 @theme {
   --font-sans:
-    "Zen Kaku Gothic New", ui-sans-serif, system-ui, -apple-system, "Hiragino Kaku Gothic ProN",
-    "Noto Sans JP", Meiryo, sans-serif;
-  --font-display: "Orbitron", "Zen Kaku Gothic New", ui-sans-serif, sans-serif;
-  --font-tech: "Share Tech Mono", "Zen Kaku Gothic New", ui-monospace, monospace;
+    "Noto Sans JP", "Zen Kaku Gothic New", ui-sans-serif, system-ui, -apple-system,
+    "Hiragino Kaku Gothic ProN", Meiryo, sans-serif;
+  --font-display: "Manrope", "Noto Sans JP", ui-sans-serif, sans-serif;
 
-  /* --- stone → スチール（明度反転：淡色=深いパネル / 濃色=明るい文字） --- */
-  --color-stone-50: #0d1a26;
-  --color-stone-100: #11212f;
-  --color-stone-200: #162a3a;
-  --color-stone-300: #22394c;
-  --color-stone-400: #5f7d94;
-  --color-stone-500: #7c9ab1;
-  --color-stone-600: #9cb6c9;
-  --color-stone-700: #bcd2e1;
-  --color-stone-800: #d6e8f3;
-  --color-stone-900: #edf6fc;
+  /* --- stone → 明るいスレート（コーポレートグレー） --- */
+  --color-stone-50: #f7f9fb;
+  --color-stone-100: #eef2f6;
+  --color-stone-200: #e2e8f0;
+  --color-stone-300: #cbd5e1;
+  --color-stone-400: #94a3b8;
+  --color-stone-500: #64748b;
+  --color-stone-600: #475569;
+  --color-stone-700: #334155;
+  --color-stone-800: #1e293b;
+  --color-stone-900: #0f172a;
 
-  /* --- orange → リアクター・シアン（プライマリアクセント） --- */
-  --color-orange-50: #0a1d28;
-  --color-orange-100: #0d2836;
-  --color-orange-200: #123648;
-  --color-orange-400: #22d3ee;
-  --color-orange-500: #06b6d4;
-  --color-orange-600: #0891b2;
-  --color-orange-700: #0d6e8a;
-  --color-orange-800: #0d4f63;
-  --color-orange-900: #0b3d4d;
+  /* --- orange → コーポレート・ブルー（プライマリ） --- */
+  --color-orange-50: #eff6ff;
+  --color-orange-100: #dbeafe;
+  --color-orange-200: #bfdbfe;
+  --color-orange-400: #60a5fa;
+  --color-orange-500: #3b82f6;
+  --color-orange-600: #2563eb;
+  --color-orange-700: #1d4ed8;
+  --color-orange-800: #1e40af;
+  --color-orange-900: #1e3a8a;
 
-  /* --- amber → ゴールド計器色（ダーク上で発光するよう調整） --- */
-  --color-amber-50: #251b07;
-  --color-amber-100: #32260c;
-  --color-amber-200: #483711;
+  /* --- その他は標準の明るいトーン --- */
+  --color-amber-50: #fffbeb;
+  --color-amber-100: #fef3c7;
+  --color-amber-200: #fde68a;
   --color-amber-300: #fcd34d;
   --color-amber-400: #fbbf24;
   --color-amber-500: #f59e0b;
-  --color-amber-600: #fbbf24;
-  --color-amber-700: #fcd34d;
-  --color-amber-800: #eac964;
-  --color-amber-900: #fde68a;
+  --color-amber-600: #d97706;
+  --color-amber-700: #b45309;
+  --color-amber-800: #92400e;
+  --color-amber-900: #78350f;
 
-  /* --- emerald / teal / rose / red / violet → ダーク上で視認できる明度へ --- */
-  --color-emerald-50: #07211b;
-  --color-emerald-100: #0a2d24;
-  --color-emerald-200: #104134;
+  --color-emerald-50: #ecfdf5;
+  --color-emerald-100: #d1fae5;
+  --color-emerald-200: #a7f3d0;
   --color-emerald-500: #10b981;
-  --color-emerald-600: #34d399;
-  --color-emerald-700: #6ee7b7;
-  --color-emerald-800: #0a2d24;
+  --color-emerald-600: #059669;
+  --color-emerald-700: #047857;
+  --color-emerald-800: #065f46;
 
-  --color-teal-50: #08252a;
-  --color-teal-200: #104049;
-  --color-teal-600: #2dd4bf;
-  --color-teal-700: #5eead4;
+  --color-teal-50: #f0fdfa;
+  --color-teal-200: #99f6e4;
+  --color-teal-600: #0d9488;
+  --color-teal-700: #0f766e;
 
-  --color-rose-50: #2a0f19;
-  --color-rose-100: #371323;
-  --color-rose-200: #4d1a30;
+  --color-rose-50: #fff1f2;
+  --color-rose-100: #ffe4e6;
+  --color-rose-200: #fecdd3;
   --color-rose-500: #f43f5e;
-  --color-rose-600: #fb7185;
-  --color-rose-700: #fda4af;
+  --color-rose-600: #e11d48;
+  --color-rose-700: #be123c;
 
-  --color-red-50: #2a1210;
-  --color-red-200: #5a2a22;
+  --color-red-50: #fef2f2;
+  --color-red-200: #fecaca;
   --color-red-500: #ef4444;
-  --color-red-600: #f87171;
-  --color-red-700: #fca5a5;
+  --color-red-600: #dc2626;
+  --color-red-700: #b91c1c;
 
-  --color-violet-50: #181030;
-  --color-violet-200: #2a1c50;
+  --color-violet-50: #f5f3ff;
+  --color-violet-200: #ddd6fe;
   --color-violet-400: #a78bfa;
   --color-violet-500: #8b5cf6;
-  --color-violet-600: #a78bfa;
-  --color-violet-700: #c4b5fd;
-  --color-violet-800: #2a1c50;
-  --color-violet-900: #181030;
+  --color-violet-600: #7c3aed;
+  --color-violet-700: #6d28d9;
+  --color-violet-800: #5b21b6;
+  --color-violet-900: #4c1d95;
 }
 
 @keyframes toastIn {
@@ -97,74 +95,64 @@
 
 html {
   -webkit-tap-highlight-color: transparent;
-  color-scheme: dark;
 }
 
-/* 実験室の夜景：青写真グリッド + 上部のシアングロー + 深い闇 */
+/* 明るいオフィスの基調：白みのあるグレー + 上部の淡いブルーの空気感 */
 body {
   font-family: var(--font-sans);
-  color: #c7dbe9;
-  background-color: #060d15;
+  color: #334155;
+  background-color: #f4f7fa;
   background-image:
-    radial-gradient(ellipse 70% 45% at 50% -8%, rgba(34, 211, 238, 0.09), transparent 62%),
-    radial-gradient(ellipse 45% 32% at 88% 108%, rgba(14, 116, 144, 0.12), transparent 62%),
-    radial-gradient(ellipse 32% 26% at 6% 92%, rgba(14, 165, 201, 0.07), transparent 62%),
-    linear-gradient(rgba(56, 189, 232, 0.045) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(56, 189, 232, 0.045) 1px, transparent 1px);
-  background-size: auto, auto, auto, 44px 44px, 44px 44px;
+    radial-gradient(ellipse 65% 42% at 50% -10%, rgba(37, 99, 235, 0.07), transparent 60%),
+    radial-gradient(ellipse 40% 30% at 92% 105%, rgba(30, 58, 138, 0.05), transparent 60%),
+    linear-gradient(rgba(15, 42, 74, 0.028) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(15, 42, 74, 0.028) 1px, transparent 1px);
+  background-size: auto, auto, 40px 40px, 40px 40px;
   background-attachment: fixed;
   min-height: 100vh;
 }
 
-/* スクリーンガラス（端のわずかな暗角。操作は阻害しない） */
-body::before {
-  content: "";
-  position: fixed;
-  inset: 0;
-  z-index: 9999;
-  pointer-events: none;
-  background: radial-gradient(ellipse 125% 95% at 50% 30%, transparent 62%, rgba(2, 6, 12, 0.42) 100%);
-}
-
-/* 濃色パネル（ヘッダー・ナビ）— 計器パネル風の金属+発光ライン */
-.wood-panel {
-  background-color: #0a1622;
-  background-image:
-    linear-gradient(180deg, rgba(56, 189, 232, 0.1), transparent 55%),
-    repeating-linear-gradient(90deg, rgba(148, 197, 224, 0.05) 0px, rgba(148, 197, 224, 0.05) 1px, transparent 1px, transparent 12px);
-  box-shadow: 0 1px 0 rgba(56, 189, 232, 0.25), 0 8px 24px rgba(1, 5, 9, 0.55);
-}
-
 h1, h2, h3 {
   font-family: var(--font-display);
-  letter-spacing: 0.05em;
+  letter-spacing: 0.02em;
 }
 
-/* 技術計器ラベル（数値・ID などに使用可能な等幅） */
-.font-tech {
-  font-family: var(--font-tech);
-  letter-spacing: 0.08em;
-}
-
-/* 設計図風の破線枠 */
+/* 公式サービス風の破線枠（フッター等） */
 .stitch {
-  border: 1.5px dashed rgba(56, 189, 232, 0.35);
+  border: 1.5px dashed rgba(100, 116, 139, 0.35);
 }
 
-/* リアクターボタン（発光シアン + ダーク文字） */
+/* ヘッダー・ナビ：公式サービスのネイビーバー */
+.wood-panel {
+  background-color: #0f2a4a;
+  background-image: linear-gradient(180deg, #143458 0%, #0c2240 100%);
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.08), 0 4px 16px rgba(15, 42, 74, 0.22);
+}
+
+/* プライマリボタン：施設公式のブルー（白文字） */
 .brass-btn {
-  background-image: linear-gradient(180deg, #29d8f5 0%, #0891b2 100%);
+  background-image: linear-gradient(180deg, #3b82f6 0%, #2563eb 100%);
+  color: #fff;
   box-shadow:
-    0 0 14px rgba(34, 211, 238, 0.4),
-    inset 0 1px 0 rgba(255, 255, 255, 0.4);
+    0 1px 2px rgba(30, 58, 138, 0.28),
+    inset 0 1px 0 rgba(255, 255, 255, 0.25);
 }
 .brass-btn:hover {
-  filter: brightness(1.12);
+  filter: brightness(1.08);
+}
+
+/* ---------- 公式感のあるボタン形状（ピル型） ---------- */
+button {
+  border-radius: 9999px !important;
+}
+input,
+select,
+textarea {
+  border-radius: 0.625rem;
 }
 
 /* ---------- タップ/クリック インタラクション ---------- */
 
-/* すべての操作要素に軽い反応を付与 */
 button:not(:disabled),
 a,
 [role="button"],
@@ -185,11 +173,11 @@ select:active {
 }
 .tap-card:hover {
   transform: translateY(-2px);
-  box-shadow: 0 10px 30px rgba(1, 5, 9, 0.6), 0 0 0 1px rgba(56, 189, 232, 0.18);
+  box-shadow: 0 10px 28px rgba(15, 42, 74, 0.12), 0 0 0 1px rgba(37, 99, 235, 0.14);
 }
 .tap-card:active {
   transform: scale(0.977);
-  box-shadow: 0 0 0 2px rgba(56, 189, 232, 0.35), 0 0 24px rgba(34, 211, 238, 0.25);
+  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.3), 0 6px 18px rgba(15, 42, 74, 0.1);
 }
 
 /* ポインタ位置から広がるインク（リップル） */
@@ -202,8 +190,8 @@ select:active {
   border-radius: 9999px;
   pointer-events: none;
   transform: scale(0);
-  opacity: 0.5;
-  background: radial-gradient(circle, color-mix(in oklab, currentColor 50%, transparent) 0%, transparent 70%);
+  opacity: 0.35;
+  background: radial-gradient(circle, color-mix(in oklab, currentColor 45%, transparent) 0%, transparent 70%);
   animation: inkSpread 0.55s ease-out forwards;
 }
 @keyframes inkSpread {
@@ -227,11 +215,11 @@ select:active {
 
 /* 選択色とフォーカスリング */
 ::selection {
-  background: rgba(34, 211, 238, 0.35);
-  color: #f0fbff;
+  background: rgba(37, 99, 235, 0.22);
+  color: #0f172a;
 }
 :focus-visible {
-  outline: 2px solid rgba(34, 211, 238, 0.7);
+  outline: 2px solid rgba(37, 99, 235, 0.65);
   outline-offset: 2px;
 }
 
@@ -240,11 +228,11 @@ select:active {
   height: 8px;
 }
 ::-webkit-scrollbar-thumb {
-  background: #1d3547;
+  background: #cbd5e1;
   border-radius: 8px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #2a4d66;
+  background: #94a3b8;
 }
 ::-webkit-scrollbar-track {
   background: transparent;

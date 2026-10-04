@@ -37,7 +37,7 @@ export default function OrdersTable({ orders }: { orders: Order[] }) {
         </thead>
         <tbody>
           {orders.map((o) => (
-            <tr key={o.id} className="border-t border-stone-100 bg-[#0f1e2d]">
+            <tr key={o.id} className="border-t border-stone-100 bg-white">
               <td className="px-4 py-2.5 text-stone-500">{fmtDate(o.created_at)}</td>
               <td className="px-4 py-2.5 font-medium text-stone-800">{o.idea?.title ?? `#${o.idea_id}`}</td>
               <td className="px-4 py-2.5">

@@ -123,7 +123,7 @@ export default function IdeaCard({ idea, profile, onOpen, onAction, showFav, fav
   return (
     <div
       onClick={() => onOpen(idea.id)}
-      className="tap-card group flex flex-col overflow-hidden rounded-2xl border border-stone-200 bg-[#0f1e2d] shadow-sm transition hover:-translate-y-0.5 hover:shadow-lg hover:shadow-black/40"
+      className="tap-card group flex flex-col overflow-hidden rounded-2xl border border-stone-200 bg-white shadow-sm transition hover:-translate-y-0.5 hover:shadow-lg hover:shadow-slate-900/10"
     >
       <div className="relative h-40 overflow-hidden bg-gradient-to-br from-stone-100 to-stone-200">
         {idea.images?.[0] ?? idea.image_url ? (

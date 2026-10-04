@@ -58,19 +58,19 @@ export default function NotificationBell({ profile }: { profile: Profile }) {
       <button
         onClick={toggle}
         aria-label="お知らせ"
-        className="relative grid h-9 w-9 place-items-center rounded-full bg-[#0c1826]/70 text-base ring-1 ring-[#8a6a4a] transition hover:bg-[#112234]"
+        className="relative grid h-9 w-9 place-items-center rounded-full bg-white/10 text-base ring-1 ring-white/25 transition hover:bg-white/20"
       >
         🔔
         {hasNew && (
-          <span className="absolute -right-0.5 -top-0.5 h-3 w-3 rounded-full bg-red-500 ring-2 ring-[#312217]" />
+          <span className="absolute -right-0.5 -top-0.5 h-3 w-3 rounded-full bg-red-500 ring-2 ring-[#0f2a4a]" />
         )}
       </button>
 
       {open && (
         <>
           <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} />
-          <div className="absolute right-0 top-full z-50 mt-2 max-h-[70vh] w-80 overflow-y-auto rounded-xl border border-stone-200 bg-[#0f1e2d] shadow-2xl">
-            <div className="sticky top-0 flex items-center justify-between border-b border-stone-200 bg-[#0f1e2d] px-4 py-2.5">
+          <div className="absolute right-0 top-full z-50 mt-2 max-h-[70vh] w-80 overflow-y-auto rounded-xl border border-stone-200 bg-white shadow-2xl">
+            <div className="sticky top-0 flex items-center justify-between border-b border-stone-200 bg-white px-4 py-2.5">
               <p className="text-xs font-bold text-stone-800">🔔 お知らせ</p>
               <button
                 onClick={markAllRead}
