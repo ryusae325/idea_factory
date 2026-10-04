@@ -13,7 +13,7 @@ export default function ToastHost() {
   useEffect(() => subscribeToasts(setItems), []);
 
   return (
-    <div className="fixed bottom-5 right-5 z-[100] flex flex-col gap-2">
+    <div className="fixed inset-x-4 bottom-[calc(4.5rem+env(safe-area-inset-bottom))] z-[100] flex flex-col items-stretch gap-2 sm:inset-x-auto sm:bottom-5 sm:right-5 sm:items-end">
       {items.map((t) => (
         <div
           key={t.id}

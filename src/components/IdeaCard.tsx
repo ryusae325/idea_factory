@@ -38,7 +38,7 @@ export default function IdeaCard({ idea, profile, onOpen, onAction, showFav, fav
             e.stopPropagation();
             onAction(idea, 'accept');
           }}
-          className="w-full rounded-lg bg-orange-600 px-3 py-2 text-xs font-bold text-white shadow-sm shadow-orange-500/30 transition hover:bg-orange-700"
+          className="w-full rounded-lg bg-orange-600 px-3 py-2.5 text-xs font-bold text-white shadow-sm shadow-orange-500/30 transition hover:bg-orange-700"
         >
           {isCreator ? '🛠️ 自分でモデリングを引き受ける' : '🛠️ モデリングを引き受ける'}
         </button>
@@ -52,7 +52,7 @@ export default function IdeaCard({ idea, profile, onOpen, onAction, showFav, fav
             e.stopPropagation();
             onAction(idea, 'submit');
           }}
-          className="w-full rounded-lg bg-violet-600 px-3 py-2 text-xs font-bold text-white shadow-sm shadow-violet-500/30 transition hover:bg-violet-700"
+          className="w-full rounded-lg bg-violet-600 px-3 py-2.5 text-xs font-bold text-white shadow-sm shadow-violet-500/30 transition hover:bg-violet-700"
         >
           📤 3Dデータをプランナーへ提出
         </button>
@@ -74,7 +74,7 @@ export default function IdeaCard({ idea, profile, onOpen, onAction, showFav, fav
             e.stopPropagation();
             onAction(idea, 'approve');
           }}
-          className="flex-1 rounded-lg bg-emerald-600 px-2 py-2 text-[11px] font-bold text-white shadow-sm shadow-emerald-500/30 transition hover:bg-emerald-700"
+          className="flex-1 rounded-lg bg-emerald-600 px-2 py-2.5 text-[11px] font-bold text-white shadow-sm shadow-emerald-500/30 transition hover:bg-emerald-700"
         >
           ✅ 承認して販売開始
         </button>
@@ -83,7 +83,7 @@ export default function IdeaCard({ idea, profile, onOpen, onAction, showFav, fav
             e.stopPropagation();
             onAction(idea, 'revision');
           }}
-          className="flex-1 rounded-lg bg-amber-500 px-2 py-2 text-[11px] font-bold text-white shadow-sm shadow-amber-500/30 transition hover:bg-amber-600"
+          className="flex-1 rounded-lg bg-amber-500 px-2 py-2.5 text-[11px] font-bold text-white shadow-sm shadow-amber-500/30 transition hover:bg-amber-600"
         >
           ✏️ 修正を依頼
         </button>
@@ -102,7 +102,7 @@ export default function IdeaCard({ idea, profile, onOpen, onAction, showFav, fav
             onAction(idea, 'buy-physical');
           }}
           disabled={!profile}
-          className="flex-1 rounded-lg bg-orange-600 px-2 py-2 text-[11px] font-bold text-white shadow-sm shadow-orange-500/30 transition hover:bg-orange-700 disabled:cursor-not-allowed disabled:opacity-50"
+          className="flex-1 rounded-lg bg-orange-600 px-2 py-2.5 text-[11px] font-bold text-white shadow-sm shadow-orange-500/30 transition hover:bg-orange-700 disabled:cursor-not-allowed disabled:opacity-50"
         >
           プリント品を購入
         </button>
@@ -112,7 +112,7 @@ export default function IdeaCard({ idea, profile, onOpen, onAction, showFav, fav
             onAction(idea, 'buy-digital');
           }}
           disabled={!profile}
-          className="flex-1 rounded-lg bg-emerald-600 px-2 py-2 text-[11px] font-bold text-white shadow-sm shadow-emerald-500/30 transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-50"
+          className="flex-1 rounded-lg bg-emerald-600 px-2 py-2.5 text-[11px] font-bold text-white shadow-sm shadow-emerald-500/30 transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-50"
         >
           STLデータを購入
         </button>

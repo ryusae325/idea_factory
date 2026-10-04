@@ -197,6 +197,16 @@ export default function App() {
   const [sortOrder2, setSortOrder2] = useState<Order>('new');
   const [genreFilter3, setGenreFilter3] = useState('すべて');
   const [sortOrder3, setSortOrder3] = useState<Order>('new');
+  const [query1, setQuery1] = useState('');
+  const [query2, setQuery2] = useState('');
+  const [query3, setQuery3] = useState('');
+  const [showTop, setShowTop] = useState(false);
+
+  useEffect(() => {
+    const onScroll = () => setShowTop(window.scrollY > 600);
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
+  }, []);
 
   const applyFilterSort = (list: Idea[], genre: string, order: Order) => {
     const byGenre = genre === 'すべて' ? list : list.filter((i) => i.genre === genre);
@@ -218,17 +228,23 @@ export default function App() {
     return byId;
   };
 
+  const matchesQuery = (i: Idea, q: string) =>
+    !q.trim() ||
+    i.title.includes(q.trim()) ||
+    (i.desc ?? '').includes(q.trim()) ||
+    i.genre.includes(q.trim());
+
   const recruitingFiltered = useMemo(
-    () => applyFilterSort(recruiting, genreFilter, sortOrder),
-    [recruiting, genreFilter, sortOrder],
+    () => applyFilterSort(recruiting.filter((i) => matchesQuery(i, query1)), genreFilter, sortOrder),
+    [recruiting, genreFilter, sortOrder, query1],
   );
   const inProgressFiltered = useMemo(
-    () => applyFilterSort(inProgress, genreFilter2, sortOrder2),
-    [inProgress, genreFilter2, sortOrder2],
+    () => applyFilterSort(inProgress.filter((i) => matchesQuery(i, query2)), genreFilter2, sortOrder2),
+    [inProgress, genreFilter2, sortOrder2, query2],
   );
   const onSaleFiltered = useMemo(
-    () => applyFilterSort(onSale, genreFilter3, sortOrder3),
-    [onSale, genreFilter3, sortOrder3],
+    () => applyFilterSort(onSale.filter((i) => matchesQuery(i, query3)), genreFilter3, sortOrder3),
+    [onSale, genreFilter3, sortOrder3, query3],
   );
 
   const usedGenres = (list: Idea[]) => GENRES.filter((g) => list.some((i) => i.genre === g));
@@ -236,12 +252,12 @@ export default function App() {
   const gridProps = { profile, onOpen: setDetailId, onAction: handleAction };
 
   return (
-    <div className="min-h-screen pb-20 sm:pb-16">
+    <div className="min-h-screen pb-[calc(4.5rem+env(safe-area-inset-bottom))] sm:pb-16">
       <Header profile={profile} loggedIn={loggedIn} />
 
       <main className="mx-auto max-w-6xl px-4 pt-5">
         {loading ? (
-          <p className="py-24 text-center text-sm text-stone-500">読み込み中…</p>
+          <SkeletonGrid />
         ) : (
           <>
             {/* PC: 上部タブ */}
@@ -322,6 +338,9 @@ export default function App() {
                     onGenre={setGenreFilter}
                     order={sortOrder}
                     onOrder={setSortOrder}
+                    query={query1}
+                    onQuery={setQuery1}
+                    onRefresh={refreshIdeas}
                   />
                   <IdeaGrid ideas={recruitingFiltered} {...gridProps} emptyMessage="募集中のアイデアはまだありません。" />
                 </section>
@@ -338,6 +357,9 @@ export default function App() {
                   onGenre={setGenreFilter2}
                   order={sortOrder2}
                   onOrder={setSortOrder2}
+                  query={query2}
+                  onQuery={setQuery2}
+                  onRefresh={refreshIdeas}
                 />
                 <IdeaGrid ideas={inProgressFiltered} {...gridProps} emptyMessage="制作中の案件はありません。" />
               </section>
@@ -353,6 +375,9 @@ export default function App() {
                   onGenre={setGenreFilter3}
                   order={sortOrder3}
                   onOrder={setSortOrder3}
+                  query={query3}
+                  onQuery={setQuery3}
+                  onRefresh={refreshIdeas}
                 />
                 <IdeaGrid
                   ideas={onSaleFiltered}
@@ -421,6 +446,16 @@ export default function App() {
 
       {showLegal && <LegalModal onClose={() => setShowLegal(false)} />}
 
+      {showTop && (
+        <button
+          onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+          aria-label="ページ上部へ"
+          className="scroll-fab fixed bottom-[calc(5rem+env(safe-area-inset-bottom))] right-4 z-40 grid h-11 w-11 place-items-center rounded-full bg-white text-lg text-[#0f2a4a] sm:bottom-6"
+        >
+          ↑
+        </button>
+      )}
+
       <ToastHost />
     </div>
   );
@@ -434,6 +469,9 @@ function ListHeader({
   onGenre,
   order,
   onOrder,
+  query,
+  onQuery,
+  onRefresh,
 }: {
   title: string;
   count: number;
@@ -442,38 +480,78 @@ function ListHeader({
   onGenre: (v: string) => void;
   order: 'new' | 'priceAsc' | 'priceDesc' | 'stlAsc' | 'stlDesc' | 'comments' | 'rating';
   onOrder: (v: 'new' | 'priceAsc' | 'priceDesc' | 'stlAsc' | 'stlDesc' | 'comments' | 'rating') => void;
+  query?: string;
+  onQuery?: (v: string) => void;
+  onRefresh?: () => void;
 }) {
   return (
-    <div className="mb-3 flex flex-wrap items-center gap-2">
-      <h3 className="text-sm font-bold text-stone-800">{title}</h3>
-      <span className="text-[11px] font-semibold text-stone-400">{count}件</span>
-      <div className="ml-auto flex flex-wrap items-center gap-1.5">
-        <select
-          value={genre}
-          onChange={(e) => onGenre(e.target.value)}
-          className="rounded-lg border border-stone-300 bg-white px-2.5 py-1.5 text-[11px] font-semibold text-stone-700 outline-none focus:border-orange-500"
-        >
-          <option value="すべて">📂 すべてのジャンル</option>
-          {genres.map((g) => (
-            <option key={g} value={g}>
-              {g}
-            </option>
-          ))}
-        </select>
-        <select
-          value={order}
-          onChange={(e) => onOrder(e.target.value as 'new' | 'priceAsc' | 'priceDesc' | 'stlAsc' | 'stlDesc' | 'comments' | 'rating')}
-          className="rounded-lg border border-stone-300 bg-white px-2.5 py-1.5 text-[11px] font-semibold text-stone-700 outline-none focus:border-orange-500"
-        >
-          <option value="new">↕️ 新着順</option>
-          <option value="priceAsc">💰 プリント品が安い順</option>
-          <option value="priceDesc">💎 プリント品が高い順</option>
-          <option value="stlAsc">🧩 STLデータが安い順</option>
-          <option value="stlDesc">📈 STLデータが高い順</option>
-          <option value="comments">💬 コメント数順</option>
-          <option value="rating">⭐ 評価が高い順</option>
-        </select>
+    <div className="mb-3 space-y-2">
+      <div className="flex flex-wrap items-center gap-2">
+        <h3 className="text-sm font-bold text-stone-800">{title}</h3>
+        <span className="text-[11px] font-semibold text-stone-400">{count}件</span>
+        <div className="ml-auto flex items-center gap-1.5">
+          {onRefresh && (
+            <button
+              onClick={onRefresh}
+              aria-label="最新情報に更新"
+              className="grid h-8 w-8 place-items-center rounded-full border border-stone-300 bg-white text-sm text-stone-500 transition hover:border-orange-400 hover:text-orange-600"
+            >
+              ⟳
+            </button>
+          )}
+          <select
+            value={genre}
+            onChange={(e) => onGenre(e.target.value)}
+            className="rounded-lg border border-stone-300 bg-white px-2.5 py-1.5 text-[11px] font-semibold text-stone-700 outline-none focus:border-orange-500"
+          >
+            <option value="すべて">📂 すべてのジャンル</option>
+            {genres.map((g) => (
+              <option key={g} value={g}>
+                {g}
+              </option>
+            ))}
+          </select>
+          <select
+            value={order}
+            onChange={(e) => onOrder(e.target.value as 'new' | 'priceAsc' | 'priceDesc' | 'stlAsc' | 'stlDesc' | 'comments' | 'rating')}
+            className="rounded-lg border border-stone-300 bg-white px-2.5 py-1.5 text-[11px] font-semibold text-stone-700 outline-none focus:border-orange-500"
+          >
+            <option value="new">↕️ 新着順</option>
+            <option value="priceAsc">💰 プリント品が安い順</option>
+            <option value="priceDesc">💎 プリント品が高い順</option>
+            <option value="stlAsc">🧩 STLデータが安い順</option>
+            <option value="stlDesc">📈 STLデータが高い順</option>
+            <option value="comments">💬 コメント数順</option>
+            <option value="rating">⭐ 評価が高い順</option>
+          </select>
+        </div>
       </div>
+      {onQuery !== undefined && (
+        <input
+          type="search"
+          value={query}
+          onChange={(e) => onQuery(e.target.value)}
+          placeholder="🔍 キーワードで絞り込む（タイトル・説明）"
+          className="w-full rounded-full border border-stone-300 bg-white px-4 py-2 text-xs text-stone-700 placeholder:text-stone-400 outline-none focus:border-orange-500"
+        />
+      )}
+    </div>
+  );
+}
+
+function SkeletonGrid() {
+  return (
+    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3" aria-label="読み込み中">
+      {[0, 1, 2, 3, 4, 5].map((n) => (
+        <div key={n} className="overflow-hidden rounded-2xl border border-stone-200 bg-white">
+          <div className="skeleton h-40 rounded-none" />
+          <div className="space-y-2.5 p-4">
+            <div className="skeleton h-4 w-3/4" />
+            <div className="skeleton h-3 w-1/2" />
+            <div className="skeleton h-9 w-full !rounded-full" />
+          </div>
+        </div>
+      ))}
     </div>
   );
 }

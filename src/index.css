@@ -97,6 +97,89 @@ html {
   -webkit-tap-highlight-color: transparent;
 }
 
+/* ---------- アプリのような表示・操作の基礎 ---------- */
+
+body {
+  overscroll-behavior-y: contain;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* UI（chrome）部分はテキスト選択させない。入力欄と本文は選択可 */
+nav,
+header,
+footer,
+button,
+select,
+label {
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+/* ヘッダー: ノッチ等のセーフエリア対応 */
+header.wood-panel {
+  padding-top: env(safe-area-inset-top);
+}
+
+/* ---------- スケルトンローディング ---------- */
+.skeleton {
+  position: relative;
+  overflow: hidden;
+  background: #eef2f6;
+  border-radius: 0.75rem;
+}
+.skeleton::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.75), transparent);
+  animation: shimmer 1.4s infinite;
+}
+@keyframes shimmer {
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+/* ---------- スクロールトップ FAB ---------- */
+.scroll-fab {
+  box-shadow: 0 4px 14px rgba(15, 42, 74, 0.3), 0 0 0 1px rgba(37, 99, 235, 0.12);
+}
+.scroll-fab:active {
+  transform: scale(0.92);
+}
+
+/* ---------- モバイル: モーダルをボトムシート化 ---------- */
+@media (max-width: 640px) {
+  .fixed.z-50 {
+    align-items: flex-end !important;
+    padding: 0 !important;
+  }
+  .fixed.z-50 > div {
+    width: 100% !important;
+    max-width: 100% !important;
+    max-height: 92dvh !important;
+    border-radius: 1.25rem 1.25rem 0 0 !important;
+    animation: sheetUp 0.28s cubic-bezier(0.2, 0.9, 0.3, 1);
+  }
+  .fixed.z-50 > div::before {
+    content: "";
+    display: block;
+    width: 44px;
+    height: 4px;
+    margin: 8px auto 0;
+    border-radius: 9999px;
+    background: #cbd5e1;
+  }
+}
+@keyframes sheetUp {
+  from {
+    transform: translateY(40%);
+    opacity: 0.4;
+  }
+}
+
 /* 明るいオフィスの基調：白みのあるグレー + 上部の淡いブルーの空気感 */
 body {
   font-family: var(--font-sans);
