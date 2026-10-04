@@ -150,6 +150,15 @@ header.wood-panel {
   transform: scale(0.92);
 }
 
+/* ---------- モバイル横スクロール（スクロールバー非表示） ---------- */
+.no-scrollbar {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
 /* ---------- モバイル: モーダルをボトムシート化 ---------- */
 @media (max-width: 640px) {
   .fixed.z-50 {

@@ -530,49 +530,62 @@ export default function App() {
 }
 
 function Hero({ loggedIn, onPost, onShop }: { loggedIn: boolean; onPost: () => void; onShop: () => void }) {
+  const [open, setOpen] = useState(true);
   const steps = [
     { icon: '💡', title: 'アイデアを投稿', body: 'プランナーが商品のアイデアを投稿し、モデラーを募集します' },
     { icon: '🛠️', title: 'モデラーが制作', body: 'マッチしたモデラーが3Dデータを制作・提案します' },
     { icon: '🛒', title: '販売・収益分配', body: 'プリント品/STLデータとして販売し、売上を公正に分配します' },
   ];
   return (
-    <section className="mb-6 overflow-hidden rounded-2xl bg-gradient-to-br from-[#0f2a4a] via-[#163a5f] to-[#0f2a4a] px-6 py-8 text-white shadow-md shadow-slate-900/10 sm:px-10 sm:py-10">
+    <section className="relative mb-5 overflow-hidden rounded-2xl bg-gradient-to-br from-[#0f2a4a] via-[#163a5f] to-[#0f2a4a] px-4 py-5 text-white shadow-md shadow-slate-900/10 sm:mb-6 sm:px-10 sm:py-10">
       <div className="mx-auto max-w-4xl">
-        <p className="text-[11px] font-bold tracking-[0.2em] text-amber-300">PLANMO — CO-CREATION PLATFORM</p>
-        <h2 className="mt-2 text-xl font-extrabold leading-snug sm:text-2xl">
+        <button
+          onClick={() => setOpen((v) => !v)}
+          aria-expanded={open}
+          aria-label={open ? '案内をたたむ' : '案内を開く'}
+          className="absolute right-3 top-3 z-10 grid h-8 w-8 shrink-0 place-items-center rounded-full bg-white/10 text-sm ring-1 ring-white/25 transition hover:bg-white/20 sm:right-4 sm:top-4"
+        >
+          {open ? '▲' : '▼'}
+        </button>
+        <p className="text-[10px] font-bold tracking-[0.2em] text-amber-300 sm:text-[11px]">PLANMO — CO-CREATION PLATFORM</p>
+        <h2 className="mt-1.5 text-lg font-extrabold leading-snug sm:mt-2 sm:text-2xl">
           アイデアと3D技術が出会う
           <br className="sm:hidden" />
           共創プラットフォーム
         </h2>
-        <p className="mt-2 text-xs leading-relaxed text-slate-300 sm:text-sm">
-          思いつきを、売れる3D商品に。PlanMo なら、モデリングの技術がなくても大丈夫。
-        </p>
-        <div className="mt-5 grid gap-2.5 sm:grid-cols-3">
-          {steps.map((s, i) => (
-            <div key={s.title} className="rounded-xl bg-white/10 px-4 py-3.5 backdrop-blur-sm">
-              <p className="text-lg">{s.icon}</p>
-              <p className="mt-0.5 text-xs font-bold">
-                <span className="mr-1.5 text-amber-300">{i + 1}</span>
-                {s.title}
-              </p>
-              <p className="mt-1 text-[10px] leading-relaxed text-slate-300">{s.body}</p>
+        {open && (
+          <>
+            <p className="mt-1.5 text-xs leading-relaxed text-slate-300 sm:mt-2 sm:text-sm">
+              思いつきを、売れる3D商品に。PlanMo なら、モデリングの技術がなくても大丈夫。
+            </p>
+            <div className="no-scrollbar -mx-4 mt-3.5 flex snap-x snap-mandatory gap-2.5 overflow-x-auto px-4 pb-1 sm:mx-0 sm:grid sm:grid-cols-3 sm:gap-2.5 sm:overflow-visible sm:px-0 sm:pb-0">
+              {steps.map((s, i) => (
+                <div key={s.title} className="w-[15rem] shrink-0 snap-start rounded-xl bg-white/10 px-3.5 py-3 backdrop-blur-sm sm:w-auto sm:shrink sm:px-4 sm:py-3.5">
+                  <p className="text-lg">{s.icon}</p>
+                  <p className="mt-0.5 whitespace-nowrap text-xs font-bold">
+                    <span className="mr-1.5 text-amber-300">{i + 1}</span>
+                    {s.title}
+                  </p>
+                  <p className="mt-1 text-[10px] leading-relaxed text-slate-300 sm:whitespace-normal">{s.body}</p>
+                </div>
+              ))}
             </div>
-          ))}
-        </div>
-        <div className="mt-5 flex flex-wrap gap-2.5">
-          <button
-            onClick={onPost}
-            className="brass-btn rounded-full px-6 py-2.5 text-sm font-bold"
-          >
-            {loggedIn ? 'アイデアを投稿する' : '始める（無料登録）'}
-          </button>
-          <button
-            onClick={onShop}
-            className="rounded-full border border-white/25 bg-white/10 px-6 py-2.5 text-sm font-bold text-white transition hover:bg-white/20"
-          >
-            商品を見る
-          </button>
-        </div>
+            <div className="mt-3.5 flex flex-wrap gap-2.5 sm:mt-5">
+              <button
+                onClick={onPost}
+                className="brass-btn whitespace-nowrap rounded-full px-5 py-2.5 text-sm font-bold sm:px-6"
+              >
+                {loggedIn ? 'アイデアを投稿する' : '始める（無料登録）'}
+              </button>
+              <button
+                onClick={onShop}
+                className="whitespace-nowrap rounded-full border border-white/25 bg-white/10 px-5 py-2.5 text-sm font-bold text-white transition hover:bg-white/20 sm:px-6"
+              >
+                商品を見る
+              </button>
+            </div>
+          </>
+        )}
       </div>
     </section>
   );
