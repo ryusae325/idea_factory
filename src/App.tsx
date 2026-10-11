@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import type { Idea, Profile } from './lib/types';
+import type { ArrangementDraft, Idea, Profile } from './lib/types';
 import { supabase, auth } from './lib/supabase';
 import { fetchIdeas, fetchProfile, updateIdeaStatus, createCheckout, completeCheckout, GENRES, commentCount, ratingStats, fetchMyFavorites, setFavorite } from './lib/data';
 import { toast } from './lib/toast';
@@ -39,6 +39,7 @@ export default function App() {
   const [favorites, setFavorites] = useState<Set<number>>(new Set());
   const [tab, setTab] = useState<TabId>('creator');
   const [detailId, setDetailId] = useState<number | null>(null);
+  const [arrangementDraft, setArrangementDraft] = useState<ArrangementDraft | null>(null);
   const [loading, setLoading] = useState(true);
 
   const refreshProfile = useCallback(async (userId: string) => {
@@ -327,7 +328,12 @@ export default function App() {
               <div className="grid items-start gap-6 lg:grid-cols-[400px_1fr]">
                 <div className="space-y-3">
                   {loggedIn && profile ? (
-                    <CreatorTab profile={profile} onCreated={refreshIdeas} />
+                    <CreatorTab
+                      profile={profile}
+                      onCreated={refreshIdeas}
+                      arrangementDraft={arrangementDraft}
+                      onClearArrangement={() => setArrangementDraft(null)}
+                    />
                   ) : (
                     <div className="grid place-items-center rounded-2xl border border-dashed border-orange-200 bg-orange-50/50 py-16 text-center">
                       <p className="text-sm font-semibold text-orange-900">ログインしてアイデアを投稿しましょう</p>
@@ -504,6 +510,11 @@ export default function App() {
           onChanged={() => {
             refreshIdeas();
             if (profile) refreshProfile(profile.id);
+          }}
+          onArrangeRequest={(draft) => {
+            setArrangementDraft(draft);
+            setTab('creator');
+            toast('アレンジ依頼の内容を投稿画面に反映しました。確認して投稿してください。');
           }}
         />
       )}

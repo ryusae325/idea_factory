@@ -140,6 +140,32 @@ export interface IdeaMessage {
   sender?: ProfileLite | null;
 }
 
+export interface ArrangementChoice {
+  label: string;
+  price: number;
+}
+
+export interface ArrangementOption {
+  id: number;
+  idea_id: number;
+  name: string;
+  choices: ArrangementChoice[];
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ArrangementDraft {
+  baseIdeaId: number;
+  baseTitle: string;
+  title: string;
+  description: string;
+  genre: string;
+  sizeTier: 'S' | 'M' | 'L' | 'XL';
+  priceDigital: number;
+  selectedOptions: { optionId: number; optionName: string; choice: ArrangementChoice }[];
+  totalExtra: number;
+}
+
 export interface GiftStock {
   id: number;
   exchange_type: string;

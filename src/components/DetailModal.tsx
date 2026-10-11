@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import type { Comment, Idea, IdeaApplication, IdeaMessage, Profile } from '../lib/types';
+import type { ArrangementChoice, ArrangementDraft, ArrangementOption, Comment, Idea, IdeaApplication, IdeaMessage, Profile } from '../lib/types';
 import { fmtDate, fmtYen } from '../lib/types';
 import { supabase } from '../lib/supabase';
-import { deleteComment, fetchComments, fetchIdea, postComment, getStlDownloadUrl, setIdeaStl, uploadStl, SIZE_OPTIONS, fulfillmentFee, ratingStats, fetchMyRating, rateIdea, updateIdeaStatus, requestIdeaDelete, confirmIdeaDelete, reportIdea, fetchApplications, applyForIdea, withdrawApplication, assignModeler, fetchIdeaMessages, sendIdeaMessage } from '../lib/data';
+import { deleteComment, fetchComments, fetchIdea, postComment, getStlDownloadUrl, setIdeaStl, uploadStl, SIZE_OPTIONS, fulfillmentFee, ratingStats, fetchMyRating, rateIdea, updateIdeaStatus, requestIdeaDelete, confirmIdeaDelete, reportIdea, fetchApplications, applyForIdea, withdrawApplication, assignModeler, fetchIdeaMessages, sendIdeaMessage, fetchArrangementOptions, buildArrangementDescription } from '../lib/data';
 import { toast } from '../lib/toast';
 
 interface Props {
@@ -10,9 +10,10 @@ interface Props {
   profile: Profile | null;
   onClose: () => void;
   onChanged: () => void;
+  onArrangeRequest?: (draft: ArrangementDraft) => void;
 }
 
-export default function DetailModal({ ideaId, profile, onClose, onChanged }: Props) {
+export default function DetailModal({ ideaId, profile, onClose, onChanged, onArrangeRequest }: Props) {
   const [idea, setIdea] = useState<Idea | null>(null);
   const [comments, setComments] = useState<Comment[]>([]);
   const [text, setText] = useState('');
@@ -25,6 +26,10 @@ export default function DetailModal({ ideaId, profile, onClose, onChanged }: Pro
   const [chatText, setChatText] = useState('');
   const [chatBusy, setChatBusy] = useState(false);
   const chatBottomRef = useRef<HTMLDivElement | null>(null);
+  const [arrangementOptions, setArrangementOptions] = useState<ArrangementOption[]>([]);
+  const [showArrangeModal, setShowArrangeModal] = useState(false);
+  const [selectedChoices, setSelectedChoices] = useState<Map<number, ArrangementChoice>>(new Map());
+  const [arrangeBusy, setArrangeBusy] = useState(false);
 
   const reload = useCallback(async () => {
     const [i, c] = await Promise.all([fetchIdea(ideaId), fetchComments(ideaId)]);
@@ -56,6 +61,19 @@ export default function DetailModal({ ideaId, profile, onClose, onChanged }: Pro
   useEffect(() => {
     reloadApplications();
   }, [reloadApplications]);
+
+  useEffect(() => {
+    fetchArrangementOptions(ideaId)
+      .then((opts) => {
+        setArrangementOptions(opts);
+        const defaults = new Map<number, ArrangementChoice>();
+        for (const o of opts) {
+          if (o.choices[0]) defaults.set(o.id, o.choices[0]);
+        }
+        setSelectedChoices(defaults);
+      })
+      .catch(() => setArrangementOptions([]));
+  }, [ideaId]);
 
   const canChat = !!(idea?.modeler_id && profile && (profile.id === idea.creator_id || profile.id === idea.modeler_id || profile.is_admin));
 
@@ -277,6 +295,48 @@ export default function DetailModal({ ideaId, profile, onClose, onChanged }: Pro
     }
   };
 
+  const totalArrangementExtra = arrangementOptions.reduce((sum, o) => sum + (selectedChoices.get(o.id)?.price ?? 0), 0);
+
+  const openArrangeModal = () => {
+    if (!profile) return toast('アレンジ依頼するにはログインしてください', 'error');
+    if (idea?.status !== '販売中') return toast('販売中の商品のみアレンジ依頼できます', 'error');
+    setShowArrangeModal(true);
+  };
+
+  const submitArrangeRequest = async () => {
+    if (!idea || !profile) return;
+    const selected = arrangementOptions
+      .map((o) => {
+        const choice = selectedChoices.get(o.id);
+        return choice ? { optionId: o.id, optionName: o.name, choice } : null;
+      })
+      .filter((x): x is { optionId: number; optionName: string; choice: ArrangementChoice } => !!x);
+
+    setArrangeBusy(true);
+    try {
+      const description = buildArrangementDescription(
+        idea.title,
+        selected.map((s) => ({ optionName: s.optionName, choice: s.choice })),
+      );
+      const draft: ArrangementDraft = {
+        baseIdeaId: idea.id,
+        baseTitle: idea.title,
+        title: `【アレンジ】${idea.title}`,
+        description,
+        genre: idea.genre,
+        sizeTier: idea.size_tier,
+        priceDigital: idea.price_digital + totalArrangementExtra,
+        selectedOptions: selected,
+        totalExtra: totalArrangementExtra,
+      };
+      onArrangeRequest?.(draft);
+      setShowArrangeModal(false);
+      onClose();
+    } finally {
+      setArrangeBusy(false);
+    }
+  };
+
   return (
     <Overlay onClose={onClose}>
       <div className="flex items-start justify-between gap-3">
@@ -390,6 +450,20 @@ export default function DetailModal({ ideaId, profile, onClose, onChanged }: Pro
           {idea.description || '詳細説明はありません。'}
         </p>
       </div>
+
+      {idea.status === '販売中' && (
+        <div className="mt-3 grid gap-2 sm:grid-cols-2">
+          <button
+            onClick={openArrangeModal}
+            className="w-full rounded-lg bg-violet-600 px-3 py-2.5 text-xs font-bold text-white shadow-sm shadow-violet-500/30 transition hover:bg-violet-700"
+          >
+            🎨 アレンジ依頼する
+          </button>
+          <p className="flex items-center rounded-lg bg-violet-50 px-3 py-2 text-[11px] text-violet-800 ring-1 ring-violet-200">
+            基本価格＋オプションでカスタム版を依頼できます
+          </p>
+        </div>
+      )}
 
       {idea.status === 'アイデア募集' && (
         <div className="mt-3 rounded-xl bg-sky-50/70 p-3.5 ring-1 ring-sky-200">
@@ -657,6 +731,101 @@ export default function DetailModal({ ideaId, profile, onClose, onChanged }: Pro
           📢 これ観たことある（通報）
         </button>
       </div>
+
+      {showArrangeModal && idea && (
+        <div
+          className="fixed inset-0 z-[60] grid place-items-center bg-slate-900/50 p-4 backdrop-blur-sm"
+          onClick={() => setShowArrangeModal(false)}
+        >
+          <div
+            className="max-h-[80vh] w-full max-w-md overflow-y-auto rounded-2xl bg-white p-5 shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h4 className="text-base font-bold text-stone-900">🎨 アレンジ依頼</h4>
+            <p className="mt-1 text-[11px] text-stone-500">「{idea.title}」をベースにカスタム版を依頼します。</p>
+
+            {arrangementOptions.length === 0 ? (
+              <p className="mt-3 rounded-lg bg-stone-50 px-3 py-2 text-[11px] text-stone-500 ring-1 ring-stone-200">
+                この商品にはアレンジオプションが設定されていません。
+              </p>
+            ) : (
+              <div className="mt-3 space-y-3">
+                {arrangementOptions.map((opt) => (
+                  <div key={opt.id} className="rounded-xl border border-stone-200 bg-stone-50 p-3">
+                    <p className="text-xs font-bold text-stone-800">{opt.name}</p>
+                    <div className="mt-2 grid gap-2">
+                      {opt.choices.map((choice) => (
+                        <label
+                          key={choice.label}
+                          className={`flex cursor-pointer items-center justify-between rounded-lg border px-3 py-2 transition ${
+                            selectedChoices.get(opt.id)?.label === choice.label
+                              ? 'border-violet-500 bg-violet-50 ring-1 ring-violet-200'
+                              : 'border-stone-300 bg-white hover:border-stone-400'
+                          }`}
+                        >
+                          <span className="flex items-center gap-2">
+                            <input
+                              type="radio"
+                              name={`arrange-${opt.id}`}
+                              checked={selectedChoices.get(opt.id)?.label === choice.label}
+                              onChange={() =>
+                                setSelectedChoices((prev) => {
+                                  const next = new Map(prev);
+                                  next.set(opt.id, choice);
+                                  return next;
+                                })
+                              }
+                              className="accent-violet-600"
+                            />
+                            <span className="text-[13px] text-stone-800">{choice.label}</span>
+                          </span>
+                          <span className="text-xs font-bold text-violet-700">+¥{fmtYen(choice.price)}</span>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            <div className="mt-4 rounded-xl bg-violet-50 p-3 ring-1 ring-violet-200">
+              <div className="flex items-center justify-between text-[13px]">
+                <span className="text-stone-600">STLデータ基本価格</span>
+                <span className="font-bold text-stone-800">¥{fmtYen(idea.price_digital)}</span>
+              </div>
+              <div className="mt-1 flex items-center justify-between text-[13px]">
+                <span className="text-stone-600">オプション追加料金</span>
+                <span className="font-bold text-violet-700">+¥{fmtYen(totalArrangementExtra)}</span>
+              </div>
+              <div className="mt-2 border-t border-violet-200 pt-2 flex items-center justify-between text-base">
+                <span className="font-bold text-stone-900">見積もり合計</span>
+                <span className="font-extrabold text-violet-700">¥{fmtYen(idea.price_digital + totalArrangementExtra)}</span>
+              </div>
+              <p className="mt-1 text-[10px] text-stone-500">
+                ※プリント品の価格はサイズにより変動します。最終価格はモデラー指名後に確定します。
+              </p>
+            </div>
+
+            <div className="mt-4 flex gap-2">
+              <button
+                type="button"
+                onClick={() => setShowArrangeModal(false)}
+                className="flex-1 rounded-lg border border-stone-300 bg-white py-2.5 text-xs font-bold text-stone-600 transition hover:bg-stone-50"
+              >
+                キャンセル
+              </button>
+              <button
+                type="button"
+                onClick={submitArrangeRequest}
+                disabled={arrangeBusy}
+                className="flex-1 rounded-lg bg-violet-600 py-2.5 text-xs font-bold text-white shadow-sm transition hover:bg-violet-700 disabled:opacity-50"
+              >
+                {arrangeBusy ? '準備中…' : 'この内容で依頼する'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </Overlay>
   );
 }

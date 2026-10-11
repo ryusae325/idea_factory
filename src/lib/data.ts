@@ -1,6 +1,6 @@
 import { supabase, authFetch } from './supabase';
 import { toast } from './toast';
-import type { Comment, ExchangeRequest, Idea, IdeaApplication, IdeaMessage, IdeaReport, Order, BalanceEntry, Profile, Announcement, GiftStock, Notification, MyStats } from './types';
+import type { ArrangementOption, Comment, ExchangeRequest, Idea, IdeaApplication, IdeaMessage, IdeaReport, Order, BalanceEntry, Profile, Announcement, GiftStock, Notification, MyStats } from './types';
 
 export const IDEA_SELECT = `*, creator:profiles!ideas_creator_id_fkey(username,display_name), modeler:profiles!ideas_modeler_id_fkey(username,display_name)`;
 
@@ -127,9 +127,60 @@ export async function createIdea(values: {
   price_digital: number;
   mfg_cost: number;
   size_tier: 'S' | 'M' | 'L' | 'XL';
-}) {
-  const { error } = await supabase.from('ideas').insert(values);
+}): Promise<number> {
+  const { data, error } = await supabase.from('ideas').insert(values).select('id').single();
   if (error) throw new Error(error.message);
+  return (data as { id: number }).id;
+}
+
+// ---------- アレンジ依頼（選択式・半オーダー） ----------
+
+/** 商品のアレンジオプション一覧を取得（公開閲覧可） */
+export async function fetchArrangementOptions(ideaId: number): Promise<ArrangementOption[]> {
+  const { data, error } = await supabase
+    .from('idea_arrangement_options')
+    .select('*')
+    .eq('idea_id', ideaId)
+    .order('id', { ascending: true });
+  if (error) throw new Error(error.message);
+  return ((data ?? []) as ArrangementOption[]).map((o) => ({
+    ...o,
+    choices: Array.isArray(o.choices) ? o.choices : [],
+  }));
+}
+
+/** 出品者が商品のアレンジオプションを保存（既存は置き換え） */
+export async function upsertArrangementOptions(
+  ideaId: number,
+  options: Omit<ArrangementOption, 'id' | 'idea_id' | 'created_at' | 'updated_at'>[],
+): Promise<void> {
+  const { error } = await supabase.rpc('upsert_arrangement_options', {
+    p_idea_id: ideaId,
+    p_options: JSON.stringify(
+      options.map((o) => ({
+        name: o.name.trim(),
+        choices: o.choices.map((c) => ({ label: c.label.trim(), price: Math.max(0, Math.round(c.price)) })),
+      })),
+    ),
+  });
+  if (error) throw new Error(error.message);
+}
+
+/** アレンジ依頼の下書きから投稿本文を生成 */
+export function buildArrangementDescription(
+  baseTitle: string,
+  selectedOptions: { optionName: string; choice: { label: string; price: number } }[],
+): string {
+  const lines = [`「${baseTitle}」をベースにしたアレンジ依頼です。`, ''];
+  if (selectedOptions.length > 0) {
+    lines.push('【選択したオプション】');
+    for (const s of selectedOptions) {
+      lines.push(`・${s.optionName}: ${s.choice.label}（+¥${s.choice.price.toLocaleString()}）`);
+    }
+    lines.push('');
+  }
+  lines.push('その他の要望があれば、詳細画面のコメント欄や案件チャットでお伝えください。');
+  return lines.join('\n');
 }
 
 /** アイデアのジャンル（募集中一覧の絞り込み・ソート用） */

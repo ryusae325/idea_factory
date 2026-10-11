@@ -1,15 +1,22 @@
-import { useState } from 'react';
-import type { Profile } from '../lib/types';
-import { createIdea, uploadImage, tierMinPrice, SIZE_OPTIONS, GENRES, type SizeTier } from '../lib/data';
+import { useEffect, useState } from 'react';
+import type { ArrangementDraft, Profile } from '../lib/types';
+import { buildArrangementDescription, createIdea, uploadImage, tierMinPrice, SIZE_OPTIONS, GENRES, type SizeTier, upsertArrangementOptions } from '../lib/data';
 import { authFetch } from '../lib/supabase';
 import { toast } from '../lib/toast';
 
 interface Props {
   profile: Profile;
   onCreated: () => void;
+  arrangementDraft?: ArrangementDraft | null;
+  onClearArrangement?: () => void;
 }
 
-export default function CreatorTab({ profile, onCreated }: Props) {
+interface OptionInput {
+  name: string;
+  choices: { label: string; price: string }[];
+}
+
+export default function CreatorTab({ profile, onCreated, arrangementDraft, onClearArrangement }: Props) {
   const [title, setTitle] = useState('');
   const [genre, setGenre] = useState<string>(GENRES[0]);
   const [desc, setDesc] = useState('');
@@ -24,10 +31,21 @@ export default function CreatorTab({ profile, onCreated }: Props) {
     summary: string;
     points: string[];
   } | null>(null);
+  const [options, setOptions] = useState<OptionInput[]>([]);
 
   const modelerShare = 100 - creatorShare;
-  /** プリント品価格はサイズ階級で自動決定 */
   const pricePhysical = tierMinPrice(sizeTier);
+
+  useEffect(() => {
+    if (!arrangementDraft) return;
+    setTitle(arrangementDraft.title);
+    setGenre(arrangementDraft.genre);
+    setDesc(arrangementDraft.description);
+    setSizeTier(arrangementDraft.sizeTier);
+    setPriceDigital(arrangementDraft.priceDigital);
+    onClearArrangement?.();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [arrangementDraft?.baseIdeaId, arrangementDraft?.totalExtra]);
 
   const selectTier = (t: SizeTier) => {
     setSizeTier(t);
@@ -60,19 +78,66 @@ export default function CreatorTab({ profile, onCreated }: Props) {
     }
   };
 
+  const addOption = () => {
+    setOptions((prev) => [...prev, { name: '', choices: [{ label: '', price: '0' }] }]);
+  };
+
+  const removeOption = (idx: number) => {
+    setOptions((prev) => prev.filter((_, i) => i !== idx));
+  };
+
+  const updateOptionName = (idx: number, name: string) => {
+    setOptions((prev) => prev.map((o, i) => (i === idx ? { ...o, name } : o)));
+  };
+
+  const addChoice = (idx: number) => {
+    setOptions((prev) =>
+      prev.map((o, i) => (i === idx ? { ...o, choices: [...o.choices, { label: '', price: '0' }] } : o)),
+    );
+  };
+
+  const updateChoice = (optIdx: number, choiceIdx: number, patch: Partial<{ label: string; price: string }>) => {
+    setOptions((prev) =>
+      prev.map((o, i) =>
+        i === optIdx
+          ? { ...o, choices: o.choices.map((c, j) => (j === choiceIdx ? { ...c, ...patch } : c)) }
+          : o,
+      ),
+    );
+  };
+
+  const removeChoice = (optIdx: number, choiceIdx: number) => {
+    setOptions((prev) =>
+      prev.map((o, i) =>
+        i === optIdx ? { ...o, choices: o.choices.filter((_, j) => j !== choiceIdx) } : o,
+      ),
+    );
+  };
+
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!title.trim()) return toast('タイトルを入力してください', 'error');
     if (priceDigital > 0 && priceDigital < 300) {
       return toast('STLデータ価格は300円以上に設定してください（無料の場合は0円）', 'error');
     }
+
+    const validOptions: OptionInput[] = [];
+    for (const opt of options) {
+      const name = opt.name.trim();
+      const choices = opt.choices
+        .map((c) => ({ label: c.label.trim(), price: c.price.trim() }))
+        .filter((c) => c.label && c.price);
+      if (!name || choices.length === 0) continue;
+      validOptions.push({ name, choices });
+    }
+
     setBusy(true);
     try {
       const images: string[] = [];
       for (const f of files) {
         images.push(await uploadImage(profile.id, f));
       }
-      await createIdea({
+      const newIdeaId = await createIdea({
         title: title.trim(),
         description: desc.trim(),
         genre,
@@ -86,12 +151,25 @@ export default function CreatorTab({ profile, onCreated }: Props) {
         mfg_cost: 0,
         size_tier: sizeTier,
       });
+
+      if (validOptions.length > 0) {
+        await upsertArrangementOptions(
+          newIdeaId,
+          validOptions.map((o) => ({
+            name: o.name,
+            choices: o.choices.map((c) => ({ label: c.label, price: Number(c.price) || 0 })),
+          })),
+        );
+      }
+
       toast('アイデアを投稿しました！');
       setTitle('');
       setGenre(GENRES[0]);
       setDesc('');
       setSizeTier('S');
+      setPriceDigital(500);
       setFiles([]);
+      setOptions([]);
       onCreated();
     } catch (err) {
       toast((err as Error).message, 'error');
@@ -255,7 +333,83 @@ export default function CreatorTab({ profile, onCreated }: Props) {
         </div>
 
         <hr className="my-4 border-stone-100" />
-        <p className="text-[11px] font-bold tracking-wide text-orange-600">4. 画像（任意）</p>
+        <p className="text-[11px] font-bold tracking-wide text-orange-600">4. アレンジオプション（任意）</p>
+        <p className="mt-1 text-[11px] text-stone-400">
+          販売開始後、購入者が「カラー変更」「パーツ追加」などを選べるようにする場合に設定します
+        </p>
+        {options.length === 0 && (
+          <p className="mt-2 rounded-lg bg-stone-50 px-3 py-2 text-[11px] text-stone-500 ring-1 ring-stone-200">
+            オプションは未設定です。必要な場合は下のボタンから追加してください。
+          </p>
+        )}
+        <div className="mt-2 space-y-3">
+          {options.map((opt, optIdx) => (
+            <div key={optIdx} className="rounded-xl border border-stone-200 bg-stone-50 p-3">
+              <div className="flex items-center gap-2">
+                <input
+                  type="text"
+                  value={opt.name}
+                  onChange={(e) => updateOptionName(optIdx, e.target.value)}
+                  placeholder="例: カラー"
+                  className="flex-1 rounded-lg border border-stone-300 px-3 py-2 text-sm outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-100"
+                />
+                <button
+                  type="button"
+                  onClick={() => removeOption(optIdx)}
+                  className="rounded-lg bg-white px-2.5 py-2 text-xs font-bold text-stone-500 ring-1 ring-stone-300 transition hover:bg-stone-100"
+                >
+                  削除
+                </button>
+              </div>
+              <div className="mt-2 space-y-2">
+                {opt.choices.map((choice, choiceIdx) => (
+                  <div key={choiceIdx} className="flex items-center gap-2">
+                    <input
+                      type="text"
+                      value={choice.label}
+                      onChange={(e) => updateChoice(optIdx, choiceIdx, { label: e.target.value })}
+                      placeholder="選択肢（例: レッド）"
+                      className="flex-1 rounded-lg border border-stone-300 px-3 py-2 text-sm outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-100"
+                    />
+                    <input
+                      type="number"
+                      min={0}
+                      value={choice.price}
+                      onChange={(e) => updateChoice(optIdx, choiceIdx, { price: e.target.value })}
+                      placeholder="追加料金"
+                      className="w-28 rounded-lg border border-stone-300 px-3 py-2 text-sm outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-100"
+                    />
+                    <span className="text-xs text-stone-500">円</span>
+                    <button
+                      type="button"
+                      onClick={() => removeChoice(optIdx, choiceIdx)}
+                      className="rounded-lg bg-white px-2.5 py-2 text-xs font-bold text-stone-500 ring-1 ring-stone-300 transition hover:bg-stone-100"
+                    >
+                      ×
+                    </button>
+                  </div>
+                ))}
+              </div>
+              <button
+                type="button"
+                onClick={() => addChoice(optIdx)}
+                className="mt-2 rounded-lg bg-white px-3 py-1.5 text-[11px] font-semibold text-stone-600 ring-1 ring-stone-300 transition hover:bg-stone-100"
+              >
+                ＋ 選択肢を追加
+              </button>
+            </div>
+          ))}
+        </div>
+        <button
+          type="button"
+          onClick={addOption}
+          className="mt-2 w-full rounded-lg border border-dashed border-stone-300 bg-white py-2 text-[11px] font-bold text-stone-600 transition hover:bg-stone-50"
+        >
+          ＋ アレンジオプションを追加
+        </button>
+
+        <hr className="my-4 border-stone-100" />
+        <p className="text-[11px] font-bold tracking-wide text-orange-600">5. 画像（任意）</p>
         <p className="mt-1 text-[11px] text-stone-400">
           📷 角度違いの画像（正面・横・上）を複数枚添えるとモデラーがイメージしやすくなります
         </p>
