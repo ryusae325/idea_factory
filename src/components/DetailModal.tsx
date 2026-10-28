@@ -1,9 +1,11 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { lazy, Suspense, useCallback, useEffect, useRef, useState } from 'react';
 import type { ArrangementChoice, ArrangementDraft, ArrangementOption, Comment, Idea, IdeaApplication, IdeaMessage, Profile } from '../lib/types';
 import { fmtDate, fmtYen } from '../lib/types';
 import { supabase } from '../lib/supabase';
 import { deleteComment, fetchComments, fetchIdea, postComment, getStlDownloadUrl, setIdeaStl, uploadStl, SIZE_OPTIONS, fulfillmentFee, ratingStats, fetchMyRating, rateIdea, updateIdeaStatus, requestIdeaDelete, confirmIdeaDelete, reportIdea, fetchApplications, applyForIdea, withdrawApplication, assignModeler, fetchIdeaMessages, sendIdeaMessage, fetchArrangementOptions, buildArrangementDescription } from '../lib/data';
 import { toast } from '../lib/toast';
+
+const ModelStudio = lazy(() => import('./ModelStudio'));
 
 interface Props {
   ideaId: number;
@@ -30,6 +32,7 @@ export default function DetailModal({ ideaId, profile, onClose, onChanged, onArr
   const [showArrangeModal, setShowArrangeModal] = useState(false);
   const [selectedChoices, setSelectedChoices] = useState<Map<number, ArrangementChoice>>(new Map());
   const [arrangeBusy, setArrangeBusy] = useState(false);
+  const [showStudio, setShowStudio] = useState(false);
 
   const reload = useCallback(async () => {
     const [i, c] = await Promise.all([fetchIdea(ideaId), fetchComments(ideaId)]);
@@ -338,7 +341,8 @@ export default function DetailModal({ ideaId, profile, onClose, onChanged, onArr
   };
 
   return (
-    <Overlay onClose={onClose}>
+    <>
+      <Overlay onClose={onClose}>
       <div className="flex items-start justify-between gap-3">
         <h3 className="text-lg font-bold text-stone-900">💡 {idea.title}</h3>
         <div className="flex shrink-0 gap-2">
@@ -602,7 +606,16 @@ export default function DetailModal({ ideaId, profile, onClose, onChanged, onArr
       )}
       {canManageStl && (
         <div className="mt-2 rounded-xl bg-stone-50 p-3 ring-1 ring-stone-200">
-          <label className="block text-[11px] font-bold text-stone-600">
+          <button
+            onClick={() => setShowStudio(true)}
+            className="w-full rounded-lg bg-teal-600 px-3 py-2.5 text-xs font-bold text-white shadow-sm shadow-teal-500/30 transition hover:bg-teal-700"
+          >
+            🧊 3Dスタジオで開く（ブラウザ内でモデリング）
+          </button>
+          <p className="mt-1 text-[10px] text-stone-400">
+            ブラウザ上で3Dモデルを制作し、STLで書き出してそのまま提出・出品できます。
+          </p>
+          <label className="mt-2 block text-[11px] font-bold text-stone-600">
             STLファイルをアップロード（完成3Dデータ・.stl）
           </label>
           <input
@@ -826,7 +839,24 @@ export default function DetailModal({ ideaId, profile, onClose, onChanged, onArr
           </div>
         </div>
       )}
-    </Overlay>
+      </Overlay>
+      {showStudio && idea && profile && (
+        <Suspense
+          fallback={
+            <div className="fixed inset-0 z-[100] grid place-items-center bg-stone-100">
+              <p className="text-sm font-bold text-stone-500">🧊 3Dスタジオを読み込み中…</p>
+            </div>
+          }
+        >
+          <ModelStudio
+            idea={idea}
+            profile={profile}
+            onClose={() => setShowStudio(false)}
+            onChanged={onChanged}
+          />
+        </Suspense>
+      )}
+    </>
   );
 }
 

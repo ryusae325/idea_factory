@@ -237,7 +237,7 @@ export default function App() {
   const matchesQuery = (i: Idea, q: string) =>
     !q.trim() ||
     i.title.includes(q.trim()) ||
-    (i.desc ?? '').includes(q.trim()) ||
+    (i.description ?? '').includes(q.trim()) ||
     i.genre.includes(q.trim());
 
   const recruitingFiltered = useMemo(
