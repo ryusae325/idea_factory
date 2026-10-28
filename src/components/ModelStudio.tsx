@@ -5,6 +5,12 @@ import { TransformControls } from 'three/examples/jsm/controls/TransformControls
 import { STLExporter } from 'three/examples/jsm/exporters/STLExporter.js';
 import { GLTFExporter } from 'three/examples/jsm/exporters/GLTFExporter.js';
 import { STLLoader } from 'three/examples/jsm/loaders/STLLoader.js';
+import { FontLoader } from 'three/examples/jsm/loaders/FontLoader.js';
+import type { Font } from 'three/examples/jsm/loaders/FontLoader.js';
+import { TextGeometry } from 'three/examples/jsm/geometries/TextGeometry.js';
+import { BufferGeometryLoader } from 'three';
+import { CSG } from 'three-csg-ts';
+import fontUrl from 'three/examples/fonts/helvetiker_regular.typeface.json?url';
 import type { Idea, Profile } from '../lib/types';
 import { fmtYen } from '../lib/types';
 import { getStlDownloadUrl, setIdeaStl, updateIdeaStatus, uploadStl } from '../lib/data';
@@ -20,11 +26,15 @@ interface Props {
 interface StudioApi {
   addPrim(kind: string): void;
   deleteSelected(): void;
+  deleteById(id: number): void;
   duplicateSelected(): void;
+  selectById(id: number, additive?: boolean): void;
+  resizeSelected(axis: 'x' | 'y' | 'z', value: number): void;
+  addText(): void;
+  booleanOperation(operation: 'union' | 'subtract'): void;
   renameObj(id: number): void;
   toggleVisible(id: number): void;
   applyMaterial(patch: { color?: string; roughness?: number; metalness?: number }): void;
-  selectById(id: number): void;
   focusSelected(): void;
   resetView(): void;
   undo(): void;
@@ -60,6 +70,7 @@ interface SnapObj {
   rotation: number[];
   scale: number[];
   geoId: number | null;
+  geometry: Record<string, unknown> | null;
 }
 
 const PRIMS = [
@@ -122,6 +133,10 @@ export default function ModelStudio({ idea, profile, onClose, onChanged }: Props
 
   const [objects, setObjects] = useState<ObjInfo[]>([]);
   const [selId, setSelId] = useState<number | null>(null);
+  const [selectedIds, setSelectedIds] = useState<number[]>([]);
+  const [dimensions, setDimensions] = useState<{ x: number; y: number; z: number } | null>(null);
+  const [dimensionInputs, setDimensionInputs] = useState<{ x: string; y: string; z: string }>({ x: '', y: '', z: '' });
+  const [textValue, setTextValue] = useState('');
   const [selMat, setSelMat] = useState<{ color: string; roughness: number; metalness: number } | null>(null);
   const [mode, setModeState] = useState<Mode>('translate');
   const [snap, setSnapState] = useState(true);
@@ -217,6 +232,9 @@ export default function ModelStudio({ idea, profile, onClose, onChanged }: Props
     const history: string[] = [];
     const redoStack: string[] = [];
     const geoCache = new Map<number, THREE.BufferGeometry>();
+    const selectedIdsRef = { current: [] as number[] };
+    const activeIdRef = { current: null as number | null };
+    let fontPromise: Promise<Font> | null = null;
     let geoSeq = 1;
     let nameSeq: Record<string, number> = {};
 
@@ -236,6 +254,9 @@ export default function ModelStudio({ idea, profile, onClose, onChanged }: Props
             rotation: [mesh.rotation.x, mesh.rotation.y, mesh.rotation.z],
             scale: mesh.scale.toArray(),
             geoId: (mesh.userData.geoId as number | undefined) ?? null,
+            geometry: ['boolean', 'text', 'import'].includes(String(mesh.userData.kind))
+              ? (mesh.geometry.toJSON() as unknown as Record<string, unknown>)
+              : null,
           } satisfies SnapObj;
         }),
       );
@@ -253,10 +274,13 @@ export default function ModelStudio({ idea, profile, onClose, onChanged }: Props
         let geo: THREE.BufferGeometry | null = null;
         if (s.geoId != null) {
           geo = geoCache.get(s.geoId) ?? null;
+          if (!geo && s.geometry) geo = new BufferGeometryLoader().parse(s.geometry);
           if (!geo) {
             missing++;
             continue;
           }
+        } else if (s.geometry) {
+          geo = new BufferGeometryLoader().parse(s.geometry);
         } else {
           geo = makeGeometry(s.kind);
         }
@@ -324,20 +348,51 @@ export default function ModelStudio({ idea, profile, onClose, onChanged }: Props
     };
 
     // ---- Selection ----
-    const select = (mesh: THREE.Object3D | null): void => {
-      if (mesh) {
-        tctrl.attach(mesh);
-        const mat = (mesh as THREE.Mesh).material as THREE.MeshStandardMaterial;
-        setSelId(mesh.id);
+    const select = (mesh: THREE.Object3D | null, additive = false): void => {
+      let nextIds: number[];
+      if (!mesh) {
+        nextIds = [];
+      } else if (additive) {
+        nextIds = selectedIdsRef.current.includes(mesh.id)
+          ? selectedIdsRef.current.filter((id) => id !== mesh.id)
+          : [...selectedIdsRef.current, mesh.id];
+        if (nextIds.length === 0) nextIds = [mesh.id];
+      } else {
+        nextIds = [mesh.id];
+      }
+      selectedIdsRef.current = nextIds;
+      setSelectedIds(nextIds);
+      const activeId = mesh && nextIds.includes(mesh.id) ? mesh.id : nextIds[nextIds.length - 1];
+      const activeMesh = modelRoot.children.find((child) => child.id === activeId) as THREE.Mesh | undefined;
+      if (activeMesh) {
+        activeIdRef.current = activeMesh.id;
+        tctrl.attach(activeMesh);
+        const mat = activeMesh.material as THREE.MeshStandardMaterial;
+        setSelId(activeMesh.id);
         setSelMat({
           color: '#' + mat.color.getHexString(),
           roughness: mat.roughness,
           metalness: mat.metalness,
         });
+        const rawSize = activeMesh.geometry.boundingBox?.getSize(new THREE.Vector3());
+        const size = rawSize && new THREE.Vector3(
+          rawSize.x * Math.abs(activeMesh.scale.x),
+          rawSize.y * Math.abs(activeMesh.scale.y),
+          rawSize.z * Math.abs(activeMesh.scale.z),
+        );
+        const nextDimensions = size ? { x: size.x, y: size.y, z: size.z } : null;
+        setDimensions(nextDimensions);
+        if (nextDimensions) setDimensionInputs({
+          x: nextDimensions.x.toFixed(1),
+          y: nextDimensions.y.toFixed(1),
+          z: nextDimensions.z.toFixed(1),
+        });
       } else {
+        activeIdRef.current = null;
         tctrl.detach();
         setSelId(null);
         setSelMat(null);
+        setDimensions(null);
       }
     };
 
@@ -355,7 +410,26 @@ export default function ModelStudio({ idea, profile, onClose, onChanged }: Props
           };
         }),
       );
+      const active = modelRoot.children.find((m) => m.id === activeIdRef.current) as THREE.Mesh | undefined;
+      if (active) {
+        active.geometry.computeBoundingBox();
+        const rawSize = active.geometry.boundingBox?.getSize(new THREE.Vector3());
+        if (rawSize) {
+          const nextDimensions = {
+            x: rawSize.x * Math.abs(active.scale.x),
+            y: rawSize.y * Math.abs(active.scale.y),
+            z: rawSize.z * Math.abs(active.scale.z),
+          };
+          setDimensions(nextDimensions);
+          setDimensionInputs({
+            x: nextDimensions.x.toFixed(1),
+            y: nextDimensions.y.toFixed(1),
+            z: nextDimensions.z.toFixed(1),
+          });
+        }
+      }
     };
+    tctrl.addEventListener('objectChange', syncObjects);
 
     // ---- Object operations ----
     const addPrim = (kind: string): void => {
@@ -376,15 +450,27 @@ export default function ModelStudio({ idea, profile, onClose, onChanged }: Props
       pushHistory();
     };
 
-    const deleteSelected = (): void => {
-      const sel = tctrl.object;
-      if (!sel) return toast('削除するオブジェクトを選択してください', 'info');
+    const deleteIds = (ids: number[]): void => {
+      const targets = modelRoot.children.filter((child) => ids.includes(child.id));
+      if (targets.length === 0) return toast('削除するオブジェクトを選択してください', 'info');
       tctrl.detach();
-      modelRoot.remove(sel);
+      for (const target of targets) {
+        const mesh = target as THREE.Mesh;
+        modelRoot.remove(target);
+        const stillUsed = modelRoot.children.some((child) => (child as THREE.Mesh).geometry === mesh.geometry);
+        if (mesh.userData.geoId == null && !stillUsed) mesh.geometry.dispose();
+        const material = mesh.material as THREE.Material | THREE.Material[];
+        if (Array.isArray(material)) material.forEach((item) => item.dispose());
+        else material.dispose();
+      }
       select(null);
       syncObjects();
       pushHistory();
+      toast(`${targets.length}個のオブジェクトを削除しました（Ctrl+Zで復元できます）`);
     };
+
+    const deleteSelected = (): void => deleteIds(selectedIdsRef.current);
+    const deleteById = (id: number): void => deleteIds([id]);
 
     const duplicateSelected = (): void => {
       const sel = tctrl.object as THREE.Mesh | null;
@@ -436,10 +522,108 @@ export default function ModelStudio({ idea, profile, onClose, onChanged }: Props
       pushHistory();
     };
 
+    const resizeSelected = (axis: 'x' | 'y' | 'z', value: number): void => {
+      const mesh = tctrl.object as THREE.Mesh | null;
+      if (!mesh || !Number.isFinite(value) || value <= 0) return;
+      mesh.geometry.computeBoundingBox();
+      const bounds = mesh.geometry.boundingBox;
+      if (!bounds) return;
+      const base = bounds.getSize(new THREE.Vector3())[axis];
+      if (base <= 0) return;
+      const sign = Math.sign(mesh.scale[axis]) || 1;
+      mesh.scale[axis] = sign * value / base;
+      syncObjects();
+      pushHistory();
+    };
+
+    const addText = async (): Promise<void> => {
+      const text = textValue.trim().slice(0, 80);
+      if (!text) return toast('文字を入力してください', 'info');
+      setBusy('フォントを読み込み中…');
+      try {
+        if (!fontPromise) fontPromise = new FontLoader().loadAsync(fontUrl);
+        const font = await fontPromise;
+        const geometry = new TextGeometry(text, {
+          font,
+          size: 14,
+          depth: 3,
+          curveSegments: 8,
+          bevelEnabled: true,
+          bevelThickness: 0.35,
+          bevelSize: 0.2,
+          bevelSegments: 2,
+        });
+        geometry.computeBoundingBox();
+        const bounds = geometry.boundingBox;
+        if (bounds) {
+          const centerX = (bounds.min.x + bounds.max.x) / 2;
+          geometry.translate(-centerX, -bounds.min.y, 0);
+        }
+        const mesh = new THREE.Mesh(
+          geometry,
+          new THREE.MeshStandardMaterial({ color: DEFAULT_COLOR, roughness: 0.55, metalness: 0.1 }),
+        );
+        mesh.userData = { kind: 'text', name: `テキスト: ${text.slice(0, 18)}`, text };
+        mesh.castShadow = true;
+        mesh.receiveShadow = true;
+        mesh.position.set(0, 0, 0);
+        modelRoot.add(mesh);
+        select(mesh);
+        syncObjects();
+        pushHistory();
+        toast('立体テキストを追加しました');
+      } catch (e) {
+        toast((e as Error).message || 'フォントを読み込めませんでした', 'error');
+      } finally {
+        setBusy(null);
+      }
+    };
+
+    const booleanOperation = (operation: 'union' | 'subtract'): void => {
+      const selected = selectedIdsRef.current
+        .map((id) => modelRoot.children.find((child) => child.id === id) as THREE.Mesh | undefined)
+        .filter((mesh): mesh is THREE.Mesh => Boolean(mesh?.visible));
+      if (selected.length < 2) return toast('ブーリアン演算には表示中のオブジェクトを2個以上選択してください', 'info');
+      try {
+        for (const mesh of selected) {
+          mesh.updateMatrix();
+          mesh.updateMatrixWorld(true);
+        }
+        let result = selected[0];
+        for (const next of selected.slice(1)) {
+          result = operation === 'union' ? CSG.union(result, next) : CSG.subtract(result, next);
+          result.updateMatrix();
+          result.updateMatrixWorld(true);
+        }
+        result.userData = {
+          kind: 'boolean',
+          name: operation === 'union' ? '合体メッシュ' : 'くり抜きメッシュ',
+        };
+        result.material = (selected[0].material as THREE.MeshStandardMaterial).clone();
+        result.castShadow = true;
+        result.receiveShadow = true;
+        for (const mesh of selected) {
+          modelRoot.remove(mesh);
+          const stillUsed = modelRoot.children.some((child) => (child as THREE.Mesh).geometry === mesh.geometry);
+          if (mesh.userData.geoId == null && !stillUsed) mesh.geometry.dispose();
+          const material = mesh.material as THREE.Material | THREE.Material[];
+          if (Array.isArray(material)) material.forEach((item) => item.dispose());
+          else material.dispose();
+        }
+        modelRoot.add(result);
+        select(result);
+        syncObjects();
+        pushHistory();
+        toast(operation === 'union' ? '選択した形状を合体しました' : '先頭の形状から後続の形状をくり抜きました');
+      } catch (e) {
+        toast(`ブーリアン演算に失敗しました: ${(e as Error).message}`, 'error');
+      }
+    };
+
     // ---- View helpers ----
-    const selectById = (id: number): void => {
+    const selectById = (id: number, additive = false): void => {
       const mesh = modelRoot.children.find((m) => m.id === id);
-      if (mesh) select(mesh);
+      if (mesh) select(mesh, additive);
     };
 
     const focusSelected = (): void => {
@@ -569,11 +753,15 @@ export default function ModelStudio({ idea, profile, onClose, onChanged }: Props
     apiRef.current = {
       addPrim,
       deleteSelected,
+      deleteById,
       duplicateSelected,
+      selectById,
+      resizeSelected,
+      addText,
+      booleanOperation,
       renameObj,
       toggleVisible,
       applyMaterial,
-      selectById,
       focusSelected,
       resetView,
       undo,
@@ -616,7 +804,7 @@ export default function ModelStudio({ idea, profile, onClose, onChanged }: Props
       ndc.set(((e.clientX - rect.left) / rect.width) * 2 - 1, -((e.clientY - rect.top) / rect.height) * 2 + 1);
       raycaster.setFromCamera(ndc, camera);
       const hits = raycaster.intersectObjects(modelRoot.children, false);
-      select(hits.length > 0 ? hits[0].object : null);
+      select(hits.length > 0 ? hits[0].object : null, e.shiftKey);
     };
     renderer.domElement.addEventListener('pointerdown', onPointerDown);
     renderer.domElement.addEventListener('pointerup', onPointerUp);
@@ -643,7 +831,7 @@ export default function ModelStudio({ idea, profile, onClose, onChanged }: Props
         return;
       }
       if (e.key === 'Delete' || e.key === 'Backspace') {
-        if (tctrl.object) {
+        if (selectedIdsRef.current.length > 0) {
           e.preventDefault();
           deleteSelected();
         }
@@ -772,6 +960,16 @@ export default function ModelStudio({ idea, profile, onClose, onChanged }: Props
               {p.icon}
             </button>
           ))}
+          <button
+            onClick={() => {
+              setShowPanel(true);
+              window.setTimeout(() => document.getElementById('studio-text-input')?.focus(), 0);
+            }}
+            title="テキストを作成"
+            className="grid h-11 w-11 place-items-center rounded-xl bg-sky-50 text-xl ring-1 ring-sky-200 transition hover:bg-sky-100 active:scale-95"
+          >
+            🔤
+          </button>
           <span className="my-1 h-px w-8 bg-stone-200" />
           <button
             onClick={() => apiRef.current?.duplicateSelected()}
@@ -815,13 +1013,14 @@ export default function ModelStudio({ idea, profile, onClose, onChanged }: Props
                 <div
                   key={o.id}
                   className={`flex items-center gap-1.5 rounded-lg px-2 py-1.5 text-[11px] transition ${
-                    selId === o.id ? 'bg-orange-50 ring-1 ring-orange-300' : 'bg-stone-50 ring-1 ring-stone-200 hover:bg-stone-100'
+                    selectedIds.includes(o.id) ? 'bg-orange-50 ring-1 ring-orange-300' : 'bg-stone-50 ring-1 ring-stone-200 hover:bg-stone-100'
                   }`}
                 >
                   <span className="h-3 w-3 shrink-0 rounded-full ring-1 ring-stone-300" style={{ background: o.color }} />
                   <button
-                    onClick={() => apiRef.current?.selectById(o.id)}
+                    onClick={(e) => apiRef.current?.selectById(o.id, e.shiftKey)}
                     className="min-w-0 flex-1 truncate text-left font-semibold text-stone-700"
+                    title="クリックで選択。Shift+クリックで複数選択"
                   >
                     {o.name}
                   </button>
@@ -829,9 +1028,98 @@ export default function ModelStudio({ idea, profile, onClose, onChanged }: Props
                     {o.visible ? '👁' : '🚫'}
                   </button>
                   <button onClick={() => apiRef.current?.renameObj(o.id)} title="名前変更" className="shrink-0 text-[11px] opacity-70 hover:opacity-100">✎</button>
+                  <button
+                    onClick={() => apiRef.current?.deleteById(o.id)}
+                    title={`${o.name}を削除（Ctrl+Zで復元）`}
+                    aria-label={`${o.name}を削除`}
+                    className="grid h-7 w-7 shrink-0 place-items-center rounded-md text-rose-600 transition hover:bg-rose-100"
+                  >
+                    🗑️
+                  </button>
                 </div>
               ))}
             </div>
+          </div>
+
+          <div>
+            <p className="text-[11px] font-bold text-stone-500">🔤 立体テキスト（Latin）</p>
+            <div className="mt-1.5 flex gap-1.5">
+              <input
+                id="studio-text-input"
+                value={textValue}
+                onChange={(e) => setTextValue(e.target.value)}
+                onKeyDown={(e) => { if (e.key === 'Enter') apiRef.current?.addText(); }}
+                maxLength={80}
+                placeholder="Tanaka など"
+                className="min-w-0 flex-1 rounded-lg border border-stone-300 px-2 py-1.5 text-xs outline-none focus:border-orange-400 focus:ring-2 focus:ring-orange-100"
+              />
+              <button
+                onClick={() => apiRef.current?.addText()}
+                disabled={!!busy || !textValue.trim()}
+                className="shrink-0 rounded-lg bg-sky-600 px-2.5 py-1.5 text-[11px] font-bold text-white disabled:opacity-40"
+              >
+                追加
+              </button>
+            </div>
+            <p className="mt-1 text-[9px] text-stone-400">英数字向けフォント。1単位=1mm、立体厚み3mm</p>
+          </div>
+
+          <div>
+            <p className="text-[11px] font-bold text-stone-500">📐 寸法（mm）</p>
+            {dimensions && selId !== null ? (
+              <div className="mt-1.5 grid grid-cols-3 gap-1.5">
+                {([['x', '幅'], ['y', '高さ'], ['z', '奥行']] as const).map(([axis, label]) => (
+                  <label key={axis} className="text-[9px] font-semibold text-stone-500">
+                    {label}
+                    <input
+                      type="number"
+                      min="0.1"
+                      step="0.1"
+                      value={dimensionInputs[axis] || Number(dimensions[axis].toFixed(1))}
+                      onChange={(e) => {
+                        const raw = e.target.value;
+                        setDimensionInputs((current) => ({ ...current, [axis]: raw }));
+                        const nextValue = Number(raw);
+                        if (raw.trim() && Number.isFinite(nextValue) && nextValue > 0) {
+                          apiRef.current?.resizeSelected(axis, nextValue);
+                        }
+                      }}
+                      onBlur={() => setDimensionInputs({
+                        x: dimensions.x.toFixed(1),
+                        y: dimensions.y.toFixed(1),
+                        z: dimensions.z.toFixed(1),
+                      })}
+                      className="mt-1 w-full rounded-md border border-stone-300 px-1.5 py-1.5 text-[11px] font-bold text-stone-800 outline-none focus:border-orange-400 focus:ring-2 focus:ring-orange-100"
+                    />
+                  </label>
+                ))}
+              </div>
+            ) : (
+              <p className="mt-1.5 rounded-lg bg-stone-50 px-2.5 py-2 text-center text-[10px] text-stone-400 ring-1 ring-stone-200">形状を選択すると寸法を表示します</p>
+            )}
+          </div>
+
+          <div>
+            <p className="text-[11px] font-bold text-stone-500">🧩 ブーリアン演算（選択 {selectedIds.length}個）</p>
+            <div className="mt-1.5 grid grid-cols-2 gap-1.5">
+              <button
+                onClick={() => apiRef.current?.booleanOperation('union')}
+                disabled={selectedIds.length < 2}
+                className="rounded-lg border border-indigo-200 bg-indigo-50 px-2 py-2 text-[10px] font-bold text-indigo-700 transition hover:bg-indigo-100 disabled:cursor-not-allowed disabled:opacity-40"
+                title="Shift+クリックで選択し、形状を合体"
+              >
+                合体 Union
+              </button>
+              <button
+                onClick={() => apiRef.current?.booleanOperation('subtract')}
+                disabled={selectedIds.length < 2}
+                className="rounded-lg border border-rose-200 bg-rose-50 px-2 py-2 text-[10px] font-bold text-rose-700 transition hover:bg-rose-100 disabled:cursor-not-allowed disabled:opacity-40"
+                title="最初に選んだ形状から後続をくり抜く"
+              >
+                差・穴あけ
+              </button>
+            </div>
+            <p className="mt-1 text-[9px] text-stone-400">一覧またはビューポートでShift+クリックして複数選択。差は選択順がベース→カッターです。</p>
           </div>
 
           <div>

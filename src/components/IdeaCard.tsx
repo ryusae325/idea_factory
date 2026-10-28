@@ -7,6 +7,7 @@ interface Props {
   idea: Idea;
   profile: Profile | null;
   onOpen: (id: number) => void;
+  onOpenStudio?: (id: number) => void;
   onAction: (
     idea: Idea,
     action: 'submit' | 'approve' | 'revision' | 'withdraw' | 'buy-physical' | 'buy-digital',
@@ -23,7 +24,7 @@ const statusBadge: Record<Idea['status'], string> = {
   販売中: 'bg-emerald-100 text-emerald-700',
 };
 
-export default function IdeaCard({ idea, profile, onOpen, onAction, showFav, fav, onToggleFav }: Props) {
+export default function IdeaCard({ idea, profile, onOpen, onOpenStudio, onAction, showFav, fav, onToggleFav }: Props) {
   const name = (p?: { username: string; display_name: string } | null) =>
     p?.display_name || p?.username || '';
 
@@ -191,6 +192,17 @@ export default function IdeaCard({ idea, profile, onOpen, onAction, showFav, fav
           </div>
         </div>
         {action && <div className="pt-0.5">{action}</div>}
+        {idea.status === '制作中' && (isModeler || isAdmin) && (
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              onOpenStudio?.(idea.id);
+            }}
+            className="w-full rounded-lg border border-teal-300 bg-teal-50 px-3 py-2 text-[11px] font-bold text-teal-800 transition hover:bg-teal-100"
+          >
+            🧊 3Dスタジオで開く
+          </button>
+        )}
         <button
           onClick={(e) => {
             e.stopPropagation();

@@ -10,12 +10,13 @@ const ModelStudio = lazy(() => import('./ModelStudio'));
 interface Props {
   ideaId: number;
   profile: Profile | null;
+  openStudioOnOpen?: boolean;
   onClose: () => void;
   onChanged: () => void;
   onArrangeRequest?: (draft: ArrangementDraft) => void;
 }
 
-export default function DetailModal({ ideaId, profile, onClose, onChanged, onArrangeRequest }: Props) {
+export default function DetailModal({ ideaId, profile, openStudioOnOpen = false, onClose, onChanged, onArrangeRequest }: Props) {
   const [idea, setIdea] = useState<Idea | null>(null);
   const [comments, setComments] = useState<Comment[]>([]);
   const [text, setText] = useState('');
@@ -33,6 +34,15 @@ export default function DetailModal({ ideaId, profile, onClose, onChanged, onArr
   const [selectedChoices, setSelectedChoices] = useState<Map<number, ArrangementChoice>>(new Map());
   const [arrangeBusy, setArrangeBusy] = useState(false);
   const [showStudio, setShowStudio] = useState(false);
+  const autoOpenedStudioIdea = useRef<number | null>(null);
+
+  useEffect(() => {
+    if (!openStudioOnOpen || !idea || !profile || autoOpenedStudioIdea.current === idea.id) return;
+    if (profile.is_admin || profile.id === idea.creator_id || profile.id === idea.modeler_id) {
+      autoOpenedStudioIdea.current = idea.id;
+      setShowStudio(true);
+    }
+  }, [idea, openStudioOnOpen, profile]);
 
   const reload = useCallback(async () => {
     const [i, c] = await Promise.all([fetchIdea(ideaId), fetchComments(ideaId)]);

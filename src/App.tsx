@@ -39,6 +39,7 @@ export default function App() {
   const [favorites, setFavorites] = useState<Set<number>>(new Set());
   const [tab, setTab] = useState<TabId>('creator');
   const [detailId, setDetailId] = useState<number | null>(null);
+  const [studioOnOpenId, setStudioOnOpenId] = useState<number | null>(null);
   const [arrangementDraft, setArrangementDraft] = useState<ArrangementDraft | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -255,7 +256,15 @@ export default function App() {
 
   const usedGenres = (list: Idea[]) => GENRES.filter((g) => list.some((i) => i.genre === g));
 
-  const gridProps = { profile, onOpen: setDetailId, onAction: handleAction };
+  const gridProps = {
+    profile,
+    onOpen: setDetailId,
+    onOpenStudio: (id: number) => {
+      setStudioOnOpenId(id);
+      setDetailId(id);
+    },
+    onAction: handleAction,
+  };
 
   return (
     <div className="min-h-screen pb-[calc(4.5rem+env(safe-area-inset-bottom))] sm:pb-16">
@@ -506,7 +515,11 @@ export default function App() {
         <DetailModal
           ideaId={detailId}
           profile={profile}
-          onClose={() => setDetailId(null)}
+          openStudioOnOpen={studioOnOpenId === detailId}
+          onClose={() => {
+            setDetailId(null);
+            setStudioOnOpenId(null);
+          }}
           onChanged={() => {
             refreshIdeas();
             if (profile) refreshProfile(profile.id);

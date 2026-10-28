@@ -8,6 +8,7 @@ interface Props {
   ideas: Idea[];
   profile: Profile | null;
   onOpen: (id: number) => void;
+  onOpenStudio?: (id: number) => void;
   onAction: (idea: Idea, action: Action) => void;
   emptyMessage: string;
   emptyAction?: ReactNode;
@@ -21,6 +22,7 @@ export default function IdeaGrid({
   ideas,
   profile,
   onOpen,
+  onOpenStudio,
   onAction,
   emptyMessage,
   emptyAction,
@@ -54,6 +56,7 @@ export default function IdeaGrid({
           idea={i}
           profile={profile}
           onOpen={onOpen}
+          onOpenStudio={onOpenStudio}
           onAction={onAction}
           showFav={showFav}
           fav={favSet?.has(i.id)}
