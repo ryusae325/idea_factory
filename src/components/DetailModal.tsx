@@ -521,6 +521,43 @@ export default function DetailModal({ ideaId, profile, openStudioOnOpen = false,
                   ))}
                 </ul>
               )}
+              {isOwner && (
+                <div className="mt-3 border-t border-sky-200 pt-3">
+                  <p className="text-[11px] font-bold text-sky-900">プランナー自身もモデリングを担当できます</p>
+                  {myApplication ? (
+                    <div className="mt-1.5">
+                      <p className="text-[11px] text-sky-800">🙋 自分の立候補状況：{myApplication.status}</p>
+                      {myApplication.status === '応募中' && (
+                        <button
+                          onClick={handleWithdraw}
+                          disabled={applyBusy}
+                          className="mt-2 rounded-lg bg-white px-3 py-1.5 text-[10px] font-semibold text-stone-600 ring-1 ring-stone-300 transition hover:bg-stone-100 disabled:opacity-50"
+                        >
+                          立候補を取り下げる
+                        </button>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="mt-1.5">
+                      <textarea
+                        value={applyMsg}
+                        onChange={(e) => setApplyMsg(e.target.value)}
+                        rows={2}
+                        maxLength={1000}
+                        placeholder="応募メッセージ（任意）— 制作経験や進め方を書いてください"
+                        className="w-full rounded-lg border border-sky-200 bg-white px-3 py-2 text-xs outline-none focus:border-sky-400"
+                      />
+                      <button
+                        onClick={handleApply}
+                        disabled={applyBusy}
+                        className="mt-1.5 w-full rounded-lg bg-orange-600 px-3 py-2 text-xs font-bold text-white shadow-sm shadow-orange-500/30 transition hover:bg-orange-700 disabled:opacity-50"
+                      >
+                        {applyBusy ? '送信中…' : '🙋 自分でモデリングに立候補する'}
+                      </button>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           ) : profile ? (
             myApplication ? (

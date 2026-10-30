@@ -36,9 +36,15 @@ export default function IdeaCard({ idea, profile, onOpen, onOpenStudio, onAction
   if (idea.status === 'アイデア募集') {
     if (profile) {
       action = isCreator ? (
-        <p className="rounded-lg bg-sky-50 px-3 py-2 text-center text-[11px] font-medium text-sky-700 ring-1 ring-sky-200">
-          🙋 立候補を待っています — 詳細画面で応募者を確認して指名
-        </p>
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            onOpen(idea.id);
+          }}
+          className="w-full rounded-lg border border-sky-200 bg-sky-50 px-3 py-2.5 text-xs font-bold text-sky-800 transition hover:bg-sky-100"
+        >
+          🙋 自分でモデリングを引き受ける／応募者を見る
+        </button>
       ) : (
         <button
           onClick={(e) => {
